@@ -306,7 +306,7 @@ export default function DashboardPage() {
       if (overdueOnly && !isProjectOverdue(p)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        const haystack = `${p.name} ${p.location ?? ""} ${
+        const haystack = `${p.name} ${p.projectNumber ?? ""} ${p.location ?? ""} ${
           p.projectManager ?? ""
         }`.toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -535,7 +535,7 @@ export default function DashboardPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, location, manager…"
+                placeholder="Search by name, number, location, manager…"
                 className="w-full sm:w-72 rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
               />
             </div>
@@ -608,6 +608,7 @@ export default function DashboardPage() {
                   { header: "Name", key: "name" },
                   { header: "Status", key: "status" },
                   { header: "Health", key: "health" },
+                  { header: "Project Number", key: "projectNumber" },
                   { header: "BP Ref No.", key: "bpRefNo" },
                   { header: "Manager", key: "manager" },
                   { header: "Director", key: "director" },
@@ -625,6 +626,7 @@ export default function DashboardPage() {
                   name: p.name,
                   status: STATUS_LABELS[p.status],
                   health: healthByProjectId[p.id] ? RAG_LABELS[healthByProjectId[p.id].overall] : "",
+                  projectNumber: p.projectNumber ?? "",
                   bpRefNo: p.bpRefNo ?? "",
                   manager: p.projectManager ?? "",
                   director: p.projectDirector ?? "",

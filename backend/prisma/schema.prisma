@@ -326,6 +326,9 @@ model Project {
   description                    String?
   assetType                      String?
   status                         ProjectStatus                   @default(PLANNING)
+  // The organisation's own project number, entered at setup. Free text
+  // (numbering schemes vary), optional, and not enforced as unique.
+  projectNumber                  String?
   bpRefNo                        String?
   // Display name of the project manager. Kept as text (and still shown
   // everywhere) so projects whose manager isn't a user account keep their

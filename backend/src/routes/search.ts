@@ -78,6 +78,7 @@ searchRouter.get("/", async (req: Request, res: Response) => {
           { location: contains },
           { contractor: contains },
           { bpRefNo: contains },
+          { projectNumber: contains },
         ],
       },
       take: CANDIDATES_PER_TYPE,

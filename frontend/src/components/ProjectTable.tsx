@@ -81,9 +81,9 @@ export default function ProjectTable({
                 <div className="font-medium text-slate-900 dark:text-slate-100">
                   {project.name}
                 </div>
-                {project.assetType && (
+                {(project.projectNumber || project.assetType) && (
                   <div className="text-xs text-slate-500 dark:text-slate-400">
-                    {project.assetType}
+                    {[project.projectNumber, project.assetType].filter(Boolean).join(" · ")}
                   </div>
                 )}
               </td>
