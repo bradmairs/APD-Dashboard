@@ -126,7 +126,7 @@ const SUMMARISE_MINUTES_SYSTEM_PROMPT =
   '"meetingType": string or null, "summary": string or null}. title is a short, specific ' +
   "heading for this meeting (3-8 words) naming its main subject, such as \"Pump Station Stage 2 " +
   'Handover Planning", otherwise null. meetingType is a short label such as "Progress Meeting", ' +
-  '"Design Review" or "Site Meeting" if inferable, otherwise null. summary is a 2-4 sentence ' +
+  '"Design Review", "Workshop" or "Site Meeting" if inferable, otherwise null. summary is a 2-4 sentence ' +
   "overview for someone who was not there: the main subjects covered and any key decisions. " +
   "Use only the information given.";
 

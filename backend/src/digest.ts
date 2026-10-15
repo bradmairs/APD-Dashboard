@@ -18,6 +18,9 @@ interface DigestItem {
   // Null for a portfolio-wide task, which has no project to link to.
   projectName: string;
   projectId: string | null;
+  // The project's linked manager (Project.projectManagerId) — who this item
+  // is sent to. Null for a portfolio-wide task or an unlinked project.
+  projectManagerId: string | null;
 }
 
 // Mirrors the thresholds and overdue/due-soon logic the frontend's
@@ -36,19 +39,19 @@ export async function buildDigestItems(): Promise<DigestItem[]> {
   const [tasks, permits, insuranceWarranties, rfis] = await Promise.all([
     prisma.task.findMany({
       where: { status: { not: "DONE" }, dueDate: { lte: taskCutoff } },
-      include: { project: { select: { id: true, name: true } } },
+      include: { project: { select: { id: true, name: true, projectManagerId: true } } },
     }),
     prisma.permit.findMany({
       where: { status: "APPROVED", expiryDate: { lte: expiryCutoff } },
-      include: { project: { select: { id: true, name: true } } },
+      include: { project: { select: { id: true, name: true, projectManagerId: true } } },
     }),
     prisma.insuranceWarranty.findMany({
       where: { expiryDate: { lte: expiryCutoff } },
-      include: { project: { select: { id: true, name: true } } },
+      include: { project: { select: { id: true, name: true, projectManagerId: true } } },
     }),
     prisma.rfi.findMany({
       where: { status: "OPEN", dateRequired: { lte: taskCutoff } },
-      include: { project: { select: { id: true, name: true } } },
+      include: { project: { select: { id: true, name: true, projectManagerId: true } } },
     }),
   ]);
 
@@ -63,6 +66,7 @@ export async function buildDigestItems(): Promise<DigestItem[]> {
       overdue: t.dueDate < now,
       projectName: t.project?.name ?? "Portfolio",
       projectId: t.project?.id ?? null,
+      projectManagerId: t.project?.projectManagerId ?? null,
     });
   }
   for (const p of permits) {
@@ -74,6 +78,7 @@ export async function buildDigestItems(): Promise<DigestItem[]> {
       overdue: p.expiryDate < now,
       projectName: p.project.name,
       projectId: p.project.id,
+      projectManagerId: p.project.projectManagerId,
     });
   }
   for (const i of insuranceWarranties) {
@@ -85,6 +90,7 @@ export async function buildDigestItems(): Promise<DigestItem[]> {
       overdue: i.expiryDate < now,
       projectName: i.project.name,
       projectId: i.project.id,
+      projectManagerId: i.project.projectManagerId,
     });
   }
   for (const r of rfis) {
@@ -96,6 +102,7 @@ export async function buildDigestItems(): Promise<DigestItem[]> {
       overdue: r.dateRequired < now,
       projectName: r.project.name,
       projectId: r.project.id,
+      projectManagerId: r.project.projectManagerId,
     });
   }
 
@@ -125,7 +132,7 @@ function renderDigestHtml(items: DigestItem[], baseUrl: string | null): string {
 
   return `<div style="font-family:sans-serif;font-size:14px;color:#0f172a;">
     <h2 style="font-size:16px;">Project Management Dashboard — Daily Digest</h2>
-    <p>Items overdue or due soon across all projects:</p>
+    <p>Items overdue or due soon on your projects:</p>
     <table style="border-collapse:collapse;width:100%;">
       <thead>
         <tr style="text-align:left;border-bottom:1px solid #e2e8f0;">
@@ -165,26 +172,38 @@ function getTransport() {
 // flipped their own emailDigestOptIn on. Never throws — a misconfigured SMTP
 // server or transient send failure is logged, not allowed to crash whatever
 // triggered it (a cron tick).
+// Same rule as the in-app NotificationBell: a user is only told about items
+// on projects they're the linked project manager of, plus portfolio-wide
+// tasks (which belong to no project, so to everyone).
+export function digestItemsForUser<T extends Pick<DigestItem, "projectId" | "projectManagerId">>(
+  items: T[],
+  userId: string
+): T[] {
+  return items.filter((item) => item.projectId === null || item.projectManagerId === userId);
+}
+
 export async function sendDigestEmails(): Promise<void> {
   const transport = getTransport();
   if (!transport) return;
 
-  const items = await buildDigestItems();
-  if (items.length === 0) return;
+  const allItems = await buildDigestItems();
+  if (allItems.length === 0) return;
 
   const recipients = await prisma.user.findMany({
     where: { active: true, emailDigestOptIn: true },
-    select: { email: true },
+    select: { id: true, email: true },
   });
   if (recipients.length === 0) return;
 
   const baseUrl = process.env.PUBLIC_APP_URL || null;
-  const html = renderDigestHtml(items, baseUrl);
-  const text = renderDigestText(items);
   const from = process.env.SMTP_FROM || "Project Management Dashboard <no-reply@apd-dashboard.local>";
-  const subject = `Project Management Dashboard: ${items.length} item${items.length === 1 ? " needs" : "s need"} attention`;
 
-  for (const { email } of recipients) {
+  for (const { id, email } of recipients) {
+    const items = digestItemsForUser(allItems, id);
+    if (items.length === 0) continue;
+    const html = renderDigestHtml(items, baseUrl);
+    const text = renderDigestText(items);
+    const subject = `Project Management Dashboard: ${items.length} item${items.length === 1 ? " needs" : "s need"} attention`;
     try {
       await transport.sendMail({ from, to: email, subject, text, html });
     } catch (err) {

@@ -87,7 +87,10 @@ export interface Project {
   assetType: string | null;
   status: ProjectStatus;
   bpRefNo: string | null;
+  // Display name; derived server-side from projectManagerId when that's set.
   projectManager: string | null;
+  // The linked user account — notifications go to this user.
+  projectManagerId: string | null;
   projectDirector: string | null;
   projectSponsor: string | null;
   location: string | null;
@@ -1118,4 +1121,30 @@ export type TenderPackageInput = Omit<
   | "createdAt"
   | "updatedAt"
   | "project"
+>;
+
+export interface UserOption {
+  id: string;
+  name: string;
+}
+
+export type ToolSuggestionCategory = "NEW_FEATURE" | "IMPROVEMENT" | "BUG" | "OTHER";
+export type ToolSuggestionStatus = "OPEN" | "PLANNED" | "IN_PROGRESS" | "DONE" | "DECLINED";
+
+export interface ToolSuggestion {
+  id: string;
+  title: string;
+  description: string | null;
+  category: ToolSuggestionCategory;
+  status: ToolSuggestionStatus;
+  response: string | null;
+  createdById: string | null;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ToolSuggestionInput = Pick<
+  ToolSuggestion,
+  "title" | "description" | "category" | "status" | "response"
 >;

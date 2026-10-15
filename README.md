@@ -81,7 +81,14 @@ Each **Project** tracks:
   Completion sits between Construction and Defects Liability — practical
   completion/handover has been reached, the defects liability period is
   about to start, but the project isn't administratively closed out yet
-- BP Ref. No., Project Manager, Project Director, Project Sponsor
+- BP Ref. No., Project Manager, Project Director, Project Sponsor. The
+  Project Manager is picked from a dropdown of active user accounts (a new
+  project defaults to whoever is creating it) rather than typed, and is
+  stored as a link to that user (`projectManagerId`) alongside their name —
+  that link is what decides who gets the project's notifications. Projects
+  from before this change were linked automatically where the typed name
+  matched exactly one user; any that didn't match keep their typed name,
+  shown as "(not a user)" in the dropdown until a user is picked
 - Location, contractor
 - Original Budget, Latest Approved Budget, vs. contract value (Contract
   Value itself isn't on the New/Edit Project form — it's set once from a
@@ -106,8 +113,9 @@ See `backend/prisma/schema.prisma` for the source of truth.
 
 A bell icon next to the account menu — present on every page, not just the
 dashboard — shows a badge with the count of items that are overdue/expired
-or due/expiring within their respective windows (across all projects, not
-just your own): tasks and open RFIs due within 7 days, and permits or
+or due/expiring within their respective windows, on **your projects only**
+(those where you're the linked Project Manager — see Projects above —
+plus portfolio-wide tasks, which belong to no project): tasks and open RFIs due within 7 days, and permits or
 insurance/warranties expiring within 60 days. The badge is red if anything
 is overdue or expired, amber if only "due soon"/"expiring soon" items
 remain. Clicking it opens one merged list — tasks, permits, insurance/
@@ -827,8 +835,11 @@ Each project has a **Meeting Minutes** register — a simple log of project
 meetings (progress meetings, design reviews, site meetings), distinct
 from **Actions & Decisions** (a single decision or action, not a full
 meeting record). A meeting has an optional **Meeting Title** (shown as
-the meeting's heading in the list, with the date beside it), a Meeting Date, Type (free text, with
-suggestions like "Progress Meeting" or "Design Review"), Location,
+the meeting's heading in the list, with the date beside it), a Meeting Date, Type (a dropdown of
+common types — General Meeting, Progress Meeting, Workshop, Design/Risk/
+Safety in Design/Value Engineering Workshop, PCG, Steering Committee, Site,
+Pre-start, Stakeholder, Handover and more — plus **Other…** to type any
+other type), Location,
 Attendees (freeform), a Summary, an optional Next Meeting Date, and
 Notes.
 
@@ -1071,6 +1082,19 @@ panel lists every flagged item across every project, soonest first,
 linking back to its project — alongside the other exception panels.
 Open to any logged-in user to edit.
 
+## Tool Suggestions
+
+A **Tool Suggestions** button in the dashboard header (next to Lessons
+Learned) opens a suggestion box for the dashboard itself: anyone signed in —
+Viewers included — can suggest a **New Feature**, an **Improvement**, a
+**Bug / Issue** or **Other**, with a title and optional detail. Suggestions
+are listed newest first with who made them, filterable by status and
+searchable. The person who made a suggestion (or an admin) can edit or
+delete it; only an admin can set its status (Open → Planned → In Progress →
+Done, or Declined) and add a response. The default **Active** filter hides
+Done and Declined ones. Backed by the `ToolSuggestion` model and
+`/api/tool-suggestions` (`backend/src/routes/toolSuggestions.ts`).
+
 ## Lessons Learned
 
 Each project has a **Lessons Learned** register — one shared
@@ -1165,6 +1189,13 @@ When at least one variation has been approved, two extra stats appear —
 **Approved Variations** (their total cost impact) and **Revised Budget**
 — so the original figure and its revision are both visible side by side
 rather than the original quietly being replaced.
+
+Each entry in the list has a one-click **Mark as actual** (on a Forecast)
+or **Mark as forecast** (on an Actual) that switches that same entry's type
+in place, keeping its amount — no need to add a new entry when a month's
+forecast becomes its actual. If the month already has an entry of the other
+type, you're asked first and it's replaced. **Edit** also lets you change
+the type and amount together, and every change can be undone from the toast.
 
 Like Milestones, this is live data rather than a per-month snapshot — an
 Actual figure doesn't need re-editing once entered, and a Forecast is
@@ -1569,9 +1600,10 @@ Several project detail tabs still stack many panels (Budget & Contract
 alone has nine), so a **Jump to:** row of pills
 (`components/SectionJumpNav.tsx`) sits just below the tab bar, one pill per
 panel in that tab, in the same top-to-bottom order they're stacked in.
-Clicking one smooth-scrolls straight to that panel
-(`element.scrollIntoView`) rather than scrolling past everything above it
-first. Each panel is wrapped in a `<div id="...">` in
+Clicking one smooth-scrolls straight to that panel rather than scrolling
+past everything above it first, stopping with the panel's top just below
+the sticky page header (offset by the header's height, so the panel's
+heading isn't hidden underneath it). Each panel is wrapped in a `<div id="...">` in
 `ProjectDetailPage.tsx` that the matching pill targets; the list of
 {id, label} pairs per tab is a static map there (`TAB_SECTIONS`) rather
 than derived from the JSX, since the panel components themselves don't
@@ -1717,8 +1749,10 @@ ordinary Task rows with no ongoing link back to the template.
 
 An optional daily email summarizing the same items the in-app notification
 bell flags — overdue/due-soon tasks and RFIs (7-day window), and
-expiring/expired permits and insurance/warranties (60-day window) — across
-every project. It's opt-in at two levels, so it does nothing by default:
+expiring/expired permits and insurance/warranties (60-day window) — on the
+recipient's own projects (where they're the linked Project Manager), plus
+portfolio-wide tasks. Each user gets their own list, and nothing is sent to
+someone with nothing on their projects. It's opt-in at two levels, so it does nothing by default:
 
 1. **The server needs SMTP configured.** Set `SMTP_HOST` (and optionally
    `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) in `.env` — see

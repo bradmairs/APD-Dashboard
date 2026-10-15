@@ -285,7 +285,9 @@ model User {
   updatedAt                      DateTime                        @updatedAt
   activityLogs                   ActivityLog[]
   attachments                    Attachment[]
-  createdProjects                Project[]
+  createdProjects                Project[]                       @relation("ProjectCreatedBy")
+  managedProjects                Project[]                       @relation("ProjectManager")
+  toolSuggestions                ToolSuggestion[]
   monthlyReports                 MonthlyReport[]
   siteVisits                     SiteVisit[]
   siteVisitPhotos                SiteVisitPhoto[]
@@ -325,7 +327,13 @@ model Project {
   assetType                      String?
   status                         ProjectStatus                   @default(PLANNING)
   bpRefNo                        String?
+  // Display name of the project manager. Kept as text (and still shown
+  // everywhere) so projects whose manager isn't a user account keep their
+  // name; projectManagerId is the link to an actual user, and is what
+  // notifications and the email digest use to work out whose project it is.
   projectManager                 String?
+  projectManagerId               String?
+  projectManagerUser             User?                           @relation("ProjectManager", fields: [projectManagerId], references: [id], onDelete: SetNull)
   projectDirector                String?
   projectSponsor                 String?
   location                       String?
@@ -344,7 +352,7 @@ model Project {
   targetCompletionDate           DateTime?
   actualCompletionDate           DateTime?
   createdById                    String?
-  createdBy                      User?                           @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy                      User?                           @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt                      DateTime                        @default(now())
   updatedAt                      DateTime                        @updatedAt
   tasks                          Task[]
@@ -381,6 +389,8 @@ model Project {
   safetyInspections              SafetyInspection[]
   tenderPackages                 TenderPackage[]
   archiveLinks                   ArchiveLink[]
+
+  @@index([projectManagerId])
 }
 
 // A reusable set of tasks — e.g. a standard "Design Stage" or
@@ -1499,4 +1509,40 @@ model ActivityLog {
 
   @@index([projectId])
   @@index([createdAt])
+}
+
+enum ToolSuggestionCategory {
+  NEW_FEATURE
+  IMPROVEMENT
+  BUG
+  OTHER
+}
+
+enum ToolSuggestionStatus {
+  OPEN
+  PLANNED
+  IN_PROGRESS
+  DONE
+  DECLINED
+}
+
+// The dashboard's own suggestion box: ideas for new features and
+// improvements to this tool, raised by anyone who uses it. Not tied to a
+// project. Anyone can add one; only its author or an admin can edit or
+// delete it, and only an admin can move it through the status workflow.
+model ToolSuggestion {
+  id            String                 @id @default(cuid())
+  title         String
+  description   String?
+  category      ToolSuggestionCategory @default(IMPROVEMENT)
+  status        ToolSuggestionStatus   @default(OPEN)
+  // Admin's reply / reason, e.g. why it was declined or what was done.
+  response      String?
+  createdBy     User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdByName String
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([status])
 }

@@ -28,6 +28,9 @@ import {
   InsuranceWarrantyInput,
   LessonLearned,
   LessonLearnedInput,
+  ToolSuggestion,
+  ToolSuggestionInput,
+  UserOption,
   MeetingMinutes,
   MeetingMinutesInput,
   MeetingMinutesDraft,
@@ -224,6 +227,43 @@ export function updateProject(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   }).then((res) => handle(res));
+}
+
+// Active users (id + name) for pickers like a project's Project Manager —
+// available to everyone, unlike the admin-only getUsers().
+export function getUserOptions(): Promise<UserOption[]> {
+  return fetch(`${API_BASE}/user-options`).then((res) => handle(res));
+}
+
+export function getToolSuggestions(): Promise<ToolSuggestion[]> {
+  return fetch(`${API_BASE}/tool-suggestions`).then((res) => handle(res));
+}
+
+export function createToolSuggestion(
+  data: Partial<ToolSuggestionInput>
+): Promise<ToolSuggestion> {
+  return fetch(`${API_BASE}/tool-suggestions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function updateToolSuggestion(
+  id: string,
+  data: Partial<ToolSuggestionInput>
+): Promise<ToolSuggestion> {
+  return fetch(`${API_BASE}/tool-suggestions/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function deleteToolSuggestion(id: string): Promise<void> {
+  return fetch(`${API_BASE}/tool-suggestions/${id}`, { method: "DELETE" }).then((res) =>
+    handle(res)
+  );
 }
 
 export function deleteProject(id: string): Promise<void> {

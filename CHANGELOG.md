@@ -5,6 +5,15 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.1 - 2026-10-15
+
+- Cash flow: one-click **Mark as actual** / **Mark as forecast** on each entry switches it in place, keeping its amount (with undo), instead of needing a new entry
+- New **Tool Suggestions** page (button next to Lessons Learned) where anyone can suggest new features and improvements; admins set status and reply
+- Project Manager is now picked from a dropdown of users (defaulting to the creator) and linked to that account; existing projects are linked automatically where the name matches exactly one user
+- Notifications (the bell and the email digest) now only cover the signed-in user's own projects, plus portfolio-wide tasks
+- Project "Jump to" links now stop with the section just below the sticky header instead of scrolling it underneath
+- Meeting minutes Type is now a dropdown with more options (General Meeting, Workshop, Risk Workshop, PCG, Steering Committee, Pre-start and more) plus "Other…" for anything else
+
 ## 1.0 - 2026-10-15
 
 First release of the GVW deployment. Single-organisation build of the APD

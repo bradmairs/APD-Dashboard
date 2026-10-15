@@ -33,7 +33,6 @@ export default function CashFlowPanel({
 }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<CashFlowEntry | null>(null);
-  const [initialType, setInitialType] = useState<CashFlowType | undefined>();
 
   const expenditure = expenditureToDate(entries);
   const forecastTotal = forecastAtCompletion(entries);
@@ -43,20 +42,41 @@ export default function CashFlowPanel({
 
   function openCreate() {
     setEditing(null);
-    setInitialType(undefined);
     setShowModal(true);
   }
 
-  function openEdit(entry: CashFlowEntry, type?: CashFlowType) {
+  // Switches an entry between forecast and actual in place — same entry, same
+  // amount — so a month's forecast becomes its actual without re-entering
+  // it. Edit is still there for changing the amount at the same time.
+  async function handleToggleType(entry: CashFlowEntry) {
+    const targetType: CashFlowType = entry.type === "ACTUAL" ? "FORECAST" : "ACTUAL";
+    const existing = entries.find(
+      (other) =>
+        other.id !== entry.id &&
+        other.type === targetType &&
+        other.month.substring(0, 7) === entry.month.substring(0, 7)
+    );
+    if (
+      existing &&
+      !(await confirm(
+        `${formatReportMonth(entry.month)} already has a ${targetType.toLowerCase()} entry (${formatCurrency(
+          existing.amount
+        )}). Replace it with this ${formatCurrency(entry.amount)} entry?`,
+        { confirmLabel: "Replace" }
+      ))
+    )
+      return;
+    await onUpdate(entry, { type: targetType });
+  }
+
+  function openEdit(entry: CashFlowEntry) {
     setEditing(entry);
-    setInitialType(type);
     setShowModal(true);
   }
 
   function closeModal() {
     setShowModal(false);
     setEditing(null);
-    setInitialType(undefined);
   }
 
   async function handleSave(data: Partial<CashFlowEntryInput>) {
@@ -163,15 +183,21 @@ export default function CashFlowPanel({
                   <span className="text-slate-900 dark:text-slate-100">
                     {formatCurrency(entry.amount)}
                   </span>
-                  {entry.type === "FORECAST" && (
-                    <button
-                      onClick={() => openEdit(entry, "ACTUAL")}
-                      className="text-xs text-emerald-700 dark:text-emerald-400 hover:underline"
-                      title="Record the actual spend for this month (replaces the forecast)"
-                    >
-                      Mark as actual
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleToggleType(entry)}
+                    className={`text-xs hover:underline ${
+                      entry.type === "FORECAST"
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-sky-700 dark:text-sky-400"
+                    }`}
+                    title={
+                      entry.type === "FORECAST"
+                        ? "Change this entry to an actual, keeping its amount"
+                        : "Change this entry back to a forecast, keeping its amount"
+                    }
+                  >
+                    {entry.type === "FORECAST" ? "Mark as actual" : "Mark as forecast"}
+                  </button>
                   <button
                     onClick={() => openEdit(entry)}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
@@ -195,7 +221,6 @@ export default function CashFlowPanel({
         <CashFlowEntryFormModal
           entry={editing}
           entries={entries}
-          initialType={initialType}
           onClose={closeModal}
           onSave={handleSave}
         />

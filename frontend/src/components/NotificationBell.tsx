@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getAllInsuranceWarranties, getAllPermits, getAllRfis, getUpcomingTasks } from "../api";
+import {
+  getAllInsuranceWarranties,
+  getAllPermits,
+  getAllRfis,
+  getProjects,
+  getUpcomingTasks,
+} from "../api";
 import { InsuranceWarranty, Permit, Rfi, Task } from "../types";
+import { useAuth } from "../auth/AuthContext";
 import { formatDate } from "../format";
 import { isTaskDueSoon, isTaskOverdue } from "../taskMeta";
 import { isPermitExpired, isPermitExpiringSoon } from "../permitMeta";
@@ -20,14 +27,26 @@ interface NotificationItem {
   project?: { id: string; name: string };
 }
 
+// Only the signed-in user's own projects (the ones they're the linked Project
+// Manager of) raise notifications, plus portfolio-wide tasks, which belong to
+// no project. Mirrors digestItemsForUser in backend/src/digest.ts.
 export default function NotificationBell() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [permits, setPermits] = useState<Permit[]>([]);
-  const [insuranceWarranties, setInsuranceWarranties] = useState<InsuranceWarranty[]>([]);
-  const [rfis, setRfis] = useState<Rfi[]>([]);
+  const { user } = useAuth();
+  const [myProjectIds, setMyProjectIds] = useState<Set<string>>(new Set());
+  const [allTasks, setTasks] = useState<Task[]>([]);
+  const [allPermits, setPermits] = useState<Permit[]>([]);
+  const [allInsuranceWarranties, setInsuranceWarranties] = useState<InsuranceWarranty[]>([]);
+  const [allRfis, setRfis] = useState<Rfi[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    getProjects()
+      .then((projects) =>
+        setMyProjectIds(
+          new Set(projects.filter((p) => p.projectManagerId === user?.id).map((p) => p.id))
+        )
+      )
+      .catch(() => setMyProjectIds(new Set()));
     getUpcomingTasks()
       .then(setTasks)
       .catch(() => setTasks([]));
@@ -40,7 +59,16 @@ export default function NotificationBell() {
     getAllRfis()
       .then(setRfis)
       .catch(() => setRfis([]));
-  }, []);
+  }, [user?.id]);
+
+  function isMine(item: { projectId?: string | null; project?: { id: string } | null }) {
+    const projectId = item.project?.id ?? item.projectId ?? null;
+    return projectId === null || myProjectIds.has(projectId);
+  }
+  const tasks = allTasks.filter(isMine);
+  const permits = allPermits.filter(isMine);
+  const insuranceWarranties = allInsuranceWarranties.filter(isMine);
+  const rfis = allRfis.filter(isMine);
 
   const overdueTasks = tasks.filter(isTaskOverdue);
   const dueSoonTasks = tasks.filter((t) => isTaskDueSoon(t) && !isTaskOverdue(t));
@@ -132,10 +160,13 @@ export default function NotificationBell() {
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Notifications
               </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                For projects where you're the Project Manager
+              </p>
             </div>
             {items.length === 0 ? (
               <p className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">
-                No upcoming deadlines or expirations.
+                No upcoming deadlines or expirations on your projects.
               </p>
             ) : (
               <ul className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">

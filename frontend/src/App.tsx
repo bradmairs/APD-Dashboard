@@ -16,6 +16,7 @@ const MonthlyReportViewPage = lazy(() => import("./pages/MonthlyReportViewPage")
 const ProjectCloseoutReportPage = lazy(() => import("./pages/ProjectCloseoutReportPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const LessonsLearnedPage = lazy(() => import("./pages/LessonsLearnedPage"));
+const ToolSuggestionsPage = lazy(() => import("./pages/ToolSuggestionsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const TaskTemplatesPage = lazy(() => import("./pages/TaskTemplatesPage"));
 
@@ -67,6 +68,10 @@ export default function App() {
                 <Route
                   path="/lessons-learned"
                   element={<Protected><LessonsLearnedPage /></Protected>}
+                />
+                <Route
+                  path="/tool-suggestions"
+                  element={<Protected><ToolSuggestionsPage /></Protected>}
                 />
                 <Route
                   path="/task-templates"

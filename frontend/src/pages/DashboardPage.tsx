@@ -447,6 +447,13 @@ export default function DashboardPage() {
               Lessons Learned
             </Link>
             <Link
+              to="/tool-suggestions"
+              className="px-4 py-2 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+              title="Suggest new features or improvements to this tool"
+            >
+              Tool Suggestions
+            </Link>
+            <Link
               to="/reports"
               className="px-4 py-2 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
             >
