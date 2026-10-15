@@ -426,13 +426,13 @@ export default function DashboardPage() {
             <GvwLogo className="h-16" />
             <div>
               <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                GVW Dashboard
+                APD Project Management Dashboard
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Water Authority
                 <span
                   className="ml-2 text-xs text-slate-400 dark:text-slate-500"
-                  title={`GVW Project Management version ${APP_VERSION}`}
+                  title={`APD Project Management Dashboard version ${APP_VERSION}`}
                 >
                   v{APP_VERSION}
                 </span>

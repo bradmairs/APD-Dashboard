@@ -12,7 +12,7 @@ const DIGITS = 6;
 // between the phone and the server doesn't lock a user out.
 const WINDOW = 1;
 const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const ISSUER = "GVW Project Management";
+const ISSUER = "APD Project Management Dashboard";
 
 function appSecret(): string {
   const secret = process.env.JWT_SECRET;

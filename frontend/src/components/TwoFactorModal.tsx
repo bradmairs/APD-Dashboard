@@ -95,7 +95,7 @@ export default function TwoFactorModal({ onClose }: { onClose: () => void }) {
   function downloadCodes() {
     const blob = new Blob(
       [
-        `GVW Project Management recovery codes for ${user?.email}\n` +
+        `APD Project Management Dashboard recovery codes for ${user?.email}\n` +
           "Each code works once. Keep them somewhere safe.\n\n" +
           recoveryCodes.join("\n") +
           "\n",
@@ -105,7 +105,7 @@ export default function TwoFactorModal({ onClose }: { onClose: () => void }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "gvw-pm-recovery-codes.txt";
+    a.download = "apd-pm-recovery-codes.txt";
     a.click();
     URL.revokeObjectURL(url);
   }

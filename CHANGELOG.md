@@ -5,6 +5,10 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.01 - 2026-10-15
+
+- Renamed the app to "APD Project Management Dashboard" (login page, dashboard header, browser tab, 2FA issuer, digest emails, README, package names)
+
 ## 1.0 - 2026-10-15
 
 First release of the GVW deployment. Single-organisation build of the APD
