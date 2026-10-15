@@ -33,12 +33,34 @@ interface Props {
   onUploadAttachment: (meetingId: string, file: File) => Promise<void>;
 }
 
-const MEETING_TYPE_SUGGESTIONS = [
+// The Type dropdown's options. Anything else can still be typed in via
+// "Other", and a meeting saved with a type not in this list (typed in, or
+// suggested by the AI draft) shows as that custom type.
+const MEETING_TYPES = [
+  "General Meeting",
   "Progress Meeting",
+  "Project Kick-off / Start-up Meeting",
+  "Project Control Group (PCG)",
+  "Steering Committee",
+  "Workshop",
+  "Design Workshop",
+  "Risk Workshop",
+  "Safety in Design Workshop",
+  "Value Engineering Workshop",
   "Design Review",
   "Site Meeting",
+  "Pre-start Meeting",
   "Client Meeting",
+  "Contractor Meeting",
+  "Stakeholder Meeting",
+  "Community Meeting",
+  "Internal Team Meeting",
+  "Commissioning Meeting",
+  "Handover Meeting",
+  "Close-out / Lessons Learned Meeting",
 ];
+
+const OTHER_MEETING_TYPE = "__other__";
 
 function toDateInputValue(value: string | null): string {
   return value ? value.substring(0, 10) : "";
@@ -60,6 +82,10 @@ export default function MeetingMinutesFormModal({
   );
   const [title, setTitle] = useState(meeting?.title ?? "");
   const [meetingType, setMeetingType] = useState(meeting?.meetingType ?? "");
+  // True when the type isn't one of MEETING_TYPES, so it's typed in instead.
+  const [customMeetingType, setCustomMeetingType] = useState(
+    !!meeting?.meetingType && !MEETING_TYPES.includes(meeting.meetingType)
+  );
   const [location, setLocation] = useState(meeting?.location ?? "");
   const [attendees, setAttendees] = useState(meeting?.attendees ?? "");
   const [summary, setSummary] = useState(meeting?.summary ?? "");
@@ -99,7 +125,10 @@ export default function MeetingMinutesFormModal({
         onProgress: setGenerateProgress,
       });
       if (draft.title && !title.trim()) setTitle(draft.title);
-      if (draft.meetingType) setMeetingType(draft.meetingType);
+      if (draft.meetingType) {
+        setMeetingType(draft.meetingType);
+        setCustomMeetingType(!MEETING_TYPES.includes(draft.meetingType));
+      }
       if (draft.attendees) setAttendees(draft.attendees);
       if (draft.summary) setSummary(draft.summary);
       if (draft.notes) setNotes(draft.notes);
@@ -320,18 +349,36 @@ export default function MeetingMinutesFormModal({
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Type
               </label>
-              <input
-                list="meeting-type-suggestions"
-                value={meetingType}
-                onChange={(e) => setMeetingType(e.target.value)}
-                placeholder="e.g. Progress Meeting"
+              <select
+                value={customMeetingType ? OTHER_MEETING_TYPE : meetingType}
+                onChange={(e) => {
+                  if (e.target.value === OTHER_MEETING_TYPE) {
+                    setCustomMeetingType(true);
+                    setMeetingType("");
+                  } else {
+                    setCustomMeetingType(false);
+                    setMeetingType(e.target.value);
+                  }
+                }}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
-              />
-              <datalist id="meeting-type-suggestions">
-                {MEETING_TYPE_SUGGESTIONS.map((t) => (
-                  <option key={t} value={t} />
+              >
+                <option value="">Select type…</option>
+                {MEETING_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
-              </datalist>
+                <option value={OTHER_MEETING_TYPE}>Other…</option>
+              </select>
+              {customMeetingType && (
+                <input
+                  value={meetingType}
+                  onChange={(e) => setMeetingType(e.target.value)}
+                  placeholder="Type of meeting"
+                  autoFocus
+                  className="mt-2 w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
+                />
+              )}
             </div>
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

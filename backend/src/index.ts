@@ -46,6 +46,8 @@ import activityRouter from "./routes/activity";
 import attachmentsRouter from "./routes/attachments";
 import usersRouter from "./routes/users";
 import taskTemplatesRouter from "./routes/taskTemplates";
+import toolSuggestionsRouter from "./routes/toolSuggestions";
+import userOptionsRouter from "./routes/userOptions";
 import { requireAuth } from "./middleware/requireAuth";
 import { requireAdmin } from "./middleware/requireAdmin";
 import { blockViewerMutations } from "./middleware/blockViewerMutations";
@@ -135,6 +137,10 @@ app.use("/api/activity", requireAuth, activityRouter);
 app.use("/api/attachments", readOnlyGuarded, attachmentsRouter);
 app.use("/api/users", requireAuth, requireAdmin, usersRouter);
 app.use("/api/task-templates", readOnlyGuarded, taskTemplatesRouter);
+// Deliberately not readOnlyGuarded: Viewers can make suggestions too (see
+// routes/toolSuggestions.ts for who can edit what).
+app.use("/api/tool-suggestions", requireAuth, toolSuggestionsRouter);
+app.use("/api/user-options", requireAuth, userOptionsRouter);
 
 // Catches multer's file-size/file-type rejections (thrown before any route
 // handler runs) and reports them as clean JSON instead of Express's default

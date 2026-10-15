@@ -7,9 +7,6 @@ interface Props {
   // Every entry on the project, so converting forecast <-> actual can warn
   // when the target type already exists for that month.
   entries: CashFlowEntry[];
-  // Opens an existing entry already switched to this type (the "Mark as actual"
-  // shortcut).
-  initialType?: CashFlowType;
   onClose: () => void;
   onSave: (data: Partial<CashFlowEntryInput>) => Promise<void>;
 }
@@ -22,13 +19,12 @@ function toMonthInputValue(value: string | null): string {
 export default function CashFlowEntryFormModal({
   entry,
   entries,
-  initialType,
   onClose,
   onSave,
 }: Props) {
   const [month, setMonth] = useState(toMonthInputValue(entry?.month ?? null));
   const [type, setType] = useState<CashFlowType>(
-    initialType ?? entry?.type ?? "ACTUAL"
+    entry?.type ?? "ACTUAL"
   );
   const [amount, setAmount] = useState(entry?.amount ?? "");
   const [saving, setSaving] = useState(false);

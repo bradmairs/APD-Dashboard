@@ -41,6 +41,35 @@ import { canModifyProject } from "../permissions";
 
 const router = Router();
 
+// The project manager is picked from the user list (projectManagerId) rather
+// than typed, so notifications can reliably tell whose project it is. The
+// stored projectManager name is always derived from that user here, never
+// taken from the client, so the two can't drift apart. Only touches the body
+// when projectManagerId was actually sent, so older clients and CSV-style
+// updates that only send other fields leave the manager alone.
+async function resolveProjectManager(
+  data: Record<string, unknown>
+): Promise<string | null> {
+  if (!("projectManagerId" in data)) {
+    delete data.projectManager;
+    return null;
+  }
+  const id = data.projectManagerId;
+  if (id === null || id === "") {
+    data.projectManagerId = null;
+    data.projectManager = null;
+    return null;
+  }
+  if (typeof id !== "string") return "Invalid project manager";
+  const manager = await prisma.user.findUnique({
+    where: { id },
+    select: { name: true, active: true },
+  });
+  if (!manager || !manager.active) return "Project manager must be an active user";
+  data.projectManager = manager.name;
+  return null;
+}
+
 router.use("/:projectId/tasks", projectTasksRouter);
 router.use("/:id/reports", projectReportsRouter);
 router.use("/:id/milestones", projectMilestonesRouter);
@@ -165,6 +194,8 @@ router.post("/", async (req, res) => {
     // createdById is server-assigned, never taken from the request body —
     // otherwise a client could claim a project was created by someone else.
     const { createdById, ...data } = req.body;
+    const managerError = await resolveProjectManager(data);
+    if (managerError) return res.status(400).json({ error: managerError });
     const project = await prisma.project.create({
       data: { ...data, createdById: req.user!.sub },
     });
@@ -193,6 +224,8 @@ router.put("/:id", async (req, res) => {
   try {
     // createdById can't be reassigned through an edit.
     const { createdById, ...data } = req.body;
+    const managerError = await resolveProjectManager(data);
+    if (managerError) return res.status(400).json({ error: managerError });
     const project = await prisma.project.update({
       where: { id: req.params.id },
       data,

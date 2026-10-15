@@ -1,6 +1,13 @@
-import { FormEvent, useState } from "react";
-import { Project, ProjectInput, ProjectStatus } from "../types";
+import { FormEvent, useEffect, useState } from "react";
+import { Project, ProjectInput, ProjectStatus, UserOption } from "../types";
 import { ALL_STATUSES, STATUS_LABELS } from "../statusMeta";
+import { getUserOptions } from "../api";
+import { useAuth } from "../auth/AuthContext";
+
+// Select value for a project whose manager was typed in before managers were
+// picked from the user list and doesn't match a user — leaving it selected
+// keeps that name as it is.
+const UNLINKED_MANAGER = "__unlinked__";
 
 interface Props {
   project: Project | null;
@@ -14,6 +21,7 @@ function toDateInputValue(value: string | null): string {
 }
 
 export default function ProjectFormModal({ project, onClose, onSave }: Props) {
+  const { user } = useAuth();
   const [name, setName] = useState(project?.name ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
   const [assetType, setAssetType] = useState(project?.assetType ?? "");
@@ -21,9 +29,13 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
     project?.status ?? "PLANNING"
   );
   const [bpRefNo, setBpRefNo] = useState(project?.bpRefNo ?? "");
-  const [projectManager, setProjectManager] = useState(
-    project?.projectManager ?? ""
+  // A new project defaults to whoever is creating it.
+  const [projectManagerId, setProjectManagerId] = useState(
+    project
+      ? project.projectManagerId ?? (project.projectManager ? UNLINKED_MANAGER : "")
+      : user?.id ?? ""
   );
+  const [userOptions, setUserOptions] = useState<UserOption[] | null>(null);
   const [projectDirector, setProjectDirector] = useState(
     project?.projectDirector ?? ""
   );
@@ -45,6 +57,20 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    getUserOptions()
+      .then(setUserOptions)
+      .catch(() => setError("Failed to load the user list for Project Manager"));
+  }, []);
+
+  // A linked manager whose account has since been deactivated isn't in the
+  // active-user list, but should still show as the current selection.
+  const linkedManagerMissing =
+    !!userOptions &&
+    !!project?.projectManagerId &&
+    projectManagerId === project.projectManagerId &&
+    !userOptions.some((u) => u.id === project.projectManagerId);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -56,7 +82,11 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
         assetType: assetType || null,
         status,
         bpRefNo: bpRefNo || null,
-        projectManager: projectManager || null,
+        // Leaving an unlinked legacy name (or an unchanged deactivated
+        // manager) selected sends nothing, so the server keeps it as is.
+        ...(projectManagerId === UNLINKED_MANAGER || linkedManagerMissing
+          ? {}
+          : { projectManagerId: projectManagerId || null }),
         projectDirector: projectDirector || null,
         projectSponsor: projectSponsor || null,
         location: location || null,
@@ -174,11 +204,38 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Project Manager
               </label>
-              <input
-                value={projectManager}
-                onChange={(e) => setProjectManager(e.target.value)}
+              <select
+                value={projectManagerId}
+                onChange={(e) => setProjectManagerId(e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
-              />
+              >
+                <option value="">— None —</option>
+                {project?.projectManager && !project.projectManagerId && (
+                  <option value={UNLINKED_MANAGER}>
+                    {project.projectManager} (not a user)
+                  </option>
+                )}
+                {linkedManagerMissing && (
+                  <option value={project!.projectManagerId!}>
+                    {project!.projectManager} (inactive)
+                  </option>
+                )}
+                {userOptions === null && projectManagerId && projectManagerId !== UNLINKED_MANAGER && (
+                  <option value={projectManagerId}>
+                    {project?.projectManager ?? user?.name ?? "Loading…"}
+                  </option>
+                )}
+                {userOptions?.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+              {projectManagerId === UNLINKED_MANAGER && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  Pick a user so they get this project's notifications.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

@@ -7,6 +7,9 @@ interface Props {
   sections: JumpSection[];
 }
 
+// Breathing room left between the sticky header and the section jumped to.
+const SECTION_GAP = 12;
+
 // A row of "jump to" pills shown above a tab's stacked panels — some tabs
 // (Budget & Contract, Site & Records) hold eight or nine panels, so getting
 // to the last one means scrolling past everything above it. Clicking a pill
@@ -16,8 +19,20 @@ interface Props {
 export default function SectionJumpNav({ sections }: Props) {
   if (sections.length <= 1) return null;
 
+  // The page header is sticky, so scrolling a section to the very top of the
+  // window (scrollIntoView's "start") tucks the section's own heading under
+  // the header and it looks like the page went too far. Offset by the
+  // header's height so the section starts just below it instead.
   function jumpTo(id: string) {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const target = document.getElementById(id);
+    if (!target) return;
+    const header = document.querySelector("header");
+    const headerHeight =
+      header && getComputedStyle(header).position === "sticky"
+        ? header.getBoundingClientRect().height
+        : 0;
+    const top = target.getBoundingClientRect().top + window.scrollY - headerHeight - SECTION_GAP;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   }
 
   return (
