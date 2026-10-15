@@ -95,7 +95,7 @@ export default function TwoFactorModal({ onClose }: { onClose: () => void }) {
   function downloadCodes() {
     const blob = new Blob(
       [
-        `APD Project Management Dashboard recovery codes for ${user?.email}\n` +
+        `Project Management Dashboard recovery codes for ${user?.email}\n` +
           "Each code works once. Keep them somewhere safe.\n\n" +
           recoveryCodes.join("\n") +
           "\n",
