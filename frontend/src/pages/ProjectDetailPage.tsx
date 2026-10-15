@@ -1444,6 +1444,7 @@ export default function ProjectDetailPage() {
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Field label="Project Number" value={project.projectNumber || "—"} />
           <Field label="BP Ref. No." value={project.bpRefNo || "—"} />
           <Field label="Asset Type" value={project.assetType || "—"} />
           <Field label="Project Manager" value={project.projectManager || "—"} />

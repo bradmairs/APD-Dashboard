@@ -185,6 +185,7 @@ export default function ProjectCloseoutReportPage() {
           <ReportSection title="Project Information">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <ReportField label="Project Name" value={project.name} />
+              <ReportField label="Project Number" value={project.projectNumber || "—"} />
               <ReportField label="BP Ref. No." value={project.bpRefNo || "—"} />
               <ReportField label="Asset Type" value={project.assetType || "—"} />
               <ReportField label="Contractor" value={project.contractor || "—"} />

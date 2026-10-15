@@ -86,6 +86,7 @@ export interface Project {
   description: string | null;
   assetType: string | null;
   status: ProjectStatus;
+  projectNumber: string | null;
   bpRefNo: string | null;
   // Display name; derived server-side from projectManagerId when that's set.
   projectManager: string | null;

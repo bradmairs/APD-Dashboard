@@ -65,6 +65,8 @@ const PROJECT_FIELD_LABELS: Record<string, string> = {
   name: "name",
   description: "description",
   assetType: "asset type",
+  projectNumber: "project number",
+  bpRefNo: "BP ref. no.",
   projectManager: "project manager",
   location: "location",
   contractor: "contractor",

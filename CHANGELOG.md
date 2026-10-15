@@ -5,6 +5,10 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.11 - 2026-10-15
+
+- New **Project Number** field on the New/Edit Project form, shown on the project page, monthly and closeout reports, the dashboard project list and CSV export, and included in search
+
 ## 1.1 - 2026-10-15
 
 - Cash flow: one-click **Mark as actual** / **Mark as forecast** on each entry switches it in place, keeping its amount (with undo), instead of needing a new entry

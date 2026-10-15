@@ -81,6 +81,9 @@ Each **Project** tracks:
   Completion sits between Construction and Defects Liability — practical
   completion/handover has been reached, the defects liability period is
   about to start, but the project isn't administratively closed out yet
+- Project Number (the organisation's own project number — optional free
+  text, shown on the project page, reports and the dashboard list, and
+  searchable)
 - BP Ref. No., Project Manager, Project Director, Project Sponsor. The
   Project Manager is picked from a dropdown of active user accounts (a new
   project defaults to whoever is creating it) rather than typed, and is

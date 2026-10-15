@@ -28,6 +28,7 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
   const [status, setStatus] = useState<ProjectStatus>(
     project?.status ?? "PLANNING"
   );
+  const [projectNumber, setProjectNumber] = useState(project?.projectNumber ?? "");
   const [bpRefNo, setBpRefNo] = useState(project?.bpRefNo ?? "");
   // A new project defaults to whoever is creating it.
   const [projectManagerId, setProjectManagerId] = useState(
@@ -81,6 +82,7 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
         description: description || null,
         assetType: assetType || null,
         status,
+        projectNumber: projectNumber.trim() || null,
         bpRefNo: bpRefNo || null,
         // Leaving an unlinked legacy name (or an unchanged deactivated
         // manager) selected sends nothing, so the server keeps it as is.
@@ -175,7 +177,17 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Project Number
+              </label>
+              <input
+                value={projectNumber}
+                onChange={(e) => setProjectNumber(e.target.value)}
+                className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 BP Ref. No.
