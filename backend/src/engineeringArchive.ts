@@ -64,7 +64,7 @@ export async function pushSiteVisitPhotoToArchive(
   form.append("projectName", input.projectName);
   form.append("siteVisitId", input.siteVisitId);
   form.append("externalId", input.photoId);
-  form.append("externalSource", "gvw-project-management");
+  form.append("externalSource", "apd-project-management");
   if (input.latitude !== null) form.append("latitude", String(input.latitude));
   if (input.longitude !== null) form.append("longitude", String(input.longitude));
   if (input.takenAt) form.append("takenAt", input.takenAt.toISOString());

@@ -1,4 +1,4 @@
-# GVW Project Management Dashboard
+# APD Project Management Dashboard
 
 A project management dashboard for Goulburn Valley Water's Asset & Project
 Delivery (APD) team. It gives Project Managers a single view of construction
@@ -1554,8 +1554,8 @@ busy Alerts tab, or a page full of panels.
 
 On the dashboard, the logo and title/subtitle block is wrapped in a
 `Link` back to `/`, so clicking it always returns home, matching the
-common "click the logo to go home" convention. On every other GVW page
-that shows the GVW logo in its header (project detail, Admin Users,
+common "click the logo to go home" convention. On every other page
+that shows the logo in its header (project detail, Admin Users,
 Task Templates, Lessons Learned, Reports), just the logo itself is
 wrapped in that same `Link` back to `/` — the page's own title (e.g.
 the project name) is left as plain text since it isn't a "go home"

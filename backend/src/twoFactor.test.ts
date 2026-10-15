@@ -60,7 +60,7 @@ describe("TOTP", () => {
     const url = otpauthUrl("a@b.com", "ABCDEFGH");
     expect(url.startsWith("otpauth://totp/")).toBe(true);
     expect(url).toContain("secret=ABCDEFGH");
-    expect(url).toContain("issuer=GVW+Project+Management");
+    expect(url).toContain("issuer=APD+Project+Management+Dashboard");
   });
 });
 
