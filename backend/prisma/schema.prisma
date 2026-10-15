@@ -1,0 +1,1502 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  PLANNING
+  DESIGN
+  TENDER
+  CONSTRUCTION
+  // Practical completion/handover reached — the main works are done and
+  // in the client's hands, but the project isn't administratively closed
+  // out yet. Sits between Construction and Defects Liability, which starts
+  // running from this point.
+  PROJECT_COMPLETION
+  DEFECTS_LIABILITY
+  COMPLETE
+  ON_HOLD
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+// How a Task repeats. Completing a task whose recurrence isn't NONE
+// creates the next occurrence (see routes/tasks.ts) rather than tracking
+// an ongoing series — the same "recreate, don't restore" philosophy as the
+// delete-undo toast, which keeps this a one-line addition instead of a
+// separate series/schedule model.
+enum TaskRecurrence {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  // Full read access across the dashboard, no create/update/delete —
+  // enforced by the blockViewerMutations middleware on every mutating route.
+  VIEWER
+}
+
+enum RagStatus {
+  GREEN
+  AMBER
+  RED
+}
+
+enum CashFlowType {
+  ACTUAL
+  FORECAST
+}
+
+enum VariationStatus {
+  PROPOSED
+  APPROVED
+  REJECTED
+}
+
+enum RiskType {
+  RISK
+  OPPORTUNITY
+}
+
+// A standard 5-point risk-matrix scale, used for both likelihood and
+// consequence — see frontend/src/riskScoring.ts for how the two combine
+// into a numeric score and a Low/Medium/High/Critical band.
+enum RiskLikelihood {
+  RARE
+  UNLIKELY
+  POSSIBLE
+  LIKELY
+  ALMOST_CERTAIN
+}
+
+enum RiskConsequence {
+  INSIGNIFICANT
+  MINOR
+  MODERATE
+  MAJOR
+  SEVERE
+}
+
+enum RiskStatus {
+  OPEN
+  MITIGATING
+  CLOSED
+}
+
+enum ActionType {
+  ACTION
+  DECISION
+}
+
+enum ActionItemStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+}
+
+enum PermitStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LessonType {
+  POSITIVE
+  NEGATIVE
+}
+
+enum SqeCategory {
+  SAFETY
+  QUALITY
+  ENVIRONMENT
+}
+
+enum SqeSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SqeStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum EotStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum ChecklistPhase {
+  COMMISSIONING
+  HANDOVER
+}
+
+enum ChecklistItemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+  NOT_APPLICABLE
+}
+
+enum DefectStatus {
+  OPEN
+  RECTIFIED
+  VERIFIED
+  DISPUTED
+}
+
+enum PaymentClaimStatus {
+  SUBMITTED
+  CERTIFIED
+  DISPUTED
+  PAID
+}
+
+enum InsuranceWarrantyType {
+  INSURANCE
+  WARRANTY
+}
+
+enum RfiStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+// Standard document-control lifecycle: a document is drafted, put out for
+// review, approved for use (e.g. Issued For Construction), and eventually
+// superseded by a later revision — never deleted, so the register keeps a
+// full revision history.
+enum DocumentStatus {
+  DRAFT
+  FOR_REVIEW
+  APPROVED
+  SUPERSEDED
+}
+
+enum EnquiryCategory {
+  NOISE
+  TRAFFIC
+  DUST
+  ACCESS
+  OTHER
+}
+
+enum EnquiryStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SubcontractorStatus {
+  ENGAGED
+  ACTIVE
+  COMPLETED
+  TERMINATED
+}
+
+enum ContractPartyType {
+  CONSULTANT
+  CONTRACTOR
+}
+
+enum ContractStatus {
+  ACTIVE
+  COMPLETE
+  TERMINATED
+}
+
+enum CorrespondenceDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum CorrespondenceStatus {
+  OPEN
+  CLOSED
+}
+
+enum LimitType {
+  MAX
+  MIN
+}
+
+enum SafetyInspectionStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum TenderMethod {
+  OPEN
+  SELECTIVE
+  DIRECT_ENGAGE
+  EXPRESSION_OF_INTEREST
+}
+
+enum TenderStatus {
+  PLANNED
+  ISSUED
+  EVALUATION
+  AWARDED
+  CANCELLED
+}
+
+model User {
+  id                             String                          @id @default(cuid())
+  name                           String
+  email                          String                          @unique
+  passwordHash                   String
+  role                           Role                            @default(MEMBER)
+  active                         Boolean                         @default(true)
+  // Opt-in (default off) for the daily email digest — see backend/src/digest.ts.
+  // Off by default since it requires SMTP to be configured to do anything
+  // anyway, and a new account shouldn't start emailing someone who hasn't
+  // asked for it.
+  emailDigestOptIn               Boolean                         @default(false)
+  // Opt-in TOTP two-factor auth (authenticator app) — see backend/src/twoFactor.ts.
+  // The secret is stored AES-GCM encrypted (not plaintext) and is set while a
+  // user is still enrolling (twoFactorEnabled=false) until they confirm a code.
+  // Recovery codes are stored only as hashes. twoFactorLastStep is the last
+  // accepted 30s time step, so a code can't be replayed within its window.
+  twoFactorEnabled               Boolean                         @default(false)
+  twoFactorSecret                String?
+  twoFactorRecoveryHashes        String[]                        @default([])
+  twoFactorLastStep              Int?
+  createdAt                      DateTime                        @default(now())
+  updatedAt                      DateTime                        @updatedAt
+  activityLogs                   ActivityLog[]
+  attachments                    Attachment[]
+  createdProjects                Project[]
+  monthlyReports                 MonthlyReport[]
+  siteVisits                     SiteVisit[]
+  siteVisitPhotos                SiteVisitPhoto[]
+  variations                     Variation[]
+  risks                          Risk[]
+  actionItems                    ActionItem[]
+  permits                        Permit[]
+  lessonsLearned                 LessonLearned[]
+  sqeRecords                     SqeRecord[]
+  eotClaims                      EotClaim[]
+  delays                         Delay[]
+  checklistItems                 ChecklistItem[]
+  defectItems                    DefectItem[]
+  paymentClaims                  PaymentClaim[]
+  insuranceWarranties            InsuranceWarranty[]
+  rfis                           Rfi[]
+  documents                      DocumentRecord[]
+  communityEnquiries             CommunityEnquiry[]
+  subcontractors                 Subcontractor[]
+  contracts                      ContractRecord[]
+  meetingMinutes                 MeetingMinutes[]
+  correspondence                 Correspondence[]
+  trainingRecords                TrainingRecord[]
+  performanceReviews             PerformanceReview[]
+  toolboxTalks                   ToolboxTalk[]
+  environmentalMonitoringRecords EnvironmentalMonitoringRecord[]
+  safetyInspections              SafetyInspection[]
+  tenderPackages                 TenderPackage[]
+  archiveLinks                   ArchiveLink[]
+  taskTemplates                  TaskTemplate[]
+}
+
+model Project {
+  id                             String                          @id @default(cuid())
+  name                           String
+  description                    String?
+  assetType                      String?
+  status                         ProjectStatus                   @default(PLANNING)
+  bpRefNo                        String?
+  projectManager                 String?
+  projectDirector                String?
+  projectSponsor                 String?
+  location                       String?
+  contractor                     String?
+  // The budget as originally approved, set once at project setup.
+  budget                         Decimal?                        @db.Decimal(14, 2)
+  // The budget as most recently approved (e.g. by the project board),
+  // tracked separately from `budget` so the two can be compared — on the
+  // Cash Flow chart in particular, where both are plotted as reference
+  // lines. Unlike the variations-derived revised budget (see
+  // frontend/src/variations.ts), this is entered directly rather than
+  // computed, since not every budget revision is raised as a Variation.
+  latestApprovedBudget           Decimal?                        @db.Decimal(14, 2)
+  contractValue                  Decimal?                        @db.Decimal(14, 2)
+  startDate                      DateTime?
+  targetCompletionDate           DateTime?
+  actualCompletionDate           DateTime?
+  createdById                    String?
+  createdBy                      User?                           @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt                      DateTime                        @default(now())
+  updatedAt                      DateTime                        @updatedAt
+  tasks                          Task[]
+  activityLogs                   ActivityLog[]
+  attachments                    Attachment[]
+  monthlyReports                 MonthlyReport[]
+  milestones                     Milestone[]
+  cashFlowEntries                CashFlowEntry[]
+  siteVisits                     SiteVisit[]
+  variations                     Variation[]
+  risks                          Risk[]
+  actionItems                    ActionItem[]
+  stakeholders                   Stakeholder[]
+  permits                        Permit[]
+  lessonsLearned                 LessonLearned[]
+  sqeRecords                     SqeRecord[]
+  eotClaims                      EotClaim[]
+  delays                         Delay[]
+  checklistItems                 ChecklistItem[]
+  defectItems                    DefectItem[]
+  paymentClaims                  PaymentClaim[]
+  insuranceWarranties            InsuranceWarranty[]
+  rfis                           Rfi[]
+  documents                      DocumentRecord[]
+  communityEnquiries             CommunityEnquiry[]
+  subcontractors                 Subcontractor[]
+  contracts                      ContractRecord[]
+  meetingMinutes                 MeetingMinutes[]
+  correspondence                 Correspondence[]
+  trainingRecords                TrainingRecord[]
+  performanceReviews             PerformanceReview[]
+  toolboxTalks                   ToolboxTalk[]
+  environmentalMonitoringRecords EnvironmentalMonitoringRecord[]
+  safetyInspections              SafetyInspection[]
+  tenderPackages                 TenderPackage[]
+  archiveLinks                   ArchiveLink[]
+}
+
+// A reusable set of tasks — e.g. a standard "Design Stage" or
+// "Commissioning" checklist — applied to a project in one action instead
+// of re-entering the same boilerplate tasks on every new project. Not
+// project-scoped itself (createdBy aside): it's a portfolio-wide library,
+// applied to as many projects as needed. Deleting a template never touches
+// any Task rows it already produced — applying it just creates ordinary
+// Task rows with no ongoing link back to the template, the same way a
+// TenderPackage.awardedTo doesn't create a live Subcontractor relation.
+model TaskTemplate {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  createdBy   User?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  items       TaskTemplateItem[]
+}
+
+// One task within a TaskTemplate. dueOffsetDays is relative to the
+// project's startDate at the moment the template is applied (e.g. 14 =
+// "two weeks after the project starts") rather than an absolute date,
+// since a template is reused across projects with different start dates;
+// null means the resulting task gets no due date. sortOrder preserves the
+// order items were added in, the same reasoning as Milestone.sortOrder.
+model TaskTemplateItem {
+  id            String       @id @default(cuid())
+  template      TaskTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId    String
+  title         String
+  description   String?
+  dueOffsetDays Int?
+  sortOrder     Int          @default(0)
+
+  @@index([templateId])
+}
+
+// projectId is nullable so a task can be portfolio-wide — relevant to every
+// project (e.g. "Complete monthly reports") — rather than scoped to one.
+// Such a task has no project relation at all, so it's unaffected by any
+// single project's lifecycle and is listed/managed separately from that
+// project's own Task list (see routes/tasks.ts's /portfolio endpoints).
+model Task {
+  id               String          @id @default(cuid())
+  project          Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String?
+  title            String
+  description      String?
+  status           TaskStatus      @default(TODO)
+  dueDate          DateTime?
+  recurrence       TaskRecurrence  @default(NONE)
+  // Optional: the meeting this task was actioned at. SetNull on delete, the
+  // same reasoning as ActionItem.meetingMinutes.
+  meetingMinutes   MeetingMinutes? @relation(fields: [meetingMinutesId], references: [id], onDelete: SetNull)
+  meetingMinutesId String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([meetingMinutesId])
+}
+
+// Files (drawings, contracts, correspondence) attached to a project.
+// Deleted with its project (unlike ActivityLog) since the underlying file on
+// disk is deleted at the same time — there's nothing left for the row to
+// document once that happens.
+model Attachment {
+  id               String          @id @default(cuid())
+  project          Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  storedFilename   String
+  originalName     String
+  mimeType         String
+  size             Int
+  // Optional: a file attached to a specific meeting's minutes (the signed
+  // PDF, a slide deck) rather than the project's general Attachments list.
+  // Cascades with its meeting, unlike uploadedBy below, since the file has
+  // no purpose once the meeting it documents is gone.
+  meetingMinutes   MeetingMinutes? @relation(fields: [meetingMinutesId], references: [id], onDelete: Cascade)
+  meetingMinutesId String?
+  uploadedBy       User?           @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedById     String?
+  uploadedByName   String
+  createdAt        DateTime        @default(now())
+
+  @@index([projectId])
+  @@index([meetingMinutesId])
+}
+
+// A major project deliverable from the WBS schedule table in the monthly
+// report (Concept Design, Detailed Design, Construction, ...). Unlike
+// MonthlyReport this is a live, current list — matching Task, it reflects
+// where the project's schedule stands right now rather than a per-month
+// snapshot, since re-entering the whole WBS table every month would be
+// needless duplication for rows that mostly don't change month to month.
+// sortOrder preserves the WBS sequence (each new row appends to the end;
+// reordering swaps two rows' values) since that order is meaningful and
+// isn't derivable from any other field. startDate is optional — most
+// milestones simply run back-to-back, so the timeline (see
+// frontend/src/components/ProjectTimeline.tsx) infers a blank startDate as
+// "starts when the previous milestone ends"; setting it explicitly is only
+// needed for a milestone that starts early, overlaps the previous one, or
+// otherwise doesn't follow straight on.
+model Milestone {
+  id                   String    @id @default(cuid())
+  project              Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId            String
+  wbsItem              String?
+  taskActivity         String
+  percentComplete      Int       @default(0)
+  startDate            DateTime?
+  originalCompletion   DateTime?
+  forecastedCompletion DateTime?
+  actualCompletion     DateTime?
+  notes                String?
+  sortOrder            Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([projectId])
+}
+
+// One month's actual or forecast spend, from the monthly cash flow
+// breakdown tables in the report. Like Milestone (and unlike MonthlyReport)
+// this is live, current data — a month's actual figure, once entered,
+// generally doesn't need re-editing, and a forecast is expected to be
+// revised as the project progresses, so there's no value in snapshotting
+// it per report. Unique on (project, month, type) rather than treating
+// actual/forecast as one row per month, since a month can carry both (a
+// forecast entered ahead of time, later followed by that month's actual
+// once it closes) without one overwriting the other.
+model CashFlowEntry {
+  id        String       @id @default(cuid())
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  month     DateTime
+  type      CashFlowType
+  amount    Decimal      @db.Decimal(14, 2)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([projectId, month, type])
+  @@index([projectId])
+}
+
+// A monthly project report snapshot, matching the board-reporting template
+// PMs already fill in manually. Each (project, reportingMonth) pair is its
+// own row rather than a set of live fields — a past month's report is a
+// historical record and shouldn't change as the project moves on, the same
+// way the source document is a point-in-time report, not a live view.
+// Cascades with its project (unlike ActivityLog) since a report only makes
+// sense in that project's context — there's no standalone value in a report
+// row once the project itself is gone.
+model MonthlyReport {
+  id                String    @id @default(cuid())
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId         String
+  reportingMonth    DateTime
+  projectPhase      String
+  currentStatus     String
+  recentlyCompleted String?
+  monthlyLookahead  String?
+  budgetHealth      RagStatus @default(GREEN)
+  budgetComments    String?
+  scheduleHealth    RagStatus @default(GREEN)
+  scheduleComments  String?
+  createdBy         User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById       String?
+  authorName        String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([projectId, reportingMonth])
+  @@index([projectId])
+}
+
+// A field record of a site visit — mobile-friendly since it's typically
+// logged from a phone on site. Like Milestone/CashFlowEntry (and unlike
+// MonthlyReport) this isn't a monthly snapshot; each visit is its own
+// point-in-time record, dated by when it happened rather than a reporting
+// month, so there's naturally many per month rather than one. Cascades with
+// its project since a visit log only makes sense in that project's context.
+model SiteVisit {
+  id              String           @id @default(cuid())
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  visitDate       DateTime
+  location        String
+  notes           String?
+  discussionNotes String?
+  visitedBy       User?            @relation(fields: [visitedById], references: [id], onDelete: SetNull)
+  visitedById     String?
+  visitedByName   String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  photos          SiteVisitPhoto[]
+
+  @@index([projectId])
+}
+
+// A photo attached to a site visit. latitude/longitude/takenAt are read
+// server-side from the file's own EXIF GPS/DateTimeOriginal tags at upload
+// time (never trusted from the client) — a photo with no GPS tag (location
+// services were off, or it came from a gallery rather than the camera)
+// simply has null coordinates and is shown in the thumbnail grid but never
+// plotted on the map. Cascades with its site visit for the same reason
+// Attachment cascades with its project: the file on disk goes with it, so
+// there's nothing left for the row to document once that happens.
+model SiteVisitPhoto {
+  id             String    @id @default(cuid())
+  siteVisit      SiteVisit @relation(fields: [siteVisitId], references: [id], onDelete: Cascade)
+  siteVisitId    String
+  storedFilename String
+  originalName   String
+  mimeType       String
+  size           Int
+  latitude       Float?
+  longitude      Float?
+  takenAt        DateTime?
+  uploadedBy     User?     @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedById   String?
+  uploadedByName String
+  createdAt      DateTime  @default(now())
+
+  // Export status to the Engineering Archive (a separate self-hosted app —
+  // see backend/src/engineeringArchive.ts). archiveMediaId is that app's own
+  // MediaItem id, set once the push succeeds; archiveSyncError holds the
+  // last failure message so a failed push is visible and retriable rather
+  // than silently dropped. All three stay null until a push is attempted.
+  archiveMediaId   String?
+  archiveSyncedAt  DateTime?
+  archiveSyncError String?
+
+  @@index([siteVisitId])
+}
+
+// A reference from a GVW project to an item that actually lives in the
+// Engineering Archive (an asset, a photo/video, or a general file) — this
+// table never stores the file itself, just enough to show and link to it.
+// label is a snapshot of the archive item's name at link time (the same
+// denormalization ActivityLog.userName relies on) so the link stays
+// meaningful even if that item is later renamed or removed on the archive
+// side; url is likewise computed once at link time from
+// ENGINEERING_ARCHIVE_PUBLIC_URL rather than built fresh by the frontend,
+// so the frontend needs no archive-specific configuration of its own.
+model ArchiveLink {
+  id            String          @id @default(cuid())
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  archiveType   ArchiveItemType
+  archiveId     String
+  label         String
+  url           String
+  createdBy     User?           @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdByName String
+  createdAt     DateTime        @default(now())
+
+  @@index([projectId])
+}
+
+enum ArchiveItemType {
+  ASSET
+  MEDIA
+  FILE
+}
+
+// A contract variation (scope/cost/time change) raised against a project.
+// Like Milestone/CashFlowEntry (and unlike MonthlyReport) this is live data,
+// not a monthly snapshot — a variation moves through Proposed -> Approved/
+// Rejected over its own lifetime, and that current state is what matters,
+// not what it looked like at some past reporting date. costImpact can be
+// negative (a deduction/credit); an APPROVED variation's costImpact is what
+// revises a project's budget for variance calculations elsewhere in the
+// app — see frontend/src/variations.ts — a Proposed or Rejected one doesn't
+// count yet (or ever). Cascades with its project for the same reason
+// Milestone does: a variation only makes sense in that project's context.
+model Variation {
+  id             String          @id @default(cuid())
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId      String
+  reference      String?
+  title          String
+  description    String?
+  category       String?
+  costImpact     Decimal         @db.Decimal(14, 2)
+  timeImpactDays Int?
+  status         VariationStatus @default(PROPOSED)
+  dateRaised     DateTime
+  dateDecided    DateTime?
+  raisedBy       User?           @relation(fields: [raisedById], references: [id], onDelete: SetNull)
+  raisedById     String?
+  raisedByName   String
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([projectId])
+}
+
+// A project risk register entry — or, when type is OPPORTUNITY, its mirror
+// image (an upside worth chasing rather than a downside to mitigate), kept
+// in the same table since the two share every field. inherentLikelihood/
+// inherentConsequence score the risk with no controls in place; the
+// residual pair (both optional) score it after mitigation is applied — a
+// risk with no residual score yet simply hasn't been assessed post-
+// mitigation. Scoring math (the 1-5 scale behind each enum value, and the
+// Low/Medium/High/Critical band a score falls into) lives in
+// frontend/src/riskScoring.ts rather than being stored, the same way a
+// Milestone's overall percent is computed rather than persisted. Cascades
+// with its project like Milestone/Variation — a risk only makes sense in
+// that project's context.
+model Risk {
+  id                  String           @id @default(cuid())
+  project             Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId           String
+  type                RiskType         @default(RISK)
+  title               String
+  description         String?
+  category            String?
+  inherentLikelihood  RiskLikelihood
+  inherentConsequence RiskConsequence
+  residualLikelihood  RiskLikelihood?
+  residualConsequence RiskConsequence?
+  mitigation          String?
+  ownerName           String?
+  dueDate             DateTime?
+  status              RiskStatus       @default(OPEN)
+  createdBy           User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById         String?
+  createdByName       String
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([projectId])
+}
+
+// A meeting action or decision logged against a project — distinct from
+// Task (a general to-do) in that it's raised in a specific context (a
+// meeting, a review) and, for a DECISION, is typically already resolved
+// the moment it's recorded rather than something to work through. Both
+// share the same shape, the same way Risk/Opportunity do, since a
+// decision is really just an action whose lifecycle is already complete.
+// dateClosed stamps automatically the moment status becomes DONE, the
+// same way Variation.dateDecided stamps on leaving PROPOSED. Cascades
+// with its project like Variation/Risk.
+model ActionItem {
+  id               String           @id @default(cuid())
+  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  type             ActionType       @default(ACTION)
+  title            String
+  description      String?
+  category         String?
+  ownerName        String?
+  dueDate          DateTime?
+  status           ActionItemStatus @default(OPEN)
+  dateRaised       DateTime
+  dateClosed       DateTime?
+  raisedBy         User?            @relation(fields: [raisedById], references: [id], onDelete: SetNull)
+  raisedById       String?
+  raisedByName     String
+  notes            String?
+  // Optional: the meeting this action arose from — unlike raisedBy/project,
+  // this unlinks (SetNull) rather than cascades on delete, since an action
+  // remains real work to track even after the meeting record documenting
+  // it is gone.
+  meetingMinutes   MeetingMinutes?  @relation(fields: [meetingMinutesId], references: [id], onDelete: SetNull)
+  meetingMinutesId String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([meetingMinutesId])
+}
+
+// A person or organization with a stake in a project — a landholder, a
+// council contact, a community group. Unlike Risk/Variation/ActionItem
+// this has no status or lifecycle of its own; it's a contact directory
+// entry that simply exists until it's no longer relevant, so there's
+// nothing to log a status transition for. Cascades with its project like
+// the other registers.
+model Stakeholder {
+  id           String   @id @default(cuid())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  name         String
+  organization String?
+  role         String?
+  email        String?
+  phone        String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+// An environmental/planning/regulatory permit or approval a project needs.
+// Whether it's "expiring soon" or already expired is computed from
+// expiryDate against the current date (frontend/src/permitMeta.ts), the
+// same way a Project's overdue state is computed rather than stored —
+// storing "expired" as a status would drift stale the moment the clock
+// passes it without anyone touching the row. status here only tracks the
+// application's own outcome (Pending/Approved/Rejected). Cascades with
+// its project like the other registers.
+model Permit {
+  id               String       @id @default(cuid())
+  project          Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  title            String
+  category         String?
+  referenceNumber  String?
+  issuingAuthority String?
+  status           PermitStatus @default(PENDING)
+  dateApplied      DateTime?
+  dateApproved     DateTime?
+  expiryDate       DateTime?
+  notes            String?
+  createdBy        User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById      String?
+  createdByName    String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([projectId])
+}
+
+// A lesson captured from a project for the benefit of future ones — what
+// went well (POSITIVE) or what should be done differently (NEGATIVE),
+// the same Risk/Opportunity-style discriminator on one shared shape.
+// Unlike the other registers this is written once a lesson is identified
+// and then rarely changes; its value is in being browsable across the
+// whole portfolio afterwards (see the dashboard's Lessons Learned page)
+// rather than in tracking a status to closure. Cascades with its project
+// like the other registers.
+model LessonLearned {
+  id             String     @id @default(cuid())
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId      String
+  type           LessonType @default(POSITIVE)
+  title          String
+  category       String?
+  description    String?
+  recommendation String?
+  createdBy      User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById    String?
+  createdByName  String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([projectId])
+}
+
+// A safety, quality, or environmental incident/observation logged against
+// a project — an SQE register entry. severity follows a standard 4-band
+// scale (Low/Medium/High/Critical) rather than the 5x5 likelihood x
+// consequence matrix Risk uses, since an SQE record documents something
+// that already happened rather than an uncertain future event — there's
+// no "likelihood" left to assess once it's occurred. dateClosed stamps
+// automatically the moment status becomes Closed, the same pattern
+// ActionItem.dateClosed and Variation.dateDecided use. Cascades with its
+// project like the other registers.
+model SqeRecord {
+  id               String      @id @default(cuid())
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  category         SqeCategory
+  severity         SqeSeverity
+  title            String
+  description      String?
+  correctiveAction String?
+  dateOccurred     DateTime
+  status           SqeStatus   @default(OPEN)
+  dateClosed       DateTime?
+  reportedBy       User?       @relation(fields: [reportedById], references: [id], onDelete: SetNull)
+  reportedById     String?
+  reportedByName   String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([projectId])
+}
+
+// An Extension of Time claim — distinct from Variation even though both
+// are raised against a contract: a Variation is a scope/cost/time change
+// the parties agree to, while an EOT claim argues the existing schedule
+// itself was disrupted (weather, latent conditions, a client-caused
+// delay) and should be pushed out, independent of any scope change.
+// daysGranted is set once a decision is made and can be less than
+// daysClaimed (a partial grant), so it's a separate field rather than a
+// third status. dateDecided stamps automatically on leaving SUBMITTED,
+// the same pattern Variation.dateDecided uses. Only an APPROVED claim's
+// daysGranted extends a project's expected completion date — see
+// frontend/src/eot.ts's revisedCompletionDate, which plays the same role
+// for schedule that frontend/src/variations.ts's revisedBudget plays for
+// cost. Cascades with its project like the other registers.
+model EotClaim {
+  id            String    @id @default(cuid())
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  reference     String?
+  title         String
+  cause         String?
+  description   String?
+  daysClaimed   Int
+  daysGranted   Int?
+  status        EotStatus @default(SUBMITTED)
+  dateSubmitted DateTime
+  dateDecided   DateTime?
+  raisedBy      User?     @relation(fields: [raisedById], references: [id], onDelete: SetNull)
+  raisedById    String?
+  raisedByName  String
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([projectId])
+}
+
+// A logged delay event on a project — what slowed the works, when, for how
+// long, and who was responsible. This is the factual record that comes
+// BEFORE an Extension of Time claim: a delay is logged as it happens
+// (ONGOING, no end date), then marked RESOLVED once the works are moving
+// again, and eotReference ties it to the EOT claim raised for it (a plain
+// reference rather than a foreign key — a delay need not become a claim,
+// and one claim can cover several delays). daysImpact is the PM's own
+// estimate of calendar days lost; the UI falls back to the elapsed days
+// between the start and end dates when it's left blank. criticalPath
+// flags whether the delay moves the completion date at all. Cascades with
+// its project like the other registers.
+enum DelayStatus {
+  ONGOING
+  RESOLVED
+}
+
+model Delay {
+  id               String      @id @default(cuid())
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  title            String
+  category         String?
+  description      String?
+  responsibleParty String?
+  criticalPath     Boolean     @default(false)
+  dateStarted      DateTime
+  dateEnded        DateTime?
+  daysImpact       Int?
+  status           DelayStatus @default(ONGOING)
+  mitigation       String?
+  eotReference     String?
+  notes            String?
+  raisedBy         User?       @relation(fields: [raisedById], references: [id], onDelete: SetNull)
+  raisedById       String?
+  raisedByName     String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([projectId])
+}
+
+// A commissioning or handover checklist line item — the granular,
+// checkable counterpart to Milestone's high-level WBS phases. Both
+// phases share one shape (title/responsible/dueDate/status/notes), the
+// same discriminator pattern as Risk/Opportunity and Lesson Learned's
+// POSITIVE/NEGATIVE, since a handover item and a commissioning item
+// track identically shaped work at different points in the same
+// closeout process. completedDate stamps automatically the moment
+// status becomes COMPLETE, the same pattern SqeRecord.dateClosed uses.
+// Cascades with its project like the other registers.
+model ChecklistItem {
+  id            String              @id @default(cuid())
+  project       Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  phase         ChecklistPhase
+  title         String
+  description   String?
+  responsible   String?
+  dueDate       DateTime?
+  completedDate DateTime?
+  status        ChecklistItemStatus @default(NOT_STARTED)
+  notes         String?
+  createdBy     User?               @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdByName String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([projectId])
+}
+
+// A defect or punch-list item raised during commissioning or the
+// Defects Liability Period — physically distinct from an SQE record
+// (which documents a safety/quality/environment event) and from an
+// ActionItem (a general open item or decision): a defect names a
+// specific piece of work that needs rectifying, tracks who it's
+// assigned to for fixing, and optionally how much retention money is
+// held against it until it's verified fixed. status runs OPEN ->
+// RECTIFIED (the contractor says it's done) -> VERIFIED (the PM has
+// confirmed it) as the normal path, with DISPUTED for a defect whose
+// existence or cause is contested — common during a DLP. dateClosed
+// stamps automatically the moment status becomes VERIFIED, the same
+// auto-stamp pattern used by SqeRecord.dateClosed and
+// ChecklistItem.completedDate. Cascades with its project like the
+// other registers.
+model DefectItem {
+  id            String       @id @default(cuid())
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  title         String
+  description   String?
+  location      String?
+  category      String?
+  assignedTo    String?
+  dueDate       DateTime?
+  status        DefectStatus @default(OPEN)
+  dateRaised    DateTime
+  dateClosed    DateTime?
+  retentionHeld Decimal?     @db.Decimal(14, 2)
+  raisedBy      User?        @relation(fields: [raisedById], references: [id], onDelete: SetNull)
+  raisedById    String?
+  raisedByName  String
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([projectId])
+}
+
+// A contractor's progress claim under the contract, and the PM's
+// certification of it — the contract-administration counterpart to
+// Cash Flow's monthly forecast/actual entries, which are the PM's own
+// budget tracking rather than a formal claim-and-certify record.
+// claimedAmount is what the contractor asked for; certifiedAmount is
+// what the PM actually certifies (often less), so the two are kept
+// separate rather than a single amount rewritten in place. status runs
+// SUBMITTED -> CERTIFIED -> PAID as the normal path, with DISPUTED for
+// a claim the PM contests. dateCertified stamps the moment status
+// first reaches CERTIFIED or PAID (both imply certification happened)
+// and clears if moved back to SUBMITTED/DISPUTED; datePaid stamps only
+// on reaching PAID and clears otherwise — two independent stamps,
+// since certification and payment are distinct events that don't
+// necessarily happen together. Cascades with its project like the
+// other registers.
+model PaymentClaim {
+  id              String             @id @default(cuid())
+  project         Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  claimNumber     String
+  periodEnding    DateTime?
+  claimedAmount   Decimal            @db.Decimal(14, 2)
+  certifiedAmount Decimal?           @db.Decimal(14, 2)
+  status          PaymentClaimStatus @default(SUBMITTED)
+  dateSubmitted   DateTime
+  dateCertified   DateTime?
+  datePaid        DateTime?
+  raisedBy        User?              @relation(fields: [raisedById], references: [id], onDelete: SetNull)
+  raisedById      String?
+  raisedByName    String
+  notes           String?
+  // Which Contracts register entry this claim draws down, so the contract
+  // can show its remaining value (contractValue minus claims to date).
+  // Optional and SetNull on delete — a claim isn't required to be against
+  // a formal Contract record, and losing the contract shouldn't take the
+  // claim's own history with it.
+  contract        ContractRecord?    @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  contractId      String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([projectId])
+  @@index([contractId])
+}
+
+// An insurance policy or product/workmanship warranty held against the
+// project — a `type` discriminator (INSURANCE/WARRANTY) rather than two
+// near-identical models, the same pattern as Risk/Opportunity, Lesson
+// Learned, and ChecklistItem, since both track the same shape (who
+// provides the cover, a reference number, what's covered, and when it
+// lapses). Unlike Permit there's no application workflow — a policy or
+// warranty exists in force from the moment it's entered — so there's no
+// status field; whether it's expiring soon or already expired is
+// computed from expiryDate against the current time
+// (frontend/src/insuranceWarrantyMeta.ts), the same reasoning as
+// Permit's isPermitExpired/isPermitExpiringSoon. Cascades with its
+// project like the other registers.
+model InsuranceWarranty {
+  id              String                @id @default(cuid())
+  project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  type            InsuranceWarrantyType
+  title           String
+  provider        String?
+  referenceNumber String?
+  coverageDetails String?
+  startDate       DateTime?
+  expiryDate      DateTime?
+  notes           String?
+  createdBy       User?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById     String?
+  createdByName   String
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([projectId])
+}
+
+// A Request for Information — a formal question raised to a designer,
+// consultant, or client that needs an answer before work can proceed
+// (a specification ambiguity, a missing detail, a site condition
+// needing direction). dateRequired is the contractually meaningful
+// date — the response deadline — distinct from dateRaised; it's what
+// the portfolio-wide Open RFIs panel and the notification bell sort
+// and flag by, the same role Task.dueDate plays for tasks. status runs
+// OPEN -> ANSWERED -> CLOSED; dateAnswered stamps the moment status
+// first reaches ANSWERED or CLOSED (both imply a response exists,
+// mirroring PaymentClaim.dateCertified's dual-implication stamp) and
+// clears if moved back to OPEN. Cascades with its project like the
+// other registers.
+model Rfi {
+  id           String    @id @default(cuid())
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  rfiNumber    String
+  subject      String
+  question     String
+  response     String?
+  raisedTo     String?
+  status       RfiStatus @default(OPEN)
+  dateRaised   DateTime
+  dateRequired DateTime?
+  dateAnswered DateTime?
+  raisedBy     User?     @relation(fields: [raisedById], references: [id], onDelete: SetNull)
+  raisedById   String?
+  raisedByName String
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([projectId])
+}
+
+// A controlled-document register — drawings, specifications, and other
+// project documents subject to revision control, distinct from Attachment
+// (arbitrary uploaded files with no revision/status lifecycle).
+model DocumentRecord {
+  id             String         @id @default(cuid())
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId      String
+  documentNumber String
+  title          String
+  category       String?
+  revision       String
+  status         DocumentStatus @default(DRAFT)
+  issueDate      DateTime?
+  description    String?
+  uploadedBy     User?          @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedById   String?
+  uploadedByName String
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([projectId])
+}
+
+// A public enquiry or complaint about construction activity (noise,
+// traffic, dust, site access) — distinct from Stakeholders (a contacts
+// list) and RFIs (technical questions to a designer/consultant/client).
+model CommunityEnquiry {
+  id             String          @id @default(cuid())
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId      String
+  reference      String?
+  category       EnquiryCategory
+  source         String?
+  contactName    String?
+  contactDetails String?
+  description    String
+  dateReceived   DateTime
+  status         EnquiryStatus   @default(OPEN)
+  assignedTo     String?
+  resolution     String?
+  dateResolved   DateTime?
+  loggedBy       User?           @relation(fields: [loggedById], references: [id], onDelete: SetNull)
+  loggedById     String?
+  loggedByName   String
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([projectId])
+}
+
+// A trade contractor engaged on a project — distinct from Project.contractor
+// (a single freeform field naming the head contractor). insuranceExpiry
+// mirrors Permit's computed-not-stored expiry pattern: never a stored
+// "expiring soon"/"expired" flag, just a date the frontend compares against
+// the current time.
+model Subcontractor {
+  id              String              @id @default(cuid())
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  companyName     String
+  trade           String?
+  contactName     String?
+  contactDetails  String?
+  contractValue   Decimal?            @db.Decimal(14, 2)
+  startDate       DateTime?
+  endDate         DateTime?
+  status          SubcontractorStatus @default(ENGAGED)
+  insuranceExpiry DateTime?
+  notes           String?
+  addedBy         User?               @relation(fields: [addedById], references: [id], onDelete: SetNull)
+  addedById       String?
+  addedByName     String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([projectId])
+}
+
+// A design consultant's or head contractor's contract on the project —
+// distinct from Subcontractor (a trade contractor engaged under the head
+// contract) and from Project.contractor/contractValue (a single freeform
+// summary field kept for quick reference on the project form). partyType
+// distinguishes a consultancy agreement from a construction contract
+// rather than splitting them into two models, since both share the same
+// shape: who, under what contract number/form, for how much, with what
+// retention and defects liability tail, over what dates.
+model ContractRecord {
+  id                     String            @id @default(cuid())
+  project                Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId              String
+  partyType              ContractPartyType
+  partyName              String
+  discipline             String?
+  contractNumber         String?
+  contractForm           String?
+  contractValue          Decimal?          @db.Decimal(14, 2)
+  // Contingency is tracked per contract, not as a single project-wide
+  // figure — each contract's own risk allowance, not a portfolio rollup.
+  contingency            Decimal?          @db.Decimal(14, 2)
+  poValue                Decimal?          @db.Decimal(14, 2)
+  provisionalItemsValue  Decimal?          @db.Decimal(14, 2)
+  retentionPercent       Decimal?          @db.Decimal(5, 2)
+  defectsLiabilityMonths Int?
+  executionDate          DateTime?
+  startDate              DateTime?
+  completionDate         DateTime?
+  status                 ContractStatus    @default(ACTIVE)
+  notes                  String?
+  addedBy                User?             @relation(fields: [addedById], references: [id], onDelete: SetNull)
+  addedById              String?
+  addedByName            String
+  paymentClaims          PaymentClaim[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  @@index([projectId])
+}
+
+// A record of a project meeting — progress meeting, design review, site
+// meeting, etc. A simple log, not a status workflow, like SiteVisit;
+// distinct from ActionItem (a single decision/action, not a full meeting
+// record with attendees and a summary).
+model MeetingMinutes {
+  id              String       @id @default(cuid())
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  title           String?
+  meetingDate     DateTime
+  meetingType     String?
+  location        String?
+  attendees       String?
+  summary         String?
+  nextMeetingDate DateTime?
+  notes           String?
+  recordedBy      User?        @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedById    String?
+  recordedByName  String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  attachments     Attachment[]
+  actionItems     ActionItem[]
+  tasks           Task[]
+
+  @@index([projectId])
+}
+
+// A formal letter or notice to/from a consultant or contractor — a delay
+// notice, a notice to show cause, a formal direction — distinct from Rfi
+// (a technical question needing an answer to proceed with works) and
+// CommunityEnquiry (the public, not a project party). dateClosed stamps
+// automatically the moment status becomes Closed, and clears if it moves
+// back to Open — the single-implication version of the dual-implication
+// pattern Rfi's dateAnswered uses, since Correspondence has only one
+// closing state.
+model Correspondence {
+  id              String                  @id @default(cuid())
+  project         Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  reference       String?
+  direction       CorrespondenceDirection
+  correspondent   String
+  subject         String
+  summary         String?
+  dateSent        DateTime
+  responseDueDate DateTime?
+  status          CorrespondenceStatus    @default(OPEN)
+  dateClosed      DateTime?
+  notes           String?
+  loggedBy        User?                   @relation(fields: [loggedById], references: [id], onDelete: SetNull)
+  loggedById      String?
+  loggedByName    String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([projectId])
+}
+
+// A site induction or competency certification held by a person working for
+// a consultant or contractor on the project — a site induction, a White
+// Card, Working at Heights, Confined Space, First Aid, etc. Distinct from
+// Subcontractor (a company-level engagement record) and SqeRecord (a
+// one-off safety/quality/environment incident, not an ongoing
+// qualification). expiryDate is optional since some records (e.g. a
+// one-off site induction) never expire; when present it follows the same
+// computed-not-stored expiry pattern as InsuranceWarranty — no status
+// field, the frontend just compares the date against "now".
+model TrainingRecord {
+  id                String    @id @default(cuid())
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId         String
+  personName        String
+  company           String?
+  trainingType      String
+  completionDate    DateTime
+  expiryDate        DateTime?
+  certificateNumber String?
+  notes             String?
+  recordedBy        User?     @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedById      String?
+  recordedByName    String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([projectId])
+}
+
+// A periodic performance scorecard for a consultant or contractor engaged
+// on the project — distinct from Subcontractor (a static engagement
+// record with no ongoing assessment) and SqeRecord (a one-off incident,
+// not a scheduled review). revieweeName is freeform, matching the same
+// pattern as Subcontractor.companyName and Project.contractor rather than
+// a foreign key, since a review may cover the head contractor, a named
+// subcontractor, or a design consultant. The four 1-5 ratings are stored
+// as entered; the overall score is computed client-side as their average
+// (never stored), the same computed-not-stored pattern Risk's
+// likelihood x consequence score uses.
+model PerformanceReview {
+  id                  String   @id @default(cuid())
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId           String
+  revieweeName        String
+  reviewPeriod        String?
+  reviewDate          DateTime
+  qualityRating       Int
+  safetyRating        Int
+  timelinessRating    Int
+  communicationRating Int
+  comments            String?
+  reviewedBy          User?    @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedById        String?
+  reviewedByName      String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+// A routine on-site safety briefing — distinct from MeetingMinutes (a
+// project/design/progress meeting with the project team) and SqeRecord (a
+// one-off incident). A plain log with no status workflow, like
+// MeetingMinutes and SiteVisit; no portfolio-wide GET endpoint either,
+// matching that same precedent — too project-specific to aggregate.
+model ToolboxTalk {
+  id             String   @id @default(cuid())
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId      String
+  talkDate       DateTime
+  topic          String
+  conductedBy    String
+  attendees      String?
+  keyPoints      String?
+  notes          String?
+  recordedBy     User?    @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedById   String?
+  recordedByName String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+// A routine environmental compliance reading (noise, dust, turbidity,
+// vibration, groundwater level) taken against a licence or approval
+// condition limit — distinct from SqeRecord (a one-off safety/quality/
+// environment incident, not a scheduled quantitative sample). isExceedance
+// is computed client-side from readingValue vs limitValue/limitType, never
+// stored, the same computed-not-stored pattern as the expiry checks.
+model EnvironmentalMonitoringRecord {
+  id               String    @id @default(cuid())
+  project          Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  parameter        String
+  location         String?
+  monitoringDate   DateTime
+  readingValue     Float
+  unit             String
+  limitValue       Float?
+  limitType        LimitType @default(MAX)
+  correctiveAction String?
+  notes            String?
+  monitoredBy      User?     @relation(fields: [monitoredById], references: [id], onDelete: SetNull)
+  monitoredById    String?
+  monitoredByName  String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([projectId])
+}
+
+// A scheduled or ad-hoc site safety inspection/audit — distinct from
+// SqeRecord (a one-off incident that already happened, not a proactive
+// compliance walk) and ToolboxTalk (a briefing delivered to workers, not
+// an assessment of site conditions). Produces an optional compliance
+// score plus findings that may need corrective action, tracked through
+// the same OPEN/IN_PROGRESS/CLOSED workflow as SqeRecord. dateClosed
+// stamps automatically the moment status becomes Closed, the same
+// pattern SqeRecord/ActionItem use for their own closing dates.
+model SafetyInspection {
+  id               String                 @id @default(cuid())
+  project          Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  inspectionDate   DateTime
+  inspectionType   String
+  location         String?
+  conductedBy      String
+  score            Int?
+  findings         String?
+  correctiveAction String?
+  status           SafetyInspectionStatus @default(OPEN)
+  dateClosed       DateTime?
+  recordedBy       User?                  @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedById     String?
+  recordedByName   String
+  notes            String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([projectId])
+}
+
+// A tender/procurement package raised to source a consultant or contractor
+// for a project — distinct from Subcontractor, which tracks a trade
+// contractor already engaged: this is the process that precedes and
+// eventually produces an engagement. awardedTo is freeform text (the
+// winning bidder's name) rather than a Subcontractor relation, since not
+// every awarded package results in a Subcontractor record being created,
+// and a package can be cancelled before award. dateAwarded is set once the
+// status moves to AWARDED, the same pattern EotClaim.dateDecided uses for
+// SUBMITTED -> APPROVED/REJECTED.
+model TenderPackage {
+  id                  String       @id @default(cuid())
+  project             Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId           String
+  packageNumber       String?
+  title               String
+  description         String?
+  method              TenderMethod @default(OPEN)
+  status              TenderStatus @default(PLANNED)
+  dateIssued          DateTime?
+  closingDate         DateTime?
+  submissionsReceived Int?
+  estimatedValue      Decimal?     @db.Decimal(14, 2)
+  awardedTo           String?
+  awardedValue        Decimal?     @db.Decimal(14, 2)
+  dateAwarded         DateTime?
+  managedBy           User?        @relation(fields: [managedById], references: [id], onDelete: SetNull)
+  managedById         String?
+  managedByName       String
+  notes               String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([projectId])
+}
+
+// Append-only audit trail. projectName/userName are snapshots taken at write
+// time so an entry stays meaningful even after its project or user is gone
+// (project relation is SET NULL on delete rather than cascaded, so a
+// project's "deleted" entry — and its history — outlives the project row).
+model ActivityLog {
+  id          String   @id @default(cuid())
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId   String?
+  projectName String
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId      String?
+  userName    String
+  action      String
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([createdAt])
+}

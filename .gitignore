@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+backend/uploads/
+*.tsbuildinfo
+# Docker bind-mounted data (databases, uploads)
+/data/

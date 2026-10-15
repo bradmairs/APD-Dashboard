@@ -1,0 +1,74 @@
+# All persistent data lives in ./data next to this file (bind mounts, not named
+# volumes): ./data/db is the Postgres database and ./data/uploads holds
+# attachments and site photos. Back up or move the app by copying that folder; Docker creates the folders on first `docker compose up`.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-apd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apd}
+      POSTGRES_DB: ${POSTGRES_DB:-apd_dashboard}
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-apd}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-apd}:${POSTGRES_PASSWORD:-apd}@db:5432/${POSTGRES_DB:-apd_dashboard}
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (see .env.example)}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-}
+      FRONTEND_URL: ${FRONTEND_URL:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      # OLLAMA_MODEL is the legacy name for the chat slot (see backend/src/ollama.ts) —
+      # falling back to it here, rather than straight to a default, is what keeps a
+      # deployment that only ever set OLLAMA_MODEL working.
+      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-${OLLAMA_MODEL:-llama3.1}}
+      OLLAMA_VISION_MODEL: ${OLLAMA_VISION_MODEL:-llava}
+      ENGINEERING_ARCHIVE_BASE_URL: ${ENGINEERING_ARCHIVE_BASE_URL:-}
+      ENGINEERING_ARCHIVE_PUBLIC_URL: ${ENGINEERING_ARCHIVE_PUBLIC_URL:-}
+      ENGINEERING_ARCHIVE_API_KEY: ${ENGINEERING_ARCHIVE_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      DIGEST_CRON: ${DIGEST_CRON:-}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    # Bound to loopback only: the frontend container's nginx (see
+    # frontend/nginx.conf) already proxies /api/ to this service over the
+    # internal Docker network, and that's meant to be the only way in from
+    # outside the host. Publishing 4000 on every interface would let
+    # anyone reach the raw Express API directly — no TLS, no CORS
+    # restriction, none of the header/hardening this container relies on
+    # nginx or an external reverse proxy for — bypassing the frontend
+    # entirely. 127.0.0.1:4000 is still reachable for local
+    # debugging (curl/Postman on the host itself).
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - ./data/uploads:/app/uploads
+    # Lets the backend container reach Ollama running on the Docker host via
+    # host.docker.internal — resolved out of the box on Docker Desktop, but
+    # needs this mapping on Linux hosts.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"

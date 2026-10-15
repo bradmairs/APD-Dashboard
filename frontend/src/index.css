@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+}
+
+/* Leaflet's popup chrome ships hardcoded white/black — the map tiles
+   themselves don't invert for dark mode either, so only the popup box
+   (which sits right next to app UI, unlike the tiles) needs a dark variant. */
+html.dark .leaflet-popup-content-wrapper,
+html.dark .leaflet-popup-tip {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+html.dark .leaflet-popup-close-button {
+  color: #94a3b8 !important;
+}
