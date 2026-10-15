@@ -1,4 +1,4 @@
-# APD Project Management Dashboard
+# Project Management Dashboard
 
 A project management dashboard for Goulburn Valley Water's Asset & Project
 Delivery (APD) team. It gives Project Managers a single view of construction

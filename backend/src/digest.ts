@@ -124,7 +124,7 @@ function renderDigestHtml(items: DigestItem[], baseUrl: string | null): string {
     .join("\n");
 
   return `<div style="font-family:sans-serif;font-size:14px;color:#0f172a;">
-    <h2 style="font-size:16px;">APD Project Management Dashboard — Daily Digest</h2>
+    <h2 style="font-size:16px;">Project Management Dashboard — Daily Digest</h2>
     <p>Items overdue or due soon across all projects:</p>
     <table style="border-collapse:collapse;width:100%;">
       <thead>
@@ -145,7 +145,7 @@ function renderDigestText(items: DigestItem[]): string {
     (item) =>
       `- [${item.kind}] ${item.title} (${item.projectName}) — due ${item.date.toISOString().substring(0, 10)}${item.overdue ? " (overdue)" : ""}`
   );
-  return `APD Project Management Dashboard — Daily Digest\n\n${lines.join("\n")}`;
+  return `Project Management Dashboard — Daily Digest\n\n${lines.join("\n")}`;
 }
 
 function getTransport() {
@@ -181,8 +181,8 @@ export async function sendDigestEmails(): Promise<void> {
   const baseUrl = process.env.PUBLIC_APP_URL || null;
   const html = renderDigestHtml(items, baseUrl);
   const text = renderDigestText(items);
-  const from = process.env.SMTP_FROM || "APD Project Management Dashboard <no-reply@apd-dashboard.local>";
-  const subject = `APD Project Management Dashboard: ${items.length} item${items.length === 1 ? " needs" : "s need"} attention`;
+  const from = process.env.SMTP_FROM || "Project Management Dashboard <no-reply@apd-dashboard.local>";
+  const subject = `Project Management Dashboard: ${items.length} item${items.length === 1 ? " needs" : "s need"} attention`;
 
   for (const { email } of recipients) {
     try {
