@@ -79,6 +79,8 @@ searchRouter.get("/", async (req: Request, res: Response) => {
           { contractor: contains },
           { bpRefNo: contains },
           { projectNumber: contains },
+          { consultant: contains },
+          { trimFolder: contains },
         ],
       },
       take: CANDIDATES_PER_TYPE,
@@ -243,7 +245,7 @@ searchRouter.get("/", async (req: Request, res: Response) => {
       orderBy: { createdAt: "desc" },
     }),
     prisma.siteVisit.findMany({
-      where: { OR: [{ location: contains }, { notes: contains }, { discussionNotes: contains }] },
+      where: { OR: [{ location: contains }, { notes: contains }, { discussionNotes: contains }, { outcomesAndActions: contains }] },
       include: { project: projectSelect },
       take: CANDIDATES_PER_TYPE,
       orderBy: { createdAt: "desc" },
@@ -463,8 +465,8 @@ searchRouter.get("/", async (req: Request, res: Response) => {
       date: d.createdAt,
     })),
     ...checklistItems.map((c) => ({
-      type: "checklist",
-      typeLabel: "Checklist Item",
+      type: c.phase === "PROCUREMENT" ? "procurementChecklist" : "checklist",
+      typeLabel: c.phase === "PROCUREMENT" ? "Procurement Checklist" : "Checklist Item",
       id: c.id,
       projectId: c.project.id,
       projectName: c.project.name,

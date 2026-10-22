@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTabParam } from "../useTabParam";
 import {
@@ -71,6 +71,8 @@ import {
   TaskStatus,
   TenderPackage,
   TenderPackageInput,
+  TenderSubmission,
+  TenderSubmissionInput,
   ToolboxTalk,
   ToolboxTalkInput,
   Variation,
@@ -80,6 +82,10 @@ import {
   createActionItem,
   createArchiveLink,
   createChecklistItem,
+  createTenderSubmission,
+  deleteTenderSubmission,
+  getTenderSubmissions,
+  updateTenderSubmission,
   createCommunityEnquiry,
   createCorrespondence,
   createDefect,
@@ -250,6 +256,12 @@ import AiAssistantPanel from "../components/AiAssistantPanel";
 import DelaysPanel from "../components/DelaysPanel";
 import EotPanel from "../components/EotPanel";
 import ChecklistPanel from "../components/ChecklistPanel";
+import TenderSubmissionsPanel from "../components/TenderSubmissionsPanel";
+import CollapsibleSection, {
+  COLLAPSE_THRESHOLD,
+  useCollapsedSections,
+} from "../components/CollapsibleSection";
+import { STANDARD_PROCUREMENT_CHECKLIST } from "../checklistMeta";
 import DefectsPanel from "../components/DefectsPanel";
 import DocumentsPanel from "../components/DocumentsPanel";
 import EnquiriesPanel from "../components/EnquiriesPanel";
@@ -264,6 +276,7 @@ import { computeProjectHealth } from "../health";
 import { revisedCompletionDate } from "../eot";
 import { STATUS_COLORS, STATUS_LABELS } from "../statusMeta";
 import { formatCurrency, formatDate, formatReportMonth } from "../format";
+import { trimHref } from "../trim";
 import { canModifyProject } from "../permissions";
 import UserMenu from "../components/UserMenu";
 import { useAuth } from "../auth/AuthContext";
@@ -272,12 +285,20 @@ import SectionJumpNav, { JumpSection } from "../components/SectionJumpNav";
 import { useUndoToast } from "../undo/UndoToastContext";
 import { useConfirm } from "../confirm/ConfirmContext";
 
-type ProjectTabId = "overview" | "schedule" | "budget" | "quality" | "site" | "ai";
+type ProjectTabId =
+  | "overview"
+  | "schedule"
+  | "budget"
+  | "procurement"
+  | "quality"
+  | "site"
+  | "ai";
 
 const PROJECT_TABS: { id: ProjectTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "schedule", label: "Schedule" },
   { id: "budget", label: "Budget & Contract" },
+  { id: "procurement", label: "Procurement" },
   { id: "quality", label: "Quality & Risk" },
   { id: "site", label: "Site & Records" },
   { id: "ai", label: "AI Assistant" },
@@ -309,9 +330,13 @@ const TAB_SECTIONS: Record<ProjectTabId, JumpSection[]> = {
     { id: "payment-claims", label: "Payment Claims" },
     { id: "insurance-warranties", label: "Insurance & Warranties" },
     { id: "permits", label: "Permits & Approvals" },
-    { id: "tender-packages", label: "Procurement & Tenders" },
     { id: "subcontractors", label: "Subcontractors" },
     { id: "performance-reviews", label: "Performance Reviews" },
+  ],
+  procurement: [
+    { id: "tender-packages", label: "Tenders" },
+    { id: "tender-submissions", label: "Tender Submissions & Assessment" },
+    { id: "procurement-checklist", label: "Procurement Checklist" },
   ],
   quality: [
     { id: "risks", label: "Risk Register" },
@@ -378,6 +403,9 @@ export default function ProjectDetailPage() {
   >([]);
   const [safetyInspections, setSafetyInspections] = useState<SafetyInspection[]>([]);
   const [tenderPackages, setTenderPackages] = useState<TenderPackage[]>([]);
+  const [tenderSubmissions, setTenderSubmissions] = useState<TenderSubmission[]>([]);
+  const { collapsed: collapsedSections, setCollapsed: setSectionsCollapsed } =
+    useCollapsedSections();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -437,6 +465,7 @@ export default function ProjectDetailPage() {
         safetyInspectionData,
         tenderPackageData,
         delayData,
+        tenderSubmissionData,
       ] = await Promise.all([
         getProject(id),
         getProjectActivity(id),
@@ -473,6 +502,7 @@ export default function ProjectDetailPage() {
         getSafetyInspections(id),
         getTenderPackages(id),
         getDelays(id),
+        getTenderSubmissions(id),
       ]);
       // Two quick saves overlap two refreshes — only the newest one's
       // result is applied, so an older response can't overwrite it.
@@ -512,6 +542,7 @@ export default function ProjectDetailPage() {
       setEnvironmentalMonitoring(environmentalMonitoringData);
       setSafetyInspections(safetyInspectionData);
       setTenderPackages(tenderPackageData);
+      setTenderSubmissions(tenderSubmissionData);
       loadedIdRef.current = id;
     } catch (err) {
       if (seq !== loadSeqRef.current) return;
@@ -749,9 +780,10 @@ export default function ProjectDetailPage() {
   }
 
   async function handleCreateSiteVisit(data: Partial<SiteVisitInput>) {
-    if (!project) return;
-    await createSiteVisit(project.id, data);
+    if (!project) return null;
+    const siteVisit = await createSiteVisit(project.id, data);
     await load();
+    return siteVisit;
   }
 
   async function handleUpdateSiteVisit(
@@ -765,9 +797,9 @@ export default function ProjectDetailPage() {
   async function handleDeleteSiteVisit(siteVisit: SiteVisit) {
     await deleteSiteVisit(siteVisit.id);
     await load();
-    notifyUndo(`Site visit at "${siteVisit.location}" deleted.`, () =>
-      handleCreateSiteVisit(siteVisit)
-    );
+    notifyUndo(`Site visit at "${siteVisit.location}" deleted.`, async () => {
+      await handleCreateSiteVisit(siteVisit);
+    });
   }
 
   async function handleUploadSiteVisitPhotos(siteVisit: SiteVisit, files: File[]) {
@@ -1024,6 +1056,51 @@ export default function ProjectDetailPage() {
     if (!project) return;
     await createChecklistItem(project.id, data);
     await load();
+  }
+
+  async function handleCreateChecklistItems(items: Partial<ChecklistItemInput>[]) {
+    if (!project) return;
+    try {
+      // In order, so the checklist reads top to bottom as listed.
+      for (const data of items) await createChecklistItem(project.id, data);
+    } finally {
+      await load();
+    }
+  }
+
+  async function handleCreateTenderSubmission(
+    tenderPackage: TenderPackage,
+    data: Partial<TenderSubmissionInput>
+  ) {
+    await createTenderSubmission(tenderPackage.id, data);
+    await load();
+  }
+
+  async function handleUpdateTenderSubmission(
+    submission: TenderSubmission,
+    data: Partial<TenderSubmissionInput>
+  ) {
+    await updateTenderSubmission(submission.id, data);
+    await load();
+  }
+
+  async function handleDeleteTenderSubmission(submission: TenderSubmission) {
+    await deleteTenderSubmission(submission.id);
+    await load();
+    const tenderPackage = tenderPackages.find((p) => p.id === submission.tenderPackageId);
+    notifyUndo(`Submission from ${submission.tendererName} deleted.`, async () => {
+      if (!tenderPackage) return;
+      await handleCreateTenderSubmission(tenderPackage, {
+        tendererName: submission.tendererName,
+        dateReceived: submission.dateReceived,
+        tenderPrice: submission.tenderPrice,
+        conforming: submission.conforming,
+        score: submission.score,
+        rank: submission.rank === null ? null : String(submission.rank),
+        recommended: submission.recommended,
+        notes: submission.notes,
+      });
+    });
   }
 
   async function handleUpdateChecklistItem(item: ChecklistItem, data: Partial<ChecklistItemInput>) {
@@ -1370,6 +1447,65 @@ export default function ProjectDetailPage() {
     );
   }
 
+  // Item counts per section, for CollapsibleSection: a section with more
+  // than COLLAPSE_THRESHOLD items can be collapsed (see Expand/Collapse all
+  // in the Jump-to row).
+  const sectionCounts: Record<string, number> = {
+    "stakeholders": stakeholders.length,
+    "actions": actionItems.length,
+    "meeting-minutes": meetingMinutes.length,
+    "activity": activity.length,
+    "milestones": milestones.length,
+    "tasks": (project.tasks ?? []).length,
+    "delays": delays.length,
+    "eot-claims": eotClaims.length,
+    "checklist": checklistItems.filter((c) => c.phase !== "PROCUREMENT").length,
+    "contracts": contracts.length,
+    "cash-flow": cashFlowEntries.length,
+    "variations": variations.length,
+    "payment-claims": paymentClaims.length,
+    "insurance-warranties": insuranceWarranties.length,
+    "permits": permits.length,
+    "tender-packages": tenderPackages.length,
+    "tender-submissions": tenderSubmissions.length,
+    "procurement-checklist": checklistItems.filter((c) => c.phase === "PROCUREMENT").length,
+    "subcontractors": subcontractors.length,
+    "performance-reviews": performanceReviews.length,
+    "risks": risks.length,
+    "sqe": sqeRecords.length,
+    "environmental-monitoring": environmentalMonitoring.length,
+    "safety-inspections": safetyInspections.length,
+    "defects": defects.length,
+    "rfis": rfis.length,
+    "documents": documents.length,
+    "correspondence": correspondence.length,
+    "site-visits": siteVisits.length,
+    "enquiries": communityEnquiries.length,
+    "attachments": attachments.length,
+    "archive-links": archiveLinks.length,
+    "monthly-reports": reports.length,
+    "lessons-learned": lessons.length,
+    "training-records": trainingRecords.length,
+    "toolbox-talks": toolboxTalks.length,
+  };
+  const sectionLabels = new Map(
+    Object.values(TAB_SECTIONS)
+      .flat()
+      .map((sec) => [sec.id, sec.label])
+  );
+  const collapsibleInTab = TAB_SECTIONS[activeTab]
+    .map((sec) => sec.id)
+    .filter((sectionId) => (sectionCounts[sectionId] ?? 0) > COLLAPSE_THRESHOLD);
+  function section(sectionId: string) {
+    return {
+      id: sectionId,
+      label: sectionLabels.get(sectionId) ?? sectionId,
+      count: sectionCounts[sectionId] ?? 0,
+      collapsed: collapsedSections.has(sectionId),
+      onToggle: (value: boolean) => setSectionsCollapsed([sectionId], value),
+    };
+  }
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
@@ -1452,6 +1588,24 @@ export default function ProjectDetailPage() {
           <Field label="Project Sponsor" value={project.projectSponsor || "—"} />
           <Field label="Location" value={project.location || "—"} />
           <Field label="Contractor" value={project.contractor || "—"} />
+          <Field label="Consultant" value={project.consultant || "—"} />
+          <Field
+            label="TRIM Folder"
+            value={
+              trimHref(project.trimFolder) ? (
+                <a
+                  href={trimHref(project.trimFolder)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                >
+                  Open in TRIM
+                </a>
+              ) : (
+                <span className="break-all">{project.trimFolder || "—"}</span>
+              )
+            }
+          />
           <Field label="Original Budget" value={formatCurrency(project.budget)} />
           {project.latestApprovedBudget !== null && (
             <Field
@@ -1479,30 +1633,37 @@ export default function ProjectDetailPage() {
         </div>
 
         <Tabs tabs={PROJECT_TABS} active={activeTab} onChange={setActiveTab} />
-        <SectionJumpNav sections={TAB_SECTIONS[activeTab]} />
+        <SectionJumpNav
+          sections={TAB_SECTIONS[activeTab]}
+          onJump={(sectionId) => setSectionsCollapsed([sectionId], false)}
+          {...(collapsibleInTab.length > 0 && {
+            onExpandAll: () => setSectionsCollapsed(collapsibleInTab, false),
+            onCollapseAll: () => setSectionsCollapsed(collapsibleInTab, true),
+          })}
+        />
 
         <div className="space-y-6">
           {activeTab === "overview" && (
             <>
-              <div id="stakeholders">
+              <CollapsibleSection {...section("stakeholders")}>
                 <StakeholdersPanel
                   stakeholders={stakeholders}
                   onCreate={handleCreateStakeholder}
                   onUpdate={handleUpdateStakeholder}
                   onDelete={handleDeleteStakeholder}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="actions">
+              <CollapsibleSection {...section("actions")}>
                 <ActionsPanel
                   actionItems={actionItems}
                   onCreate={handleCreateActionItem}
                   onUpdate={handleUpdateActionItem}
                   onDelete={handleDeleteActionItem}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="meeting-minutes">
+              <CollapsibleSection {...section("meeting-minutes")}>
                 <MeetingMinutesPanel
                   projectName={project.name}
                   meetings={meetingMinutes}
@@ -1519,17 +1680,15 @@ export default function ProjectDetailPage() {
                   onExtractActions={handleExtractMeetingActions}
                   onGenerateDraft={handleGenerateMeetingMinutesDraft}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div
-                id="activity"
-                className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4"
-              >
+              <CollapsibleSection {...section("activity")}
+                className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
                   Activity
                 </h2>
                 <ActivityFeed entries={activity} emptyMessage="No activity recorded yet." />
-              </div>
+              </CollapsibleSection>
             </>
           )}
 
@@ -1544,7 +1703,7 @@ export default function ProjectDetailPage() {
                 />
               </div>
 
-              <div id="milestones">
+              <CollapsibleSection {...section("milestones")}>
                 <MilestonesPanel
                   milestones={milestones}
                   onCreate={handleCreateMilestone}
@@ -1552,9 +1711,9 @@ export default function ProjectDetailPage() {
                   onDelete={handleDeleteMilestone}
                   onReorder={handleReorderMilestone}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="tasks" className="space-y-3">
+              <CollapsibleSection {...section("tasks")} className="space-y-3">
                 <ApplyTaskTemplateControl onApply={handleApplyTaskTemplate} />
 
                 <TaskList
@@ -1563,40 +1722,40 @@ export default function ProjectDetailPage() {
                   onUpdate={handleUpdateTask}
                   onDelete={handleDeleteTask}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="delays">
+              <CollapsibleSection {...section("delays")}>
                 <DelaysPanel
                   delays={delays}
                   onCreate={handleCreateDelay}
                   onUpdate={handleUpdateDelay}
                   onDelete={handleDeleteDelay}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="eot-claims">
+              <CollapsibleSection {...section("eot-claims")}>
                 <EotPanel
                   claims={eotClaims}
                   onCreate={handleCreateEotClaim}
                   onUpdate={handleUpdateEotClaim}
                   onDelete={handleDeleteEotClaim}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="checklist">
+              <CollapsibleSection {...section("checklist")}>
                 <ChecklistPanel
                   items={checklistItems}
                   onCreate={handleCreateChecklistItem}
                   onUpdate={handleUpdateChecklistItem}
                   onDelete={handleDeleteChecklistItem}
                 />
-              </div>
+              </CollapsibleSection>
             </>
           )}
 
           {activeTab === "budget" && (
             <>
-              <div id="contracts">
+              <CollapsibleSection {...section("contracts")}>
                 <ContractsPanel
                   contracts={contracts}
                   paymentClaims={paymentClaims}
@@ -1604,9 +1763,9 @@ export default function ProjectDetailPage() {
                   onUpdate={handleUpdateContract}
                   onDelete={handleDeleteContract}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="cash-flow">
+              <CollapsibleSection {...section("cash-flow")}>
                 <CashFlowPanel
                   project={project}
                   entries={cashFlowEntries}
@@ -1615,18 +1774,18 @@ export default function ProjectDetailPage() {
                   onUpdate={handleUpdateCashFlowEntry}
                   onDelete={handleDeleteCashFlowEntry}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="variations">
+              <CollapsibleSection {...section("variations")}>
                 <VariationsPanel
                   variations={variations}
                   onCreate={handleCreateVariation}
                   onUpdate={handleUpdateVariation}
                   onDelete={handleDeleteVariation}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="payment-claims">
+              <CollapsibleSection {...section("payment-claims")}>
                 <PaymentClaimsPanel
                   claims={paymentClaims}
                   contracts={contracts}
@@ -1634,134 +1793,163 @@ export default function ProjectDetailPage() {
                   onUpdate={handleUpdatePaymentClaim}
                   onDelete={handleDeletePaymentClaim}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="insurance-warranties">
+              <CollapsibleSection {...section("insurance-warranties")}>
                 <InsuranceWarrantiesPanel
                   items={insuranceWarranties}
                   onCreate={handleCreateInsuranceWarranty}
                   onUpdate={handleUpdateInsuranceWarranty}
                   onDelete={handleDeleteInsuranceWarranty}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="permits">
+              <CollapsibleSection {...section("permits")}>
                 <PermitsPanel
                   permits={permits}
                   onCreate={handleCreatePermit}
                   onUpdate={handleUpdatePermit}
                   onDelete={handleDeletePermit}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="tender-packages">
-                <TenderPackagesPanel
-                  tenderPackages={tenderPackages}
-                  onCreate={handleCreateTenderPackage}
-                  onUpdate={handleUpdateTenderPackage}
-                  onDelete={handleDeleteTenderPackage}
-                />
-              </div>
-
-              <div id="subcontractors">
+              <CollapsibleSection {...section("subcontractors")}>
                 <SubcontractorsPanel
                   subcontractors={subcontractors}
                   onCreate={handleCreateSubcontractor}
                   onUpdate={handleUpdateSubcontractor}
                   onDelete={handleDeleteSubcontractor}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="performance-reviews">
+              <CollapsibleSection {...section("performance-reviews")}>
                 <PerformanceReviewsPanel
                   items={performanceReviews}
                   onCreate={handleCreatePerformanceReview}
                   onUpdate={handleUpdatePerformanceReview}
                   onDelete={handleDeletePerformanceReview}
                 />
-              </div>
+              </CollapsibleSection>
+            </>
+          )}
+
+          {activeTab === "procurement" && (
+            <>
+              <CollapsibleSection {...section("tender-packages")}>
+                <TenderPackagesPanel
+                  tenderPackages={tenderPackages}
+                  onCreate={handleCreateTenderPackage}
+                  onUpdate={handleUpdateTenderPackage}
+                  onDelete={handleDeleteTenderPackage}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection {...section("tender-submissions")}>
+                <TenderSubmissionsPanel
+                  tenderPackages={tenderPackages}
+                  submissions={tenderSubmissions}
+                  onCreate={handleCreateTenderSubmission}
+                  onUpdate={handleUpdateTenderSubmission}
+                  onDelete={handleDeleteTenderSubmission}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection {...section("procurement-checklist")}>
+                <ChecklistPanel
+                  items={checklistItems}
+                  phases={["PROCUREMENT"]}
+                  title="Procurement Checklist"
+                  emptyText="No procurement checklist items yet."
+                  csvFilename="procurement-checklist"
+                  standardItems={STANDARD_PROCUREMENT_CHECKLIST}
+                  onCreateMany={handleCreateChecklistItems}
+                  onCreate={handleCreateChecklistItem}
+                  onUpdate={handleUpdateChecklistItem}
+                  onDelete={handleDeleteChecklistItem}
+                />
+              </CollapsibleSection>
             </>
           )}
 
           {activeTab === "quality" && (
             <>
-              <div id="risks">
+              <CollapsibleSection {...section("risks")}>
                 <RisksPanel
                   risks={risks}
                   onCreate={handleCreateRisk}
                   onUpdate={handleUpdateRisk}
                   onDelete={handleDeleteRisk}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="sqe">
+              <CollapsibleSection {...section("sqe")}>
                 <SqePanel
                   records={sqeRecords}
                   onCreate={handleCreateSqeRecord}
                   onUpdate={handleUpdateSqeRecord}
                   onDelete={handleDeleteSqeRecord}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="environmental-monitoring">
+              <CollapsibleSection {...section("environmental-monitoring")}>
                 <EnvironmentalMonitoringPanel
                   records={environmentalMonitoring}
                   onCreate={handleCreateEnvironmentalMonitoring}
                   onUpdate={handleUpdateEnvironmentalMonitoring}
                   onDelete={handleDeleteEnvironmentalMonitoring}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="safety-inspections">
+              <CollapsibleSection {...section("safety-inspections")}>
                 <SafetyInspectionsPanel
                   inspections={safetyInspections}
                   onCreate={handleCreateSafetyInspection}
                   onUpdate={handleUpdateSafetyInspection}
                   onDelete={handleDeleteSafetyInspection}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="defects">
+              <CollapsibleSection {...section("defects")}>
                 <DefectsPanel
                   defects={defects}
                   onCreate={handleCreateDefect}
                   onUpdate={handleUpdateDefect}
                   onDelete={handleDeleteDefect}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="rfis">
+              <CollapsibleSection {...section("rfis")}>
                 <RfisPanel
                   rfis={rfis}
                   onCreate={handleCreateRfi}
                   onUpdate={handleUpdateRfi}
                   onDelete={handleDeleteRfi}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="documents">
+              <CollapsibleSection {...section("documents")}>
                 <DocumentsPanel
                   documents={documents}
                   onCreate={handleCreateDocument}
                   onUpdate={handleUpdateDocument}
                   onDelete={handleDeleteDocument}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="correspondence">
+              <CollapsibleSection {...section("correspondence")}>
                 <CorrespondencePanel
                   items={correspondence}
                   onCreate={handleCreateCorrespondence}
                   onUpdate={handleUpdateCorrespondence}
                   onDelete={handleDeleteCorrespondence}
                 />
-              </div>
+              </CollapsibleSection>
             </>
           )}
 
           {activeTab === "site" && (
             <>
-              <div id="site-visits">
+              <CollapsibleSection {...section("site-visits")}>
                 <SiteVisitsPanel
                   siteVisits={siteVisits}
                   photosByVisit={groupPhotosByVisit(sitePhotos)}
@@ -1773,34 +1961,34 @@ export default function ProjectDetailPage() {
                   onDeletePhoto={handleDeleteSiteVisitPhoto}
                   onSyncPhotoToArchive={handleSyncPhotoToArchive}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="enquiries">
+              <CollapsibleSection {...section("enquiries")}>
                 <EnquiriesPanel
                   enquiries={communityEnquiries}
                   onCreate={handleCreateCommunityEnquiry}
                   onUpdate={handleUpdateCommunityEnquiry}
                   onDelete={handleDeleteCommunityEnquiry}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="attachments">
+              <CollapsibleSection {...section("attachments")}>
                 <AttachmentsPanel
                   attachments={attachments}
                   onUpload={handleUploadAttachment}
                   onDelete={handleDeleteAttachment}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="archive-links">
+              <CollapsibleSection {...section("archive-links")}>
                 <ArchiveLinksPanel
                   links={archiveLinks}
                   onCreate={handleCreateArchiveLink}
                   onDelete={handleDeleteArchiveLink}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="monthly-reports">
+              <CollapsibleSection {...section("monthly-reports")}>
                 <MonthlyReportsPanel
                   reports={reports}
                   currentUser={user}
@@ -1808,34 +1996,34 @@ export default function ProjectDetailPage() {
                   onUpdate={handleUpdateReport}
                   onDelete={handleDeleteReport}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="lessons-learned">
+              <CollapsibleSection {...section("lessons-learned")}>
                 <LessonsLearnedPanel
                   lessons={lessons}
                   onCreate={handleCreateLesson}
                   onUpdate={handleUpdateLesson}
                   onDelete={handleDeleteLesson}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="training-records">
+              <CollapsibleSection {...section("training-records")}>
                 <TrainingRecordsPanel
                   items={trainingRecords}
                   onCreate={handleCreateTrainingRecord}
                   onUpdate={handleUpdateTrainingRecord}
                   onDelete={handleDeleteTrainingRecord}
                 />
-              </div>
+              </CollapsibleSection>
 
-              <div id="toolbox-talks">
+              <CollapsibleSection {...section("toolbox-talks")}>
                 <ToolboxTalksPanel
                   talks={toolboxTalks}
                   onCreate={handleCreateToolboxTalk}
                   onUpdate={handleUpdateToolboxTalk}
                   onDelete={handleDeleteToolboxTalk}
                 />
-              </div>
+              </CollapsibleSection>
             </>
           )}
 
@@ -1871,7 +2059,7 @@ function groupPhotosByVisit(
   return grouped;
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
       <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>

@@ -5,6 +5,16 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.2 - 2026-10-22
+
+- Site visits: "Notes" is now **Site Visit Purpose** and "Discussion Notes" is now **Site Visit Notes**; new **Site Visit Outcomes and Actions** field; photos can be taken or added straight from the Log/Edit Site Visit form
+- New **TRIM Links** tab on the dashboard: shared TRIM links grouped by category, plus every project's TRIM folder
+- New project fields: **TRIM Folder** and **Consultant**
+- Project sections with more than 5 items can be collapsed/expanded, with **Expand all / Collapse all** on each tab (remembered per section)
+- Today & Upcoming can be filtered by project manager; the choice is saved to your account
+- Contracts: "PO Value" is now **PO Number**, a reference rather than a dollar amount (existing values kept)
+- New **Procurement** tab on each project: Tenders (moved from Budget & Contract), Tender Submissions & Assessment, and a Procurement Checklist with a one-click standard checklist
+
 ## 1.11 - 2026-10-15
 
 - New **Project Number** field on the New/Edit Project form, shown on the project page, monthly and closeout reports, the dashboard project list and CSV export, and included in search

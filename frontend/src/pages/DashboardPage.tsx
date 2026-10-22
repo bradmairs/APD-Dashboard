@@ -77,6 +77,7 @@ import EnvironmentalExceedancesPanel from "../components/EnvironmentalExceedance
 import OpenSafetyInspectionsPanel from "../components/OpenSafetyInspectionsPanel";
 import ActiveTendersPanel from "../components/ActiveTendersPanel";
 import AiAssistantPanel from "../components/AiAssistantPanel";
+import TrimLinksPanel from "../components/TrimLinksPanel";
 import OpenDefectsPanel from "../components/OpenDefectsPanel";
 import OpenPaymentClaimsPanel from "../components/OpenPaymentClaimsPanel";
 import OpenRfisPanel from "../components/OpenRfisPanel";
@@ -107,7 +108,14 @@ import { useConfirm } from "../confirm/ConfirmContext";
 
 const RAG_LABELS: Record<RagStatus, string> = { GREEN: "Green", AMBER: "Amber", RED: "Red" };
 
-type DashboardTabId = "projects" | "today" | "alerts" | "charts" | "activity" | "ai";
+type DashboardTabId =
+  | "projects"
+  | "today"
+  | "alerts"
+  | "charts"
+  | "activity"
+  | "trim"
+  | "ai";
 
 const DASHBOARD_TABS: { id: DashboardTabId; label: string }[] = [
   { id: "projects", label: "Projects" },
@@ -115,6 +123,7 @@ const DASHBOARD_TABS: { id: DashboardTabId; label: string }[] = [
   { id: "alerts", label: "Alerts" },
   { id: "charts", label: "Charts" },
   { id: "activity", label: "Activity" },
+  { id: "trim", label: "TRIM Links" },
   { id: "ai", label: "AI Assistant" },
 ];
 
@@ -615,6 +624,8 @@ export default function DashboardPage() {
                   { header: "Sponsor", key: "sponsor" },
                   { header: "Location", key: "location" },
                   { header: "Contractor", key: "contractor" },
+                  { header: "Consultant", key: "consultant" },
+                  { header: "TRIM Folder", key: "trimFolder" },
                   { header: "Original Budget", key: "budget" },
                   { header: "Latest Approved Budget", key: "latestApprovedBudget" },
                   { header: "Contract Value", key: "contractValue" },
@@ -633,6 +644,8 @@ export default function DashboardPage() {
                   sponsor: p.projectSponsor ?? "",
                   location: p.location ?? "",
                   contractor: p.contractor ?? "",
+                  consultant: p.consultant ?? "",
+                  trimFolder: p.trimFolder ?? "",
                   budget: p.budget != null ? formatCurrency(p.budget) : "",
                   latestApprovedBudget:
                     p.latestApprovedBudget != null ? formatCurrency(p.latestApprovedBudget) : "",
@@ -674,6 +687,7 @@ export default function DashboardPage() {
 
         {activeTab === "today" && !loading && (
           <TodayAndUpcomingPanel
+            projects={projects}
             tasks={upcomingTasks}
             actionItems={actionItems}
             onCompleteTask={handleCompleteTask}
@@ -736,6 +750,8 @@ export default function DashboardPage() {
             )}
           </div>
         )}
+
+        {activeTab === "trim" && <TrimLinksPanel projects={projects} />}
 
         {activeTab === "ai" && (
           <AiAssistantPanel

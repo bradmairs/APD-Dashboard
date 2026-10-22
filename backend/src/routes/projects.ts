@@ -33,6 +33,7 @@ import projectToolboxTalksRouter from "./toolboxTalks";
 import projectEnvironmentalMonitoringRouter from "./environmentalMonitoring";
 import projectSafetyInspectionsRouter from "./safetyInspections";
 import projectTenderPackagesRouter from "./tenderPackages";
+import { projectTenderSubmissionsRouter } from "./tenderSubmissions";
 import projectAiRouter from "./ai";
 import projectArchiveLinksRouter from "./archiveLinks";
 import { describeProjectChanges, logActivity } from "../activityLog";
@@ -102,6 +103,7 @@ router.use("/:id/toolbox-talks", projectToolboxTalksRouter);
 router.use("/:id/environmental-monitoring", projectEnvironmentalMonitoringRouter);
 router.use("/:id/safety-inspections", projectSafetyInspectionsRouter);
 router.use("/:id/tender-packages", projectTenderPackagesRouter);
+router.use("/:id/tender-submissions", projectTenderSubmissionsRouter);
 router.use("/:id/ai", projectAiRouter);
 router.use("/:id/archive-links", projectArchiveLinksRouter);
 

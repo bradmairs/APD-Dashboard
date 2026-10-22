@@ -5,6 +5,12 @@ export interface JumpSection {
 
 interface Props {
   sections: JumpSection[];
+  // Collapse/expand every long section in this tab at once (see
+  // CollapsibleSection). Omitted when the tab has no collapsible sections.
+  onExpandAll?: () => void;
+  onCollapseAll?: () => void;
+  // Called before scrolling, e.g. to expand a collapsed target section.
+  onJump?: (id: string) => void;
 }
 
 // Breathing room left between the sticky header and the section jumped to.
@@ -16,7 +22,7 @@ const SECTION_GAP = 12;
 // scrolls that section's wrapper (given the same id below, in
 // ProjectDetailPage.tsx) into view instead. Hidden entirely for a tab with
 // only one section (AI Assistant), where jumping anywhere is meaningless.
-export default function SectionJumpNav({ sections }: Props) {
+export default function SectionJumpNav({ sections, onExpandAll, onCollapseAll, onJump }: Props) {
   if (sections.length <= 1) return null;
 
   // The page header is sticky, so scrolling a section to the very top of the
@@ -24,6 +30,12 @@ export default function SectionJumpNav({ sections }: Props) {
   // the header and it looks like the page went too far. Offset by the
   // header's height so the section starts just below it instead.
   function jumpTo(id: string) {
+    onJump?.(id);
+    // Let an expanded section render before measuring where it is.
+    requestAnimationFrame(() => scrollToSection(id));
+  }
+
+  function scrollToSection(id: string) {
     const target = document.getElementById(id);
     if (!target) return;
     const header = document.querySelector("header");
@@ -48,6 +60,25 @@ export default function SectionJumpNav({ sections }: Props) {
           {section.label}
         </button>
       ))}
+      {onExpandAll && onCollapseAll && (
+        <span className="flex items-center gap-2 ml-auto shrink-0">
+          <button
+            type="button"
+            onClick={onExpandAll}
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Expand all
+          </button>
+          <span className="text-slate-300 dark:text-slate-600">|</span>
+          <button
+            type="button"
+            onClick={onCollapseAll}
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Collapse all
+          </button>
+        </span>
+      )}
     </div>
   );
 }

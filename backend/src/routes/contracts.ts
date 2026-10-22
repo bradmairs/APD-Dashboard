@@ -48,7 +48,7 @@ projectContractsRouter.post("/", async (req: Request<ProjectParams>, res: Respon
     contractForm,
     contractValue,
     contingency,
-    poValue,
+    poNumber,
     provisionalItemsValue,
     retentionPercent,
     defectsLiabilityMonths,
@@ -79,7 +79,7 @@ projectContractsRouter.post("/", async (req: Request<ProjectParams>, res: Respon
       contractForm: (contractForm as string) || null,
       contractValue: parseNumber(contractValue) ?? null,
       contingency: parseNumber(contingency) ?? null,
-      poValue: parseNumber(poValue) ?? null,
+      poNumber: typeof poNumber === "string" && poNumber.trim() ? poNumber.trim() : null,
       provisionalItemsValue: parseNumber(provisionalItemsValue) ?? null,
       retentionPercent: parseNumber(retentionPercent) ?? null,
       defectsLiabilityMonths: parseInteger(defectsLiabilityMonths) ?? null,
@@ -122,7 +122,7 @@ contractsRouter.put("/:id", async (req, res) => {
     contractForm,
     contractValue,
     contingency,
-    poValue,
+    poNumber,
     provisionalItemsValue,
     retentionPercent,
     defectsLiabilityMonths,
@@ -154,8 +154,9 @@ contractsRouter.put("/:id", async (req, res) => {
   if (value !== undefined) data.contractValue = value;
   const contingencyValue = parseNumber(contingency);
   if (contingencyValue !== undefined) data.contingency = contingencyValue;
-  const po = parseNumber(poValue);
-  if (po !== undefined) data.poValue = po;
+  if (poNumber !== undefined) {
+    data.poNumber = typeof poNumber === "string" && poNumber.trim() ? poNumber.trim() : null;
+  }
   const provisionalItems = parseNumber(provisionalItemsValue);
   if (provisionalItems !== undefined) data.provisionalItemsValue = provisionalItems;
   const retention = parseNumber(retentionPercent);

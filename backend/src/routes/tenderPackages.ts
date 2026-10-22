@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { TenderMethod, TenderStatus } from "@prisma/client";
 import { prisma } from "../prisma";
 import { describeTenderPackageUpdate, logActivity } from "../activityLog";
+import { packageTenderSubmissionsRouter } from "./tenderSubmissions";
 
 const METHODS = ["OPEN", "SELECTIVE", "DIRECT_ENGAGE", "EXPRESSION_OF_INTEREST"];
 const STATUSES = ["PLANNED", "ISSUED", "EVALUATION", "AWARDED", "CANCELLED"];
@@ -122,6 +123,8 @@ projectTenderPackagesRouter.post(
 );
 
 export const tenderPackagesRouter = Router();
+
+tenderPackagesRouter.use("/:id/submissions", packageTenderSubmissionsRouter);
 
 // Every tender package across every project, for the portfolio-wide Active
 // Tenders panel on the dashboard — avoids one request per project.

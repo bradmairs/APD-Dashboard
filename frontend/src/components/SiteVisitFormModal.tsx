@@ -1,10 +1,13 @@
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { SiteVisit, SiteVisitInput } from "../types";
 
 interface Props {
   siteVisit: SiteVisit | null;
+  // How many photos the visit already has, shown when editing.
+  existingPhotoCount?: number;
   onClose: () => void;
-  onSave: (data: Partial<SiteVisitInput>) => Promise<void>;
+  // photos are uploaded to the visit once it's saved.
+  onSave: (data: Partial<SiteVisitInput>, photos: File[]) => Promise<void>;
 }
 
 function toDateInputValue(iso: string | null): string {
@@ -28,7 +31,12 @@ function combineDateTime(dateStr: string, timeStr: string): string {
   return new Date(y, m - 1, d, hh, mm).toISOString();
 }
 
-export default function SiteVisitFormModal({ siteVisit, onClose, onSave }: Props) {
+export default function SiteVisitFormModal({
+  siteVisit,
+  existingPhotoCount = 0,
+  onClose,
+  onSave,
+}: Props) {
   const [date, setDate] = useState(toDateInputValue(siteVisit?.visitDate ?? null));
   const [time, setTime] = useState(toTimeInputValue(siteVisit?.visitDate ?? null));
   const [location, setLocation] = useState(siteVisit?.location ?? "");
@@ -36,6 +44,22 @@ export default function SiteVisitFormModal({ siteVisit, onClose, onSave }: Props
   const [discussionNotes, setDiscussionNotes] = useState(
     siteVisit?.discussionNotes ?? ""
   );
+  const [outcomesAndActions, setOutcomesAndActions] = useState(
+    siteVisit?.outcomesAndActions ?? ""
+  );
+  const [photos, setPhotos] = useState<File[]>([]);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  // Thumbnails for the photos picked so far, released when they change.
+  const previews = useMemo(() => photos.map((file) => URL.createObjectURL(file)), [photos]);
+  useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
+
+  function handlePhotoFiles(e: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 0) setPhotos((prev) => [...prev, ...files]);
+    e.target.value = "";
+  }
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -72,7 +96,8 @@ export default function SiteVisitFormModal({ siteVisit, onClose, onSave }: Props
         location: location.trim(),
         notes: notes || null,
         discussionNotes: discussionNotes || null,
-      });
+        outcomesAndActions: outcomesAndActions || null,
+      }, photos);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save site visit");
     } finally {
@@ -152,28 +177,111 @@ export default function SiteVisitFormModal({ siteVisit, onClose, onSave }: Props
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Notes
+              Site Visit Purpose
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              placeholder="What was observed on site"
+              rows={2}
+              placeholder="Why the visit was made, e.g. progress inspection, hold point, meeting on site"
               className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Discussion Notes
+              Site Visit Notes
             </label>
             <textarea
               value={discussionNotes}
               onChange={(e) => setDiscussionNotes(e.target.value)}
               rows={3}
-              placeholder="Points raised or agreed with the contractor/site team"
+              placeholder="What was observed, and points raised with the contractor/site team"
               className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Site Visit Outcomes and Actions
+            </label>
+            <textarea
+              value={outcomesAndActions}
+              onChange={(e) => setOutcomesAndActions(e.target.value)}
+              rows={3}
+              placeholder="What was agreed or decided, and who is doing what by when"
+              className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Site Photos
+                {existingPhotoCount > 0 && (
+                  <span className="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">
+                    ({existingPhotoCount} already attached)
+                  </span>
+                )}
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                >
+                  📷 Take Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                >
+                  🖼 Add Photos
+                </button>
+              </div>
+            </div>
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoFiles}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handlePhotoFiles}
+            />
+            {photos.length === 0 ? (
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Photos added here upload when you save the visit.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {photos.map((file, i) => (
+                  <div key={`${file.name}-${i}`} className="relative">
+                    <img
+                      src={previews[i]}
+                      alt={file.name}
+                      className="w-16 h-16 object-cover rounded border border-slate-200 dark:border-slate-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                      aria-label={`Remove ${file.name}`}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white text-xs leading-5 text-center"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
@@ -189,7 +297,7 @@ export default function SiteVisitFormModal({ siteVisit, onClose, onSave }: Props
               disabled={saving}
               className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Save Visit"}
+              {saving ? (photos.length > 0 ? "Saving and uploading…" : "Saving…") : "Save Visit"}
             </button>
           </div>
         </form>

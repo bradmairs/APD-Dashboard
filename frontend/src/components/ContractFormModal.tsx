@@ -28,7 +28,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
   const [contractForm, setContractForm] = useState(contract?.contractForm ?? "");
   const [contractValue, setContractValue] = useState(contract?.contractValue ?? "");
   const [contingency, setContingency] = useState(contract?.contingency ?? "");
-  const [poValue, setPoValue] = useState(contract?.poValue ?? "");
+  const [poNumber, setPoNumber] = useState(contract?.poNumber ?? "");
   const [provisionalItemsValue, setProvisionalItemsValue] = useState(
     contract?.provisionalItemsValue ?? ""
   );
@@ -61,7 +61,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
         contractForm: contractForm || null,
         contractValue: contractValue || null,
         contingency: contingency || null,
-        poValue: poValue || null,
+        poNumber: poNumber.trim() || null,
         provisionalItemsValue: provisionalItemsValue || null,
         retentionPercent: retentionPercent || null,
         defectsLiabilityMonths:
@@ -230,14 +230,12 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                PO Value
+                PO Number
               </label>
               <input
-                type="number"
-                step="0.01"
-                value={poValue}
-                onChange={(e) => setPoValue(e.target.value)}
-                placeholder="Optional"
+                value={poNumber}
+                onChange={(e) => setPoNumber(e.target.value)}
+                placeholder="Purchase order reference (optional)"
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
               />
             </div>

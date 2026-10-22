@@ -84,6 +84,9 @@ Each **Project** tracks:
 - Project Number (the organisation's own project number — optional free
   text, shown on the project page, reports and the dashboard list, and
   searchable)
+- TRIM Folder (the project's records folder — a TRIM link or container
+  number, shown as an "Open in TRIM" link on the project page when it's a
+  web link) and Consultant (alongside Contractor)
 - BP Ref. No., Project Manager, Project Director, Project Sponsor. The
   Project Manager is picked from a dropdown of active user accounts (a new
   project defaults to whoever is creating it) rather than typed, and is
@@ -1014,9 +1017,11 @@ consultancy agreement or the head contractor's construction contract. A
 contract has a Party Type (Consultant or Contractor), Party Name,
 Discipline/Scope (e.g. "Structural Design"), an optional Contract Number
 and Contract Form (free text, with suggestions like "AS4000-1997" or
-"NEC4"), Contract Value, Contingency, PO Value and Provisional Items
-(optional money values — a purchase order raised against the contract
-and the provisional-items allowance within it), Retention (%), a Defects
+"NEC4"), Contract Value, Contingency and Provisional Items (optional
+money values — the provisional-items allowance within the contract), a
+**PO Number** (the purchase order reference raised against the contract —
+free text, not an amount; existing numeric PO values were carried over as
+text), Retention (%), a Defects
 Liability Period in months, Execution/Start/Completion dates, a Status of
 Active/Complete/Terminated (changeable inline), and Notes. This is
 distinct from `Project.contractor`/`Project.contractValue` (a single
@@ -1084,6 +1089,21 @@ dashboard's portfolio-wide **Insurance & Warranties Expiring Soon**
 panel lists every flagged item across every project, soonest first,
 linking back to its project — alongside the other exception panels.
 Open to any logged-in user to edit.
+
+## TRIM Links
+
+The Dashboard's **TRIM Links** tab collects links into TRIM (the records
+management system) in one place:
+
+- **TRIM Links** — shared links anyone except a Viewer can add: a title,
+  the TRIM web link *or* a record/container number, an optional category
+  (links are grouped by it) and description. The person who added a link,
+  or an admin, can edit or delete it. Only `http(s)` values become
+  clickable links.
+- **Project TRIM Folders** — every project's own **TRIM Folder** (set on
+  the project's Edit form, next to Project Number), linking to the project.
+
+The list is searchable across both.
 
 ## Tool Suggestions
 
@@ -1291,9 +1311,15 @@ Each project has a **Site Visits** panel — a mobile-friendly field log for
 the visits a project manager makes to site, since that's typically entered
 from a phone standing in the field rather than at a desk. A visit records
 Date, Time, Location (free text, with a **📍 Use current** button that
-fills it from the browser's Geolocation API as `lat, lng`), Notes (what was
-observed), and Discussion Notes (points raised or agreed with the
-contractor/site team). Entries render as a stack of full-width cards rather
+fills it from the browser's Geolocation API as `lat, lng`), **Site Visit
+Purpose** (why the visit was made), **Site Visit Notes** (what was observed
+and discussed with the contractor/site team), **Site Visit Outcomes and
+Actions** (what was agreed, and who is doing what by when), and **Site
+Photos** — taken with the camera or picked from the gallery right in the
+form, uploaded when the visit is saved (more can still be added to a saved
+visit from its card). If the visit saves but its photos fail to upload,
+the panel says so rather than leaving the form open, so retrying can't
+create a duplicate visit. Entries render as a stack of full-width cards rather
 than the app's usual table layout — tables don't fit a narrow screen, and a
 project typically has far fewer site visits than tasks or activity-log
 entries, so a card per visit costs little vertical space. Each card expands
@@ -1507,9 +1533,28 @@ ss -tlnp | grep 11434
 curl http://<your-public-ip>:11434/api/version
 ```
 
-## Procurement & Tenders
+## Procurement
 
-Each project has a **Procurement & Tenders** register tracking the
+Each project has a **Procurement** tab — the one place for a project's
+procurement process. It is being built up in stages; currently it holds:
+
+- **Tenders** — the tender package register described below (moved here
+  from Budget & Contract).
+- **Tender Submissions & Assessment** — one row per tenderer per tender
+  package: date received, tender price, whether it's conforming, an
+  evaluation score (out of 100), rank, whether it's the recommended
+  tenderer, and assessment notes, shown as a comparison table per package
+  (`TenderSubmission` model, `/api/tender-packages/:id/submissions`).
+- **Procurement Checklist** — checklist items with the `PROCUREMENT`
+  phase (the same `ChecklistItem` model as Commissioning & Handover, which
+  keeps showing only its own phases). An empty checklist offers a
+  one-click **standard checklist** of 18 typical steps, from procurement
+  plan approval through to notifying unsuccessful tenderers and recording
+  the contract, which can then be edited or marked Not Applicable.
+
+### Tenders
+
+Each project has a **Tenders** register tracking the
 process of sourcing a consultant or contractor for a package of work —
 distinct from **Subcontractors**, which tracks a trade contractor
 *already engaged*: this register is the process that precedes and
@@ -1600,7 +1645,7 @@ all — just a "back" link and a Print button — so they're unaffected.
 ### Jump To
 
 Several project detail tabs still stack many panels (Budget & Contract
-alone has nine), so a **Jump to:** row of pills
+alone has eight), so a **Jump to:** row of pills
 (`components/SectionJumpNav.tsx`) sits just below the tab bar, one pill per
 panel in that tab, in the same top-to-bottom order they're stacked in.
 Clicking one smooth-scrolls straight to that panel rather than scrolling
@@ -1612,6 +1657,16 @@ heading isn't hidden underneath it). Each panel is wrapped in a `<div id="...">`
 than derived from the JSX, since the panel components themselves don't
 know their own tab or position. A tab with only one section (AI Assistant)
 shows no jump row at all, since there'd be nowhere else to jump to.
+
+### Collapsing long sections
+
+Any project section listing more than 5 items (`COLLAPSE_THRESHOLD` in
+`components/CollapsibleSection.tsx`) gets a **Collapse** link above it;
+collapsed, it shrinks to a one-line summary ("Risk Register · 12 items —
+Expand"). When a tab has any such sections, **Expand all | Collapse all**
+appears at the end of its Jump-to row. Choices are remembered in the
+browser per section (so collapsing Risks keeps it collapsed on every
+project), and jumping to a collapsed section expands it.
 
 ### Today & Upcoming
 
@@ -1626,6 +1681,12 @@ Task without a due date never appears in the upcoming-tasks feed at all).
 Buckets are computed from calendar-day comparisons, not raw timestamp
 deltas, so a due date and "now" on the same day is Due Today rather than
 Overdue.
+
+A **project manager** filter at the top narrows the list to items on that
+PM's projects (portfolio-wide tasks, which belong to no project, always
+show). The choice is saved to the user's account
+(`User.upcomingManagerFilter`, via `PUT /api/auth/preferences`), so it
+sticks across logins and devices rather than resetting each visit.
 
 Each row shows a type badge (Task / Action / Decision), the title, a link
 to its project (portfolio-wide tasks have none), an owner (Actions only),
