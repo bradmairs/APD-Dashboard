@@ -10,6 +10,8 @@ import {
 interface Props {
   item: ChecklistItem | null;
   defaultPhase?: ChecklistPhase;
+  // Phases offered in the Phase dropdown (defaults to all).
+  phases?: ChecklistPhase[];
   onClose: () => void;
   onSave: (data: Partial<ChecklistItemInput>) => Promise<void>;
 }
@@ -21,11 +23,12 @@ function toDateInputValue(value: string | null): string {
 export default function ChecklistItemFormModal({
   item,
   defaultPhase,
+  phases = ALL_CHECKLIST_PHASES,
   onClose,
   onSave,
 }: Props) {
   const [phase, setPhase] = useState<ChecklistPhase>(
-    item?.phase ?? defaultPhase ?? "COMMISSIONING"
+    item?.phase ?? defaultPhase ?? phases[0]
   );
   const [title, setTitle] = useState(item?.title ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
@@ -93,7 +96,7 @@ export default function ChecklistItemFormModal({
                 onChange={(e) => setPhase(e.target.value as ChecklistPhase)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
               >
-                {ALL_CHECKLIST_PHASES.map((p) => (
+                {phases.map((p) => (
                   <option key={p} value={p}>
                     {CHECKLIST_PHASE_LABELS[p]}
                   </option>

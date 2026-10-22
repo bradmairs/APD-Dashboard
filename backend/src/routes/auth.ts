@@ -52,6 +52,7 @@ type SessionUser = {
   createdAt: Date;
   emailDigestOptIn: boolean;
   twoFactorEnabled: boolean;
+  upcomingManagerFilter: string | null;
 };
 
 function toSessionUser(user: SessionUser) {
@@ -63,6 +64,7 @@ function toSessionUser(user: SessionUser) {
     createdAt: user.createdAt,
     emailDigestOptIn: user.emailDigestOptIn,
     twoFactorEnabled: user.twoFactorEnabled,
+    upcomingManagerFilter: user.upcomingManagerFilter,
   };
 }
 
@@ -209,7 +211,7 @@ router.get("/me", requireAuth, async (req, res) => {
   // and baking it into the token would mean it goes stale until next login.
   const user = await prisma.user.findUnique({
     where: { id: req.user!.sub },
-    select: { emailDigestOptIn: true, twoFactorEnabled: true },
+    select: { emailDigestOptIn: true, twoFactorEnabled: true, upcomingManagerFilter: true },
   });
   res.json({
     id: req.user!.sub,
@@ -219,18 +221,37 @@ router.get("/me", requireAuth, async (req, res) => {
     createdAt: req.user!.createdAt,
     emailDigestOptIn: user?.emailDigestOptIn ?? false,
     twoFactorEnabled: user?.twoFactorEnabled ?? false,
+    upcomingManagerFilter: user?.upcomingManagerFilter ?? null,
   });
 });
 
+// Per-user settings that should follow someone across logins and devices.
+// Each field is optional, so a client can save one without touching others.
 router.put("/preferences", requireAuth, async (req, res) => {
-  const { emailDigestOptIn } = req.body as { emailDigestOptIn?: unknown };
-  if (typeof emailDigestOptIn !== "boolean") {
-    return res.status(400).json({ error: "emailDigestOptIn must be true or false" });
+  const { emailDigestOptIn, upcomingManagerFilter } = req.body as {
+    emailDigestOptIn?: unknown;
+    upcomingManagerFilter?: unknown;
+  };
+  const data: { emailDigestOptIn?: boolean; upcomingManagerFilter?: string | null } = {};
+  if (emailDigestOptIn !== undefined) {
+    if (typeof emailDigestOptIn !== "boolean") {
+      return res.status(400).json({ error: "emailDigestOptIn must be true or false" });
+    }
+    data.emailDigestOptIn = emailDigestOptIn;
+  }
+  if (upcomingManagerFilter !== undefined) {
+    if (upcomingManagerFilter !== null && typeof upcomingManagerFilter !== "string") {
+      return res.status(400).json({ error: "upcomingManagerFilter must be a name or null" });
+    }
+    data.upcomingManagerFilter = upcomingManagerFilter ? upcomingManagerFilter.slice(0, 200) : null;
+  }
+  if (Object.keys(data).length === 0) {
+    return res.status(400).json({ error: "Nothing to update" });
   }
   const user = await prisma.user.update({
     where: { id: req.user!.sub },
-    data: { emailDigestOptIn },
-    select: { emailDigestOptIn: true },
+    data,
+    select: { emailDigestOptIn: true, upcomingManagerFilter: true },
   });
   res.json(user);
 });

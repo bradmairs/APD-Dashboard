@@ -78,7 +78,7 @@ export default function TenderPackagesPanel({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Procurement &amp; Tenders
+            Tenders
           </h2>
           {tenderPackages.length > 0 && (
             <span className="text-xs text-slate-500 dark:text-slate-400">

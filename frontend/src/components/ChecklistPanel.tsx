@@ -3,6 +3,7 @@ import { ChecklistItem, ChecklistItemInput, ChecklistItemStatus, ChecklistPhase 
 import { formatDate } from "../format";
 import {
   ALL_CHECKLIST_STATUSES,
+  CLOSEOUT_CHECKLIST_PHASES,
   CHECKLIST_PHASE_COLORS,
   CHECKLIST_PHASE_LABELS,
   CHECKLIST_STATUS_COLORS,
@@ -14,6 +15,16 @@ import AutoExportCsvButton from "./AutoExportCsvButton";
 
 interface Props {
   items: ChecklistItem[];
+  // Which phases this panel shows and creates. Defaults to Commissioning &
+  // Handover; the Procurement tab passes ["PROCUREMENT"].
+  phases?: ChecklistPhase[];
+  title?: string;
+  emptyText?: string;
+  csvFilename?: string;
+  // Offered as a one-click starting list while the panel is empty.
+  standardItems?: { title: string; description?: string }[];
+  // Creates several items with a single refresh (needed with standardItems).
+  onCreateMany?: (data: Partial<ChecklistItemInput>[]) => Promise<void>;
   onCreate: (data: Partial<ChecklistItemInput>) => Promise<void>;
   onUpdate: (item: ChecklistItem, data: Partial<ChecklistItemInput>) => Promise<void>;
   onDelete: (item: ChecklistItem) => Promise<void>;
@@ -26,16 +37,44 @@ function phaseSummary(items: ChecklistItem[], phase: ChecklistPhase): string | n
   return `${CHECKLIST_PHASE_LABELS[phase]} ${complete}/${inPhase.length} complete`;
 }
 
-export default function ChecklistPanel({ items, onCreate, onUpdate, onDelete }: Props) {
+export default function ChecklistPanel({
+  items: allItems,
+  phases = CLOSEOUT_CHECKLIST_PHASES,
+  title = "Commissioning & Handover",
+  emptyText = "No commissioning or handover items logged yet.",
+  csvFilename = "commissioning-checklist",
+  standardItems,
+  onCreateMany,
+  onCreate,
+  onUpdate,
+  onDelete,
+}: Props) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<ChecklistItem | null>(null);
-  const [defaultPhase, setDefaultPhase] = useState<ChecklistPhase>("COMMISSIONING");
+  const [defaultPhase, setDefaultPhase] = useState<ChecklistPhase>(phases[0]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [addingStandard, setAddingStandard] = useState(false);
 
-  const summaries = [
-    phaseSummary(items, "COMMISSIONING"),
-    phaseSummary(items, "HANDOVER"),
-  ].filter((s): s is string => s !== null);
+  const items = allItems.filter((i) => phases.includes(i.phase));
+  const summaries = phases
+    .map((phase) => phaseSummary(items, phase))
+    .filter((s): s is string => s !== null);
+
+  async function addStandardItems() {
+    if (!standardItems || !onCreateMany) return;
+    setAddingStandard(true);
+    try {
+      await onCreateMany(
+        standardItems.map((item) => ({
+          phase: phases[0],
+          title: item.title,
+          description: item.description ?? null,
+        }))
+      );
+    } finally {
+      setAddingStandard(false);
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -74,7 +113,7 @@ export default function ChecklistPanel({ items, onCreate, onUpdate, onDelete }: 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Commissioning &amp; Handover
+            {title}
           </h2>
           {summaries.length > 0 && (
             <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -83,7 +122,7 @@ export default function ChecklistPanel({ items, onCreate, onUpdate, onDelete }: 
           )}
         </div>
         <div className="flex items-center gap-2">
-          <AutoExportCsvButton filename="commissioning-checklist" rows={items} />
+          <AutoExportCsvButton filename={csvFilename} rows={items} />
           <button
             onClick={openCreate}
             className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
@@ -94,9 +133,20 @@ export default function ChecklistPanel({ items, onCreate, onUpdate, onDelete }: 
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No commissioning or handover items logged yet.
-        </p>
+        <div className="text-sm text-slate-500 dark:text-slate-400 space-y-2">
+          <p>{emptyText}</p>
+          {standardItems && onCreateMany && (
+            <button
+              onClick={addStandardItems}
+              disabled={addingStandard}
+              className="px-3 py-1.5 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+            >
+              {addingStandard
+                ? "Adding…"
+                : `Start from the standard checklist (${standardItems.length} items)`}
+            </button>
+          )}
+        </div>
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {items.map((item) => {
@@ -109,11 +159,13 @@ export default function ChecklistPanel({ items, onCreate, onUpdate, onDelete }: 
                     className="flex-1 min-w-0 text-left"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${CHECKLIST_PHASE_COLORS[item.phase]}`}
-                      >
-                        {CHECKLIST_PHASE_LABELS[item.phase]}
-                      </span>
+                      {phases.length > 1 && (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${CHECKLIST_PHASE_COLORS[item.phase]}`}
+                        >
+                          {CHECKLIST_PHASE_LABELS[item.phase]}
+                        </span>
+                      )}
                       <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                         {item.title}
                       </span>
@@ -197,6 +249,7 @@ export default function ChecklistPanel({ items, onCreate, onUpdate, onDelete }: 
         <ChecklistItemFormModal
           item={editing}
           defaultPhase={defaultPhase}
+          phases={phases}
           onClose={() => {
             setShowModal(false);
             setEditing(null);

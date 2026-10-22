@@ -3,7 +3,7 @@ import { ChecklistItemStatus, ChecklistPhase } from "@prisma/client";
 import { prisma } from "../prisma";
 import { describeChecklistItemUpdate, logActivity } from "../activityLog";
 
-const PHASES = ["COMMISSIONING", "HANDOVER"];
+const PHASES = ["COMMISSIONING", "HANDOVER", "PROCUREMENT"];
 const STATUSES = ["NOT_STARTED", "IN_PROGRESS", "COMPLETE", "NOT_APPLICABLE"];
 
 function parseDate(value: unknown): Date | null | undefined {
@@ -39,7 +39,9 @@ projectChecklistItemsRouter.post(
       return res.status(400).json({ error: "Title is required" });
     }
     if (!PHASES.includes(phase as string)) {
-      return res.status(400).json({ error: "phase must be COMMISSIONING or HANDOVER" });
+      return res
+        .status(400)
+        .json({ error: "phase must be COMMISSIONING, HANDOVER or PROCUREMENT" });
     }
     if (status !== undefined && !STATUSES.includes(status as string)) {
       return res
@@ -70,7 +72,7 @@ projectChecklistItemsRouter.post(
       projectName: project.name,
       userId: req.user!.sub,
       userName: req.user!.name,
-      action: `added ${item.phase === "HANDOVER" ? "handover" : "commissioning"} item "${item.title}"`,
+      action: `added ${item.phase.toLowerCase()} item "${item.title}"`,
     });
 
     res.status(201).json(item);
@@ -93,7 +95,9 @@ checklistItemsRouter.put("/:id", async (req, res) => {
 
   if (phase !== undefined) {
     if (!PHASES.includes(phase as string)) {
-      return res.status(400).json({ error: "phase must be COMMISSIONING or HANDOVER" });
+      return res
+        .status(400)
+        .json({ error: "phase must be COMMISSIONING, HANDOVER or PROCUREMENT" });
     }
     data.phase = phase;
   }

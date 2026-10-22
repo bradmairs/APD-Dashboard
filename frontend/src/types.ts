@@ -10,6 +10,8 @@ export interface User {
   // Only populated on the logged-in user's own record (login/me responses) —
   // see PUT /api/auth/preferences. Not selected on the admin Users list.
   emailDigestOptIn?: boolean;
+  // Own record only — the saved Today & Upcoming project manager filter.
+  upcomingManagerFilter?: string | null;
   // Own record (login/me) and the admin Users list — see backend/src/twoFactor.ts.
   twoFactorEnabled?: boolean;
 }
@@ -96,6 +98,8 @@ export interface Project {
   projectSponsor: string | null;
   location: string | null;
   contractor: string | null;
+  consultant: string | null;
+  trimFolder: string | null;
   budget: string | null;
   latestApprovedBudget: string | null;
   contractValue: string | null;
@@ -204,8 +208,11 @@ export interface SiteVisit {
   projectId: string;
   visitDate: string;
   location: string;
+  // Labelled "Site Visit Purpose" in the UI.
   notes: string | null;
+  // Labelled "Site Visit Notes" in the UI.
   discussionNotes: string | null;
+  outcomesAndActions: string | null;
   visitedById: string | null;
   visitedByName: string;
   createdAt: string;
@@ -572,7 +579,7 @@ export type DelayInput = Omit<
   "id" | "projectId" | "dateEnded" | "raisedById" | "raisedByName" | "createdAt" | "updatedAt"
 > & { dateEnded: string | null };
 
-export type ChecklistPhase = "COMMISSIONING" | "HANDOVER";
+export type ChecklistPhase = "COMMISSIONING" | "HANDOVER" | "PROCUREMENT";
 
 export type ChecklistItemStatus =
   | "NOT_STARTED"
@@ -858,7 +865,7 @@ export interface ContractRecord {
   contractForm: string | null;
   contractValue: string | null;
   contingency: string | null;
-  poValue: string | null;
+  poNumber: string | null;
   provisionalItemsValue: string | null;
   retentionPercent: string | null;
   defectsLiabilityMonths: number | null;
@@ -1149,3 +1156,46 @@ export type ToolSuggestionInput = Pick<
   ToolSuggestion,
   "title" | "description" | "category" | "status" | "response"
 >;
+
+export interface TrimLink {
+  id: string;
+  title: string;
+  // A URL, or a TRIM record/container number.
+  location: string;
+  category: string | null;
+  description: string | null;
+  createdById: string | null;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TrimLinkInput = Pick<TrimLink, "title" | "location" | "category" | "description">;
+
+export interface TenderSubmission {
+  id: string;
+  tenderPackageId: string;
+  tendererName: string;
+  dateReceived: string | null;
+  tenderPrice: string | null;
+  conforming: boolean | null;
+  score: string | null;
+  rank: number | null;
+  recommended: boolean;
+  notes: string | null;
+  createdById: string | null;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenderSubmissionInput {
+  tendererName: string;
+  dateReceived: string | null;
+  tenderPrice: string | null;
+  conforming: boolean | null;
+  score: string | null;
+  rank: string | null;
+  recommended: boolean;
+  notes: string | null;
+}

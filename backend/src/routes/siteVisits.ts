@@ -30,7 +30,7 @@ projectSiteVisitsRouter.post(
     const project = await prisma.project.findUnique({ where: { id: req.params.id } });
     if (!project) return res.status(404).json({ error: "Project not found" });
 
-    const { visitDate, location, notes, discussionNotes } = req.body as Record<
+    const { visitDate, location, notes, discussionNotes, outcomesAndActions } = req.body as Record<
       string,
       unknown
     >;
@@ -50,6 +50,7 @@ projectSiteVisitsRouter.post(
         location: location.trim(),
         notes: (notes as string) || null,
         discussionNotes: (discussionNotes as string) || null,
+        outcomesAndActions: (outcomesAndActions as string) || null,
         visitedById: req.user!.sub,
         visitedByName: req.user!.name,
       },
@@ -78,7 +79,7 @@ siteVisitsRouter.put("/:id", async (req, res) => {
   });
   if (!before) return res.status(404).json({ error: "Site visit not found" });
 
-  const { visitDate, location, notes, discussionNotes } = req.body as Record<
+  const { visitDate, location, notes, discussionNotes, outcomesAndActions } = req.body as Record<
     string,
     unknown
   >;
@@ -100,6 +101,7 @@ siteVisitsRouter.put("/:id", async (req, res) => {
   }
   if (notes !== undefined) data.notes = notes || null;
   if (discussionNotes !== undefined) data.discussionNotes = discussionNotes || null;
+  if (outcomesAndActions !== undefined) data.outcomesAndActions = outcomesAndActions || null;
 
   try {
     const siteVisit = await prisma.siteVisit.update({

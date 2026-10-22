@@ -30,6 +30,10 @@ import {
   LessonLearnedInput,
   ToolSuggestion,
   ToolSuggestionInput,
+  TrimLink,
+  TrimLinkInput,
+  TenderSubmission,
+  TenderSubmissionInput,
   UserOption,
   MeetingMinutes,
   MeetingMinutesInput,
@@ -189,6 +193,40 @@ export function updateDigestPreference(emailDigestOptIn: boolean): Promise<{ ema
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ emailDigestOptIn }),
   }).then((res) => handle(res));
+}
+
+export function updateUpcomingManagerFilter(
+  upcomingManagerFilter: string | null
+): Promise<{ upcomingManagerFilter: string | null }> {
+  return fetch(`${API_BASE}/auth/preferences`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ upcomingManagerFilter }),
+  }).then((res) => handle(res));
+}
+
+export function getTrimLinks(): Promise<TrimLink[]> {
+  return fetch(`${API_BASE}/trim-links`).then((res) => handle(res));
+}
+
+export function createTrimLink(data: Partial<TrimLinkInput>): Promise<TrimLink> {
+  return fetch(`${API_BASE}/trim-links`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function updateTrimLink(id: string, data: Partial<TrimLinkInput>): Promise<TrimLink> {
+  return fetch(`${API_BASE}/trim-links/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function deleteTrimLink(id: string): Promise<void> {
+  return fetch(`${API_BASE}/trim-links/${id}`, { method: "DELETE" }).then((res) => handle(res));
 }
 
 export function changePassword(
@@ -1585,6 +1623,40 @@ export function updateTenderPackage(
 
 export function deleteTenderPackage(id: string): Promise<void> {
   return fetch(`${API_BASE}/tender-packages/${id}`, { method: "DELETE" }).then((res) =>
+    handle(res)
+  );
+}
+
+export function getTenderSubmissions(projectId: string): Promise<TenderSubmission[]> {
+  return fetch(`${API_BASE}/projects/${projectId}/tender-submissions`).then((res) =>
+    handle(res)
+  );
+}
+
+export function createTenderSubmission(
+  tenderPackageId: string,
+  data: Partial<TenderSubmissionInput>
+): Promise<TenderSubmission> {
+  return fetch(`${API_BASE}/tender-packages/${tenderPackageId}/submissions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function updateTenderSubmission(
+  id: string,
+  data: Partial<TenderSubmissionInput>
+): Promise<TenderSubmission> {
+  return fetch(`${API_BASE}/tender-submissions/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function deleteTenderSubmission(id: string): Promise<void> {
+  return fetch(`${API_BASE}/tender-submissions/${id}`, { method: "DELETE" }).then((res) =>
     handle(res)
   );
 }

@@ -12,7 +12,7 @@ interface Props {
   siteVisits: SiteVisit[];
   photosByVisit: Record<string, SiteVisitPhoto[]>;
   allPhotos: SiteVisitPhoto[];
-  onCreate: (data: Partial<SiteVisitInput>) => Promise<void>;
+  onCreate: (data: Partial<SiteVisitInput>) => Promise<SiteVisit | null>;
   onUpdate: (siteVisit: SiteVisit, data: Partial<SiteVisitInput>) => Promise<void>;
   onDelete: (siteVisit: SiteVisit) => Promise<void>;
   onUploadPhotos: (siteVisit: SiteVisit, files: File[]) => Promise<void>;
@@ -35,6 +35,7 @@ export default function SiteVisitsPanel({
   const [editing, setEditing] = useState<SiteVisit | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [photosView, setPhotosView] = useState<"map" | "gallery">("gallery");
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   function openCreate() {
     setEditing(null);
@@ -46,14 +47,29 @@ export default function SiteVisitsPanel({
     setShowModal(true);
   }
 
-  async function handleSave(data: Partial<SiteVisitInput>) {
+  async function handleSave(data: Partial<SiteVisitInput>, photos: File[]) {
+    let saved = editing;
     if (editing) {
       await onUpdate(editing, data);
     } else {
-      await onCreate(data);
+      saved = await onCreate(data);
     }
     setShowModal(false);
     setEditing(null);
+    setUploadError(null);
+    // The visit itself is saved by now, so a failed photo upload is reported
+    // here rather than in the form (re-saving the form would duplicate it).
+    if (saved && photos.length > 0) {
+      try {
+        await onUploadPhotos(saved, photos);
+      } catch (err) {
+        setUploadError(
+          `The visit was saved, but its photos couldn't be uploaded: ${
+            err instanceof Error ? err.message : "unknown error"
+          }. Open the visit to add them again.`
+        );
+      }
+    }
   }
 
   const confirm = useConfirm();
@@ -82,6 +98,12 @@ export default function SiteVisitsPanel({
           </button>
         </div>
       </div>
+
+      {uploadError && (
+        <div className="mb-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-2">
+          {uploadError}
+        </div>
+      )}
 
       {allPhotos.length > 0 && (
         <div className="mb-4">
@@ -174,7 +196,7 @@ export default function SiteVisitsPanel({
                     {siteVisit.notes && (
                       <div>
                         <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Notes
+                          Site Visit Purpose
                         </div>
                         <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
                           {siteVisit.notes}
@@ -184,10 +206,20 @@ export default function SiteVisitsPanel({
                     {siteVisit.discussionNotes && (
                       <div>
                         <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Discussion Notes
+                          Site Visit Notes
                         </div>
                         <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
                           {siteVisit.discussionNotes}
+                        </p>
+                      </div>
+                    )}
+                    {siteVisit.outcomesAndActions && (
+                      <div>
+                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                          Site Visit Outcomes and Actions
+                        </div>
+                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
+                          {siteVisit.outcomesAndActions}
                         </p>
                       </div>
                     )}
@@ -208,6 +240,7 @@ export default function SiteVisitsPanel({
       {showModal && (
         <SiteVisitFormModal
           siteVisit={editing}
+          existingPhotoCount={editing ? (photosByVisit[editing.id] ?? []).length : 0}
           onClose={() => {
             setShowModal(false);
             setEditing(null);

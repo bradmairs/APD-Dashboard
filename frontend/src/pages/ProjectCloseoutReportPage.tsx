@@ -91,7 +91,8 @@ export default function ProjectCloseoutReportPage() {
           setMilestones(milestoneData);
           setVariations(variationData);
           setEotClaims(eotData);
-          setChecklistItems(checklistData);
+          // Procurement checklist items belong to the Procurement tab, not closeout.
+          setChecklistItems(checklistData.filter((c) => c.phase !== "PROCUREMENT"));
           setDefects(defectData);
           setRfis(rfiData);
           setLessons(lessonData);
@@ -189,6 +190,8 @@ export default function ProjectCloseoutReportPage() {
               <ReportField label="BP Ref. No." value={project.bpRefNo || "—"} />
               <ReportField label="Asset Type" value={project.assetType || "—"} />
               <ReportField label="Contractor" value={project.contractor || "—"} />
+              <ReportField label="Consultant" value={project.consultant || "—"} />
+              <ReportField label="TRIM Folder" value={project.trimFolder || "—"} />
               <ReportField label="Project Manager" value={project.projectManager || "—"} />
               <ReportField label="Project Director" value={project.projectDirector || "—"} />
               <ReportField label="Project Sponsor" value={project.projectSponsor || "—"} />

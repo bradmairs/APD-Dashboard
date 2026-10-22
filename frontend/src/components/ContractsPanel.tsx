@@ -132,7 +132,7 @@ export default function ContractsPanel({
                       {contract.contingency && (
                         <span>Contingency: {formatCurrency(contract.contingency)}</span>
                       )}
-                      {contract.poValue && <span>PO: {formatCurrency(contract.poValue)}</span>}
+                      {contract.poNumber && <span>PO No. {contract.poNumber}</span>}
                       {contract.provisionalItemsValue && (
                         <span>
                           Provisional Items: {formatCurrency(contract.provisionalItemsValue)}

@@ -59,7 +59,7 @@ export default function ActiveTendersPanel({ tenderPackages, limit = 8 }: Props)
                 </div>
                 {tenderPackage.project && (
                   <Link
-                    to={`/projects/${tenderPackage.project.id}`}
+                    to={`/projects/${tenderPackage.project.id}?tab=procurement`}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-0.5 inline-block truncate"
                   >
                     {tenderPackage.project.name}

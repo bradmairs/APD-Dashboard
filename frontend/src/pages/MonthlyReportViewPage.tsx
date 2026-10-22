@@ -140,6 +140,7 @@ export default function MonthlyReportViewPage() {
               <ReportField label="Project Name" value={project.name} />
               <ReportField label="Project Number" value={project.projectNumber || "—"} />
               <ReportField label="BP Ref. No." value={project.bpRefNo || "—"} />
+              <ReportField label="TRIM Folder" value={project.trimFolder || "—"} />
               <ReportField
                 label="Project Manager"
                 value={project.projectManager || "—"}

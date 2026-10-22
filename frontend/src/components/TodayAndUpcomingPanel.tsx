@@ -1,5 +1,8 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ActionItem, Task } from "../types";
+import { ActionItem, Project, Task } from "../types";
+import { updateUpcomingManagerFilter } from "../api";
+import { useAuth } from "../auth/AuthContext";
 import { ACTION_TYPE_COLORS, ACTION_TYPE_LABELS } from "../actionItemMeta";
 
 type Bucket = "OVERDUE" | "TODAY" | "WEEK" | "LATER" | "NONE";
@@ -27,6 +30,8 @@ interface UnifiedItem {
 }
 
 interface Props {
+  // Used to work out each item's project manager for the filter.
+  projects: Project[];
   tasks: Task[];
   actionItems: ActionItem[];
   onCompleteTask: (task: Task) => void;
@@ -70,6 +75,7 @@ const KIND_BADGE_LABELS: Record<UnifiedItem["kind"], string> = {
 // date-bucketed list — the single place to see and clear everything that's
 // due, rather than checking a tasks panel and an actions panel separately.
 export default function TodayAndUpcomingPanel({
+  projects,
   tasks,
   actionItems,
   onCompleteTask,
@@ -77,14 +83,53 @@ export default function TodayAndUpcomingPanel({
   onUpdateTaskDueDate,
   onUpdateActionDueDate,
 }: Props) {
+  const { user, refreshUser } = useAuth();
+  // The Project Manager filter is saved on the user's account (not in the
+  // browser), so it's the same on every login and device.
+  const [managerFilter, setManagerFilter] = useState(user?.upcomingManagerFilter ?? "");
+  const [filterError, setFilterError] = useState<string | null>(null);
+
+  const managerByProjectId = useMemo(
+    () => new Map(projects.map((p) => [p.id, p.projectManager ?? ""])),
+    [projects]
+  );
+  const managers = useMemo(() => {
+    const names = new Set(projects.map((p) => p.projectManager).filter((n): n is string => !!n));
+    // Keep a saved name selectable even if no project uses it any more.
+    if (managerFilter) names.add(managerFilter);
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [projects, managerFilter]);
+
+  async function changeManagerFilter(value: string) {
+    const previous = managerFilter;
+    setManagerFilter(value);
+    setFilterError(null);
+    try {
+      await updateUpcomingManagerFilter(value || null);
+      await refreshUser();
+    } catch (err) {
+      setManagerFilter(previous);
+      setFilterError(err instanceof Error ? err.message : "Couldn't save the filter");
+    }
+  }
+
+  // Portfolio-wide items belong to no project, so they show under any filter.
+  function matchesManager(project: { id: string } | undefined) {
+    if (!managerFilter || !project) return true;
+    return managerByProjectId.get(project.id) === managerFilter;
+  }
+
   const todayStart = dayStart(new Date());
   const weekEnd = new Date(todayStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  const openActionItems = actionItems.filter((a) => a.status !== "DONE");
+  const openActionItems = actionItems.filter(
+    (a) => a.status !== "DONE" && matchesManager(a.project)
+  );
+  const filteredTasks = tasks.filter((t) => matchesManager(t.project));
 
   const items: UnifiedItem[] = [
-    ...tasks.map((task) => ({
+    ...filteredTasks.map((task) => ({
       key: `task-${task.id}`,
       kind: "TASK" as const,
       title: task.title,
@@ -128,20 +173,42 @@ export default function TodayAndUpcomingPanel({
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
           Today &amp; Upcoming
         </h2>
-        {total > 0 && (
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            {buckets.OVERDUE.length} overdue · {total} open
-          </span>
-        )}
+        <div className="flex items-center gap-3 flex-wrap">
+          {total > 0 && (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {buckets.OVERDUE.length} overdue · {total} open
+            </span>
+          )}
+          <select
+            value={managerFilter}
+            onChange={(e) => changeManagerFilter(e.target.value)}
+            aria-label="Filter by project manager"
+            title="Saved to your account"
+            className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-2 py-1 text-xs"
+          >
+            <option value="">All project managers</option>
+            {managers.map((name) => (
+              <option key={name} value={name}>
+                {name === user?.name ? `${name} (me)` : name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+
+      {filterError && (
+        <p className="text-xs text-red-600 dark:text-red-400 mb-2">{filterError}</p>
+      )}
 
       {total === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Nothing outstanding — no open tasks or actions across the portfolio.
+          {managerFilter
+            ? `Nothing outstanding on ${managerFilter}'s projects.`
+            : "Nothing outstanding — no open tasks or actions across the portfolio."}
         </p>
       ) : (
         <div className="space-y-5">

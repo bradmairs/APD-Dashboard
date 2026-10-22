@@ -146,6 +146,8 @@ enum EotStatus {
 enum ChecklistPhase {
   COMMISSIONING
   HANDOVER
+  // Shown on the Procurement tab rather than with Commissioning & Handover.
+  PROCUREMENT
 }
 
 enum ChecklistItemStatus {
@@ -272,6 +274,10 @@ model User {
   // anyway, and a new account shouldn't start emailing someone who hasn't
   // asked for it.
   emailDigestOptIn               Boolean                         @default(false)
+  // Saved Project Manager filter on the dashboard's Today & Upcoming tab
+  // (a project manager's display name), so it sticks across logins and
+  // devices. Null = all project managers.
+  upcomingManagerFilter          String?
   // Opt-in TOTP two-factor auth (authenticator app) — see backend/src/twoFactor.ts.
   // The secret is stored AES-GCM encrypted (not plaintext) and is set while a
   // user is still enrolling (twoFactorEnabled=false) until they confirm a code.
@@ -288,6 +294,8 @@ model User {
   createdProjects                Project[]                       @relation("ProjectCreatedBy")
   managedProjects                Project[]                       @relation("ProjectManager")
   toolSuggestions                ToolSuggestion[]
+  trimLinks                      TrimLink[]
+  tenderSubmissions              TenderSubmission[]
   monthlyReports                 MonthlyReport[]
   siteVisits                     SiteVisit[]
   siteVisitPhotos                SiteVisitPhoto[]
@@ -341,6 +349,11 @@ model Project {
   projectSponsor                 String?
   location                       String?
   contractor                     String?
+  // Lead design/engineering consultant, alongside contractor.
+  consultant                     String?
+  // The project's TRIM (records management) folder — a container number,
+  // path or link, kept as free text.
+  trimFolder                     String?
   // The budget as originally approved, set once at project setup.
   budget                         Decimal?                        @db.Decimal(14, 2)
   // The budget as most recently approved (e.g. by the project board),
@@ -579,19 +592,23 @@ model MonthlyReport {
 // month, so there's naturally many per month rather than one. Cascades with
 // its project since a visit log only makes sense in that project's context.
 model SiteVisit {
-  id              String           @id @default(cuid())
-  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId       String
-  visitDate       DateTime
-  location        String
-  notes           String?
-  discussionNotes String?
-  visitedBy       User?            @relation(fields: [visitedById], references: [id], onDelete: SetNull)
-  visitedById     String?
-  visitedByName   String
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  photos          SiteVisitPhoto[]
+  id                 String           @id @default(cuid())
+  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId          String
+  visitDate          DateTime
+  location           String
+  // Shown as "Site Visit Purpose" (notes), "Site Visit Notes"
+  // (discussionNotes) and "Site Visit Outcomes and Actions"
+  // (outcomesAndActions) — the column names predate the relabelling.
+  notes              String?
+  discussionNotes    String?
+  outcomesAndActions String?
+  visitedBy          User?            @relation(fields: [visitedById], references: [id], onDelete: SetNull)
+  visitedById        String?
+  visitedByName      String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  photos             SiteVisitPhoto[]
 
   @@index([projectId])
 }
@@ -1239,7 +1256,8 @@ model ContractRecord {
   // Contingency is tracked per contract, not as a single project-wide
   // figure — each contract's own risk allowance, not a portfolio rollup.
   contingency            Decimal?          @db.Decimal(14, 2)
-  poValue                Decimal?          @db.Decimal(14, 2)
+  // A purchase order reference, not an amount (was the numeric poValue).
+  poNumber               String?
   provisionalItemsValue  Decimal?          @db.Decimal(14, 2)
   retentionPercent       Decimal?          @db.Decimal(5, 2)
   defectsLiabilityMonths Int?
@@ -1470,29 +1488,56 @@ model SafetyInspection {
 // status moves to AWARDED, the same pattern EotClaim.dateDecided uses for
 // SUBMITTED -> APPROVED/REJECTED.
 model TenderPackage {
-  id                  String       @id @default(cuid())
-  project             Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id                  String             @id @default(cuid())
+  project             Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId           String
   packageNumber       String?
   title               String
   description         String?
-  method              TenderMethod @default(OPEN)
-  status              TenderStatus @default(PLANNED)
+  method              TenderMethod       @default(OPEN)
+  status              TenderStatus       @default(PLANNED)
   dateIssued          DateTime?
   closingDate         DateTime?
   submissionsReceived Int?
-  estimatedValue      Decimal?     @db.Decimal(14, 2)
+  estimatedValue      Decimal?           @db.Decimal(14, 2)
   awardedTo           String?
-  awardedValue        Decimal?     @db.Decimal(14, 2)
+  awardedValue        Decimal?           @db.Decimal(14, 2)
   dateAwarded         DateTime?
-  managedBy           User?        @relation(fields: [managedById], references: [id], onDelete: SetNull)
+  managedBy           User?              @relation(fields: [managedById], references: [id], onDelete: SetNull)
   managedById         String?
   managedByName       String
   notes               String?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  submissions         TenderSubmission[]
 
   @@index([projectId])
+}
+
+// One tenderer's submission against a tender package, and how it was
+// assessed: price, conformance, an evaluation score and rank, and whether
+// it's the recommended tenderer. Cascades with its package.
+model TenderSubmission {
+  id              String        @id @default(cuid())
+  tenderPackage   TenderPackage @relation(fields: [tenderPackageId], references: [id], onDelete: Cascade)
+  tenderPackageId String
+  tendererName    String
+  dateReceived    DateTime?
+  tenderPrice     Decimal?      @db.Decimal(14, 2)
+  // null = not yet checked.
+  conforming      Boolean?
+  // Weighted evaluation score out of 100.
+  score           Decimal?      @db.Decimal(5, 2)
+  rank            Int?
+  recommended     Boolean       @default(false)
+  notes           String?
+  createdBy       User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById     String?
+  createdByName   String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([tenderPackageId])
 }
 
 // Append-only audit trail. projectName/userName are snapshots taken at write
@@ -1548,4 +1593,21 @@ model ToolSuggestion {
   updatedAt     DateTime               @updatedAt
 
   @@index([status])
+}
+
+// Shared links into TRIM (the records management system) shown on the main
+// dashboard: frequently used folders, templates and procedures. Not tied to
+// a project — a project's own folder is Project.trimFolder.
+model TrimLink {
+  id            String   @id @default(cuid())
+  title         String
+  // A URL, or a TRIM record/container number when there's no web link.
+  location      String
+  category      String?
+  description   String?
+  createdBy     User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdByName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

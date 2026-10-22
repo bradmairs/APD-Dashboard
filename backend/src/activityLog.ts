@@ -70,6 +70,8 @@ const PROJECT_FIELD_LABELS: Record<string, string> = {
   projectManager: "project manager",
   location: "location",
   contractor: "contractor",
+  consultant: "consultant",
+  trimFolder: "TRIM folder",
   budget: "original budget",
   latestApprovedBudget: "latest approved budget",
   contractValue: "contract value",
@@ -315,7 +317,7 @@ export function describeChecklistItemUpdate(
   before: ChecklistItem,
   body: Record<string, unknown>
 ): string {
-  const noun = before.phase === "HANDOVER" ? "handover item" : "commissioning item";
+  const noun = `${before.phase.toLowerCase()} item`;
   if ("status" in body && body.status !== before.status) {
     const label = CHECKLIST_STATUS_LABELS[body.status as string] ?? String(body.status);
     return `marked ${noun} "${before.title}" as ${label}`;
