@@ -48,7 +48,6 @@ import {
   Milestone,
   MilestoneInput,
   MonthlyReport,
-  MonthlyReportInput,
   Project,
   ProjectInput,
   Rfi,
@@ -99,7 +98,6 @@ import {
   createLessonLearned,
   createMeetingMinutes,
   createMilestone,
-  createMonthlyReport,
   createPaymentClaim,
   createPermit,
   createRfi,
@@ -135,7 +133,6 @@ import {
   deleteLessonLearned,
   deleteMeetingMinutes,
   deleteMilestone,
-  deleteMonthlyReport,
   deletePaymentClaim,
   deletePermit,
   deleteProject,
@@ -204,7 +201,6 @@ import {
   updateLessonLearned,
   updateMeetingMinutes,
   updateMilestone,
-  updateMonthlyReport,
   updatePaymentClaim,
   updatePermit,
   updateProject,
@@ -231,7 +227,7 @@ import TaskList from "../components/TaskList";
 import ActivityFeed from "../components/ActivityFeed";
 import AttachmentsPanel from "../components/AttachmentsPanel";
 import ArchiveLinksPanel from "../components/ArchiveLinksPanel";
-import MonthlyReportsPanel from "../components/MonthlyReportsPanel";
+import MonthlyReportingPanel from "../monthlyReport/MonthlyReportingPanel";
 import MilestonesPanel from "../components/MilestonesPanel";
 import ProjectTimeline from "../components/ProjectTimeline";
 import ApplyTaskTemplateControl from "../components/ApplyTaskTemplateControl";
@@ -292,6 +288,7 @@ type ProjectTabId =
   | "procurement"
   | "quality"
   | "site"
+  | "monthly-reporting"
   | "ai";
 
 const PROJECT_TABS: { id: ProjectTabId; label: string }[] = [
@@ -301,6 +298,7 @@ const PROJECT_TABS: { id: ProjectTabId; label: string }[] = [
   { id: "procurement", label: "Procurement" },
   { id: "quality", label: "Quality & Risk" },
   { id: "site", label: "Site & Records" },
+  { id: "monthly-reporting", label: "Monthly Reporting" },
   { id: "ai", label: "AI Assistant" },
 ];
 
@@ -353,11 +351,11 @@ const TAB_SECTIONS: Record<ProjectTabId, JumpSection[]> = {
     { id: "enquiries", label: "Community Enquiries" },
     { id: "attachments", label: "Attachments" },
     { id: "archive-links", label: "Archive Links" },
-    { id: "monthly-reports", label: "Monthly Reports" },
     { id: "lessons-learned", label: "Lessons Learned" },
     { id: "training-records", label: "Training Records" },
     { id: "toolbox-talks", label: "Toolbox Talks" },
   ],
+  "monthly-reporting": [],
   ai: [],
 };
 
@@ -654,28 +652,6 @@ export default function ProjectDetailPage() {
   async function handleSyncPhotoToArchive(photoId: string) {
     await syncSiteVisitPhotoToArchive(photoId);
     await load();
-  }
-
-  async function handleCreateReport(data: Partial<MonthlyReportInput>) {
-    if (!project) return;
-    await createMonthlyReport(project.id, data);
-    await load();
-  }
-
-  async function handleUpdateReport(
-    report: MonthlyReport,
-    data: Partial<MonthlyReportInput>
-  ) {
-    await updateMonthlyReport(report.id, data);
-    await load();
-  }
-
-  async function handleDeleteReport(report: MonthlyReport) {
-    await deleteMonthlyReport(report.id);
-    await load();
-    notifyUndo(`Monthly report for ${formatReportMonth(report.reportingMonth)} deleted.`, () =>
-      handleCreateReport(report)
-    );
   }
 
   async function handleCreateMilestone(data: Partial<MilestoneInput>) {
@@ -1483,7 +1459,6 @@ export default function ProjectDetailPage() {
     "enquiries": communityEnquiries.length,
     "attachments": attachments.length,
     "archive-links": archiveLinks.length,
-    "monthly-reports": reports.length,
     "lessons-learned": lessons.length,
     "training-records": trainingRecords.length,
     "toolbox-talks": toolboxTalks.length,
@@ -1988,16 +1963,6 @@ export default function ProjectDetailPage() {
                 />
               </CollapsibleSection>
 
-              <CollapsibleSection {...section("monthly-reports")}>
-                <MonthlyReportsPanel
-                  reports={reports}
-                  currentUser={user}
-                  onCreate={handleCreateReport}
-                  onUpdate={handleUpdateReport}
-                  onDelete={handleDeleteReport}
-                />
-              </CollapsibleSection>
-
               <CollapsibleSection {...section("lessons-learned")}>
                 <LessonsLearnedPanel
                   lessons={lessons}
@@ -2025,6 +1990,15 @@ export default function ProjectDetailPage() {
                 />
               </CollapsibleSection>
             </>
+          )}
+
+          {activeTab === "monthly-reporting" && project && (
+            <MonthlyReportingPanel
+              project={project}
+              reports={reports}
+              currentUser={user}
+              onReportsChange={setReports}
+            />
           )}
 
           {activeTab === "ai" && project && (

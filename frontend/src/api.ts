@@ -43,7 +43,13 @@ import {
   Milestone,
   MilestoneInput,
   MonthlyReport,
+  MonthlyReportDraft,
   MonthlyReportInput,
+  MonthlyReportWorkbook,
+  SharePointFile,
+  SharePointStatus,
+  WorkbookImportSummary,
+  WorkbookSyncResult,
   PaymentClaim,
   PaymentClaimInput,
   PerformanceReview,
@@ -457,6 +463,94 @@ export function updateMonthlyReport(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   }).then((res) => handle(res));
+}
+
+export function getMonthlyReportDraft(projectId: string, month: string): Promise<MonthlyReportDraft> {
+  return fetch(`${API_BASE}/projects/${projectId}/reports/draft?month=${encodeURIComponent(month)}`).then((res) =>
+    handle(res)
+  );
+}
+
+export function refreshMonthlyReport(id: string): Promise<MonthlyReportDraft> {
+  return fetch(`${API_BASE}/reports/${id}/refresh`).then((res) => handle(res));
+}
+
+export function getMonthlyReportWorkbook(projectId: string): Promise<MonthlyReportWorkbook> {
+  return fetch(`${API_BASE}/projects/${projectId}/reports/workbook`).then((res) => handle(res));
+}
+
+export function uploadMonthlyReportWorkbook(
+  projectId: string,
+  file: File
+): Promise<WorkbookImportSummary & { workbook: MonthlyReportWorkbook }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return fetch(`${API_BASE}/projects/${projectId}/reports/workbook`, {
+    method: "POST",
+    body: formData,
+  }).then((res) => handle(res));
+}
+
+export function unlinkMonthlyReportWorkbook(projectId: string): Promise<void> {
+  return fetch(`${API_BASE}/projects/${projectId}/reports/workbook`, { method: "DELETE" }).then((res) =>
+    handle(res)
+  );
+}
+
+export function monthlyReportWorkbookDownloadUrl(projectId: string): string {
+  return `${API_BASE}/projects/${projectId}/reports/workbook/download`;
+}
+
+export function syncMonthlyReport(id: string, log: boolean): Promise<WorkbookSyncResult> {
+  return fetch(`${API_BASE}/reports/${id}/sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ log }),
+  }).then((res) => handle(res));
+}
+
+export function getSharePointStatus(): Promise<SharePointStatus> {
+  return fetch(`${API_BASE}/sharepoint/status`).then((res) => handle(res));
+}
+
+export function startSharePointConnect(): Promise<{
+  userCode: string;
+  verificationUri: string;
+  expiresIn: number;
+  interval: number;
+}> {
+  return fetch(`${API_BASE}/sharepoint/connect`, { method: "POST" }).then((res) => handle(res));
+}
+
+export function pollSharePointConnect(): Promise<{ status: "pending" | "connected" | "expired" }> {
+  return fetch(`${API_BASE}/sharepoint/connect/poll`, { method: "POST" }).then((res) => handle(res));
+}
+
+export function disconnectSharePoint(): Promise<void> {
+  return fetch(`${API_BASE}/sharepoint/connection`, { method: "DELETE" }).then((res) => handle(res));
+}
+
+export function listSharePointReportFiles(
+  projectId: string
+): Promise<{ files: SharePointFile[]; suggestedItemId: string | null }> {
+  return fetch(`${API_BASE}/projects/${projectId}/reports/sharepoint/files`).then((res) => handle(res));
+}
+
+export function linkSharePointWorkbook(
+  projectId: string,
+  file: Pick<SharePointFile, "driveId" | "itemId">
+): Promise<MonthlyReportWorkbook> {
+  return fetch(`${API_BASE}/projects/${projectId}/reports/sharepoint/link`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ driveId: file.driveId, itemId: file.itemId }),
+  }).then((res) => handle(res));
+}
+
+export function pullSharePointWorkbook(projectId: string): Promise<WorkbookImportSummary> {
+  return fetch(`${API_BASE}/projects/${projectId}/reports/sharepoint/pull`, { method: "POST" }).then((res) =>
+    handle(res)
+  );
 }
 
 export function deleteMonthlyReport(id: string): Promise<void> {
