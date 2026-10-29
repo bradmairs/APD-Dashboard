@@ -5,6 +5,13 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.3 - 2026-10-29
+
+- New **Monthly Reporting** tab on every project, laid out exactly like the Monthly Report tab of the GVW monthly report workbook, with its formulas recalculating live (replaces the old Monthly Reports panel; existing reports carry over)
+- New months fill themselves from the project (details, status, milestones, cash flow, risks, tasks) and carry everything else on from the previous month; **Refresh from project** re-runs it
+- Upload the project's .xlsm to import its current month and Reporting Log history; **Write to workbook** writes a month back into the real file (macro, formats and formulas untouched) and can log it on the Reporting Log
+- SharePoint sync through Microsoft Graph (link the project's workbook in Project Monthly Reports, pull and push); needs an app registration, see README
+
 ## 1.2 - 2026-10-22
 
 - Site visits: "Notes" is now **Site Visit Purpose** and "Discussion Notes" is now **Site Visit Notes**; new **Site Visit Outcomes and Actions** field; photos can be taken or added straight from the Log/Edit Site Visit form

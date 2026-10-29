@@ -326,6 +326,7 @@ model User {
   tenderPackages                 TenderPackage[]
   archiveLinks                   ArchiveLink[]
   taskTemplates                  TaskTemplate[]
+  sharePointConnection           SharePointConnection?
 }
 
 model Project {
@@ -367,6 +368,15 @@ model Project {
   startDate                      DateTime?
   targetCompletionDate           DateTime?
   actualCompletionDate           DateTime?
+  // The project's monthly report workbook (.xlsm). Either a SharePoint
+  // file (drive + item id) synced through Microsoft Graph, or a copy
+  // uploaded to the dashboard (stored under uploads/<projectId>/ as
+  // monthlyReportStoredFile) that each export writes into in turn.
+  monthlyReportFileName          String?
+  monthlyReportDriveId           String?
+  monthlyReportItemId            String?
+  monthlyReportWebUrl            String?
+  monthlyReportStoredFile        String?
   createdById                    String?
   createdBy                      User?                           @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt                      DateTime                        @default(now())
@@ -575,6 +585,14 @@ model MonthlyReport {
   budgetComments    String?
   scheduleHealth    RagStatus @default(GREEN)
   scheduleComments  String?
+  // Everything else on the report, field for field with the workbook's
+  // "Monthly Report" tab (see backend/src/monthlyReport/model.ts). The
+  // columns above are kept in step with it for the rest of the app.
+  content           Json?
+  // When this month was last written to the workbook's Reporting Log, and
+  // when it was last pushed to / pulled from the workbook at all.
+  loggedAt          DateTime?
+  syncedAt          DateTime?
   createdBy         User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdById       String?
   authorName        String
@@ -1610,4 +1628,16 @@ model TrimLink {
   createdByName String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// A user's Microsoft sign-in for SharePoint sync (delegated device-code
+// mode, see backend/src/sharepoint.ts). refreshToken is AES-GCM encrypted.
+model SharePointConnection {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String   @unique
+  refreshToken String
+  accountName  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

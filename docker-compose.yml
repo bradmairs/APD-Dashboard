@@ -43,6 +43,11 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       DIGEST_CRON: ${DIGEST_CRON:-}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-}
+      # SharePoint sync for monthly report workbooks (README, "Monthly Reporting").
+      MS_TENANT_ID: ${MS_TENANT_ID:-}
+      MS_CLIENT_ID: ${MS_CLIENT_ID:-}
+      MS_CLIENT_SECRET: ${MS_CLIENT_SECRET:-}
+      SHAREPOINT_REPORTS_FOLDER_URL: ${SHAREPOINT_REPORTS_FOLDER_URL:-}
     depends_on:
       db:
         condition: service_healthy

@@ -50,6 +50,7 @@ import toolSuggestionsRouter from "./routes/toolSuggestions";
 import userOptionsRouter from "./routes/userOptions";
 import trimLinksRouter from "./routes/trimLinks";
 import { tenderSubmissionsRouter } from "./routes/tenderSubmissions";
+import sharePointRouter from "./routes/sharepoint";
 import { requireAuth } from "./middleware/requireAuth";
 import { requireAdmin } from "./middleware/requireAdmin";
 import { blockViewerMutations } from "./middleware/blockViewerMutations";
@@ -144,6 +145,7 @@ app.use("/api/task-templates", readOnlyGuarded, taskTemplatesRouter);
 // Deliberately not readOnlyGuarded: Viewers can make suggestions too (see
 // routes/toolSuggestions.ts for who can edit what).
 app.use("/api/tool-suggestions", requireAuth, toolSuggestionsRouter);
+app.use("/api/sharepoint", requireAuth, sharePointRouter);
 app.use("/api/user-options", requireAuth, userOptionsRouter);
 
 // Catches multer's file-size/file-type rejections (thrown before any route

@@ -1,3 +1,4 @@
+import type { MonthlyReportContent } from "./monthlyReport/model";
 export type Role = "ADMIN" | "MEMBER" | "VIEWER";
 
 export interface User {
@@ -154,6 +155,11 @@ export interface MonthlyReport {
   budgetComments: string | null;
   scheduleHealth: RagStatus;
   scheduleComments: string | null;
+  // The full workbook layout (see monthlyReport/model.ts); the server fills
+  // it in from the columns above for reports saved before it existed.
+  content: MonthlyReportContent;
+  loggedAt: string | null;
+  syncedAt: string | null;
   createdById: string | null;
   authorName: string;
   createdAt: string;
@@ -162,8 +168,51 @@ export interface MonthlyReport {
 
 export type MonthlyReportInput = Omit<
   MonthlyReport,
-  "id" | "projectId" | "createdById" | "authorName" | "createdAt" | "updatedAt"
+  "id" | "projectId" | "createdById" | "authorName" | "createdAt" | "updatedAt" | "loggedAt" | "syncedAt"
 >;
+
+export interface MonthlyReportDraft {
+  reportingMonth: string;
+  content: MonthlyReportContent;
+  autoFields: string[];
+}
+
+export interface MonthlyReportWorkbook {
+  source: "sharepoint" | "upload" | null;
+  fileName: string | null;
+  webUrl: string | null;
+}
+
+export interface WorkbookImportSummary {
+  created: string[];
+  updated: string[];
+  skipped: string[];
+}
+
+export interface WorkbookSyncResult {
+  target: "sharepoint" | "upload";
+  cellsChanged: number;
+  logged: "appended" | "replaced" | null;
+  report: MonthlyReport;
+}
+
+export interface SharePointStatus {
+  configured: boolean;
+  mode: "app" | "user" | null;
+  connected: boolean;
+  account: string | null;
+  folderUrl: string | null;
+}
+
+export interface SharePointFile {
+  driveId: string;
+  itemId: string;
+  name: string;
+  webUrl: string;
+  lastModified: string;
+  folder: string | null;
+  score: number;
+}
 
 export interface Milestone {
   id: string;
