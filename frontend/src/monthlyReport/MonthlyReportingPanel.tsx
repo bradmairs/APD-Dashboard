@@ -104,8 +104,9 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
   }, [project.id]);
 
   // Load the selected month's content.
+  // (Messages are cleared by the user's own actions, not here, so "Saved"
+  // survives the switch from the draft to the saved report.)
   useEffect(() => {
-    setMessage(null);
     if (!selection) {
       setContent(null);
       return;
@@ -316,6 +317,7 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
               onChange={async (e) => {
                 if (!(await confirmDiscard())) return;
                 const id = e.target.value;
+                setMessage(null);
                 if (id && id !== "__draft") setSelection({ kind: "saved", id });
               }}
             >
@@ -553,7 +555,13 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
 
       {/* The report itself */}
       {content && reportingMonth ? (
-        <div id="monthly-report-sheet">
+        // Wider than the page column: the workbook's grid needs the room.
+        // Centred on the column, capped to the window.
+        <div
+          id="monthly-report-sheet"
+          className="relative left-1/2 -translate-x-1/2 print:static print:translate-x-0"
+          style={{ width: "min(1180px, calc(100vw - 2rem))" }}
+        >
           <MonthlyReportSheet
             content={content}
             reportingMonth={reportingMonth}

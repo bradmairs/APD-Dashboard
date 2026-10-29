@@ -49,11 +49,13 @@ function money(v: number | null): { sign: string; text: string } {
   return { sign: "$", text: v < 0 ? `(${abs})` : abs };
 }
 
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Excel's "mmm-yy" (Sep-27, not the en-AU locale's "Sept").
 function shortDate(iso: string | null): string {
   if (!iso) return "-";
-  const d = new Date(`${iso}T00:00:00Z`);
-  const m = d.toLocaleDateString("en-AU", { month: "short", timeZone: "UTC" });
-  return `${m}-${String(d.getUTCFullYear()).slice(-2)}`;
+  const [y, m] = iso.split("-").map(Number);
+  return `${SHORT_MONTHS[m - 1]}-${String(y).slice(-2)}`;
 }
 
 type Span = [start: number, end?: number];
@@ -204,6 +206,8 @@ function MoneyInput({
   return (
     <input
       autoFocus
+      // Typing replaces the value, as in Excel.
+      onFocus={(e) => e.target.select()}
       inputMode="decimal"
       className={`${inputClass} text-right tabular-nums`}
       value={editing}
@@ -281,7 +285,7 @@ function HealthSelect({
   if (readOnly) return <span className="w-full text-center">{value || "Click to Select"}</span>;
   return (
     <select
-      className={`${inputClass} cursor-pointer text-center [text-align-last:center]`}
+      className={`${inputClass} cursor-pointer appearance-none text-center [text-align-last:center]`}
       value={value}
       onChange={(e) => onChange?.(e.target.value as Health)}
     >
@@ -309,7 +313,7 @@ function Select({
   if (readOnly) return <span className="w-full">{value}</span>;
   const all = value && !options.includes(value) ? [value, ...options] : options;
   return (
-    <select className={`${inputClass} cursor-pointer`} value={value} onChange={(e) => onChange?.(e.target.value)}>
+    <select className={`${inputClass} cursor-pointer appearance-none`} value={value} onChange={(e) => onChange?.(e.target.value)}>
       <option value="">Click to Select</option>
       {all.map((o) => (
         <option key={o} value={o}>
@@ -347,6 +351,7 @@ function PercentInput({
   return (
     <input
       autoFocus
+      onFocus={(e) => e.target.select()}
       inputMode="numeric"
       className={`${inputClass} text-center tabular-nums`}
       value={editing}

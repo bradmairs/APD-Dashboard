@@ -436,26 +436,105 @@ contrast (see the `dataviz` skill this project follows: categorical hues
 assigned in a fixed order, never cycled, and validated with its palette
 checker before use).
 
-## Monthly Reports
+## Monthly Reporting
 
-Each project has a **Monthly Reports** panel, modelled on GVW's existing
-board-reporting template: Reporting Month, Project Phase (e.g. "3 - Plan"),
-Current Status (e.g. "Concept Design"), free-text "Recently Completed" and
-"Monthly Lookahead" notes, and a Budget Health / Schedule Health traffic
-light (Green / Amber / Red) each with its own comments.
+Each project has a **Monthly Reporting** tab: one month's report at a time,
+laid out cell for cell like the **Monthly Report** tab of GVW's monthly report
+workbook (`<PM> - Monthly Report - <project>.xlsm`). It has the same sections
+(Project Information, Current Status with the ten Emerging Risks, Budget &
+Cash Flows with the annual and monthly breakdowns, Schedule / Major
+Milestones, Related Project Documentation), the same labels, colours,
+drop-down lists and traffic-light formatting. The grey formula cells
+(Emerging Risk Health and its Yellow/Red comments, Expenditure to Date,
+Forecast Total, Variance, the FY totals, the Actual/Forecast month labels and
+Project Completion %) recalculate as you type, using the workbook's own
+formulas (`backend/src/monthlyReport/model.ts`, mirrored in
+`frontend/src/monthlyReport/model.ts` — change both).
 
-A report is a **locked snapshot**, not a live view: each (project, month)
-pair is its own row, created once and then left alone as the historical
-record for that month, the same way the source document is a point-in-time
-report rather than something that keeps changing after the fact. Only one
-report can exist per project per month. Editing an existing month's report
-is still possible (for correcting a mistake), and follows the same
-creator-or-admin permission rule as projects — the report's author is
-snapshotted by name so it stays attributed even if that account is later
-removed or deactivated.
+**Starting a month** (pick the month, **Start report**) fills the report from
+the project, and carries everything else on from the previous month, the way
+a PM rolls the spreadsheet on. Cells filled from the project get a blue corner:
 
-Click a report's **View** link to open it as a formatted, printable page —
-see **Formatted Report View** below.
+| Report cells | Filled from |
+| --- | --- |
+| Project name, BP Ref, PM, Director, Sponsor | Project details |
+| Project Phase | Project status (Design → 3 - Plan, Tender → 4 - Procurement, ...) |
+| Current Status | The milestone in progress, if it's one of the phase's statuses |
+| Recently Completed | Milestones completed and tasks done in the month |
+| Monthly Lookahead | Milestones forecast next month, the one in progress, tasks due |
+| Emerging Risks | Open risks in the Risk Register, by category (Low → Green, Medium → Yellow, High/Critical → Red) |
+| Original / Approved Budget | Original Budget / Latest Approved Budget |
+| Pre-FY actual, monthly breakdowns, FY+2, FY+3, Post-FY | Cash Flow (a month's actual beats its forecast) |
+| Milestone table (six WBS rows) | Milestones register |
+| Approved / forecast completion, Date APD Received | Target completion, last milestone forecast, start date |
+
+Titles, document references, contingencies, the Corporate Plan figure, notes
+and commentary aren't tracked elsewhere in the dashboard, so they carry
+forward. **Refresh from project** re-runs the fill on a saved month without
+touching the commentary. Each saved month is still its own record (one per
+project per month), editable by its author or an admin; the original
+`budgetHealth`/`scheduleHealth` columns are kept in step for the rest of the
+app. **Print view** and **Download PDF** give the same layout on paper.
+
+### The workbook
+
+The dashboard reads and writes the real workbook, so the PMs' spreadsheet in
+SharePoint stays the official record and fills itself in:
+
+- **Upload workbook** imports it: the month on its Monthly Report tab comes in
+  in full, and every month on its **Reporting Log** tab that the dashboard
+  doesn't have yet comes in too (the log has fewer fields — no milestones or
+  notes — so it never overwrites a fuller dashboard report). The uploaded copy
+  is kept as the project's workbook.
+- **Write to workbook** (or **Push to SharePoint**) writes the month into the
+  workbook's input cells. With **Log month** ticked it also records the month
+  on the Reporting Log, as the workbook's own "Log Monthly Report" macro does,
+  replacing that month's row if it's already logged — so a month can be
+  re-synced as often as needed. The Snapshot tab follows automatically (it's
+  formulas over the Monthly Report tab).
+- **Download workbook** gives you the current file.
+
+The file is edited in place at the XML level
+(`backend/src/monthlyReport/workbook.ts`): only the input cells the dashboard
+owns are replaced, and only when their value actually changed, so the VBA
+macro, drop-down lists, conditional formatting and any formula a PM typed into
+an input cell all come back untouched. Excel recalculates the formula cells
+when the file is next opened.
+
+### SharePoint sync
+
+With SharePoint set up, **Choose SharePoint workbook** lists the workbooks in
+the APD site's *Project Monthly Reports* folder (and one level of subfolders),
+best match for the project first (its project number or BP ref in the file
+name), and links one to the project. **Pull from SharePoint** then imports it,
+and **Push to SharePoint** writes the month back. Pushes use the file's eTag,
+so an edit someone saved in between is never overwritten (pull and try again),
+and a workbook locked open in desktop Excel is reported rather than forced.
+
+This goes through Microsoft Graph and needs an app registration in the GVW
+Microsoft 365 tenant (IT can do this; it only takes a few minutes):
+
+1. Entra ID → App registrations → **New registration** (single tenant). Note the
+   **Application (client) ID** and **Directory (tenant) ID**.
+2. Pick how the dashboard signs in:
+   - **Each user's own account (recommended):** Authentication → *Allow public
+     client flows* = Yes; API permissions → Microsoft Graph → Delegated →
+     `Files.ReadWrite.All`, `Sites.ReadWrite.All`, `offline_access`, then grant
+     admin consent if the tenant requires it. Each PM clicks **Connect
+     Microsoft account**, enters the code shown at microsoft.com/devicelogin and
+     signs in once; files are read and written with their own SharePoint
+     permissions. Their sign-in is stored encrypted (key derived from
+     `JWT_SECRET`) and can be removed with **Disconnect**.
+   - **One server account:** Certificates & secrets → new client secret;
+     API permissions → Application → `Sites.Selected` (then grant the app write
+     access to the APD site) or `Sites.ReadWrite.All`, with admin consent.
+3. Set in `.env`: `MS_TENANT_ID`, `MS_CLIENT_ID`, and for the server-account
+   option `MS_CLIENT_SECRET`. `SHAREPOINT_REPORTS_FOLDER_URL` defaults to the
+   APD site's Project Monthly Reports folder; any link to the folder works.
+   Then `docker compose up -d` to restart the backend.
+
+Without these settings the SharePoint buttons are hidden and upload/download
+still work.
 
 ## Milestones
 
@@ -1225,38 +1304,11 @@ Actual figure doesn't need re-editing once entered, and a Forecast is
 expected to be revised as the project progresses. Open to any logged-in
 user to edit, matching Tasks, Attachments, and Milestones.
 
-## Formatted Report View
-
-Clicking **View** on a monthly report opens it as its own page at
-`/projects/:id/reports/:reportId`, laid out like the source document —
-Project Information, Current Status, Cash Flows, and Schedule / Major
-Milestones as the same four blue-headed sections, with both a **Download
-PDF** button and a **Print** button. Print uses the browser's own print
-dialog (every modern browser's print dialog includes a "Save as PDF"
-destination too). Download PDF instead rasterizes the report content
-client-side (`jspdf` + `html2canvas`, see `frontend/src/pdfExport.ts`) and
-triggers a direct file download — no print dialog, no server-side PDF
-generation or headless-browser dependency to run in Docker; the tradeoff
-is a rasterized (image-based) PDF rather than one with selectable text,
-which is fine for a report that's read and archived, not re-edited.
-
-The Project Information and Current Status sections come straight from
-that report's locked snapshot, so they show the record as it was for that
-month. The Cash Flows and Schedule / Major Milestones sections, though,
-pull from the **live** Milestones and Cash Flow data described above —
-opening an old report shows those exactly as they stand today, not as
-they stood in that reporting month. That's the tradeoff of keeping
-milestones and cash flow live rather than re-snapshotting them every
-month (see those sections above); it matches what the real report is
-generally used for (the current state of schedule and spend), and it's
-the only way this view can exist without also snapshotting those tables
-monthly, which no one asked for.
-
 ## Project Closeout Report
 
 Every project detail page has a **Closeout Report** button in its header,
 opening a printable summary at `/projects/:id/closeout-report` — the
-counterpart to the Monthly Report view above, but a single point-in-time
+counterpart to a monthly report's print view, but a single point-in-time
 rollup of a project's *final* outcomes rather than one month's status.
 It pulls together, into the same blue-headed section layout with the same
 Download PDF / Print buttons described above:
@@ -1277,14 +1329,13 @@ Download PDF / Print buttons described above:
 - **Lessons Learned** — the project's full list, with description and
   recommendation for each.
 
-Like the Monthly Report view, this reads **live** data — milestones,
+Unlike a monthly report (a record of one month), this reads **live** data — milestones,
 variations, EOT claims, checklist items, defects, RFIs, and lessons
 learned as they stand today — rather than a locked snapshot, since a
 closeout report is generated once, at (or after) project completion, not
 monthly. The shared print-page chrome (`ReportSection`, `ReportField`,
-`NarrativeBlock`, `HealthRow`) was factored out of the Monthly Report view
-into `components/ReportPrimitives.tsx` so both report pages share the same
-layout building blocks.
+`NarrativeBlock`, `HealthRow`) lives in `components/ReportPrimitives.tsx`
+(it was factored out of the original monthly report view).
 
 ## Dark Mode
 
@@ -1300,10 +1351,10 @@ for grid lines, axis text, and the Actual/Forecast categorical pair —
 re-validated for the dark chart surface with the same `dataviz` palette
 checker used for light mode).
 
-The **Formatted Report View** (`/projects/:id/reports/:reportId`) is the
-one page that deliberately ignores the toggle and always renders light —
-it's a print/document view meant to look the same on paper regardless of
-which theme you're browsing in, so it carries no `dark:` classes at all.
+The monthly report sheet (on the Monthly Reporting tab and its print view
+at `/projects/:id/reports/:reportId`) deliberately ignores the toggle and
+always renders light — it mirrors the workbook and is meant to look the same
+on screen and paper regardless of theme, so it carries no `dark:` classes.
 
 ## Site Visits
 
@@ -1606,7 +1657,8 @@ of a saved view), and Total Approved Budget opens the Charts tab.
   Handover), Budget & Contract (Cash Flow, Variations, Payment Claims,
   Insurance & Warranties, Permits & Approvals), Quality & Risk (Risks &
   Opportunities, SQE, Defects & Punch List, RFIs, Document Register), Site
-  & Records (Site Visits, Attachments, Monthly Reports, Lessons Learned).
+  & Records (Site Visits, Attachments, Lessons Learned), Monthly Reporting
+  (see **Monthly Reporting** above).
   The header, description, and project info field grid stay above the
   tabs, visible on every tab.
 
