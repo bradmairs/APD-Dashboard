@@ -1,115 +1,176 @@
-import { KeyboardEvent, TextareaHTMLAttributes, useRef } from "react";
+import { ClipboardEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { readFrom, renderInto } from "../richTextDom";
 
-type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & { value: string };
-
-// Sets the textarea's value the way typing does, so the field's own
-// onChange handler sees the edit (React ignores a plain `el.value = …`).
-function setNativeValue(el: HTMLTextAreaElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
-  setter?.call(el, value);
-  el.dispatchEvent(new Event("input", { bubbles: true }));
+interface Props {
+  value: string;
+  // Same shape as a textarea's onChange as the forms use it, so this is a
+  // drop-in replacement: `onChange={(e) => setNotes(e.target.value)}`.
+  onChange?: (e: { target: { value: string } }) => void;
+  rows?: number;
+  placeholder?: string;
+  required?: boolean;
+  className?: string;
+  id?: string;
+  disabled?: boolean;
+  "aria-label"?: string;
 }
 
-type Mark = "**" | "*" | "__";
+type Command = "bold" | "italic" | "underline" | "insertUnorderedList" | "insertOrderedList";
 
-// A textarea with a small formatting toolbar — bold, italic, underline,
-// bullet and numbered lists — for long-text fields. It's a drop-in
-// replacement for <textarea>: same props, and edits arrive through the
-// usual onChange. The formatting is stored as plain-text markers (see
-// richText.ts) and shown with FormattedText.
-export default function RichTextArea({ className, onKeyDown, ...props }: Props) {
-  const ref = useRef<HTMLTextAreaElement>(null);
+const BUTTONS: { command: Command; label: string; title: string; className?: string }[] = [
+  { command: "bold", label: "B", title: "Bold (Ctrl+B)", className: "font-bold" },
+  { command: "italic", label: "I", title: "Italic (Ctrl+I)", className: "italic" },
+  { command: "underline", label: "U", title: "Underline (Ctrl+U)", className: "underline" },
+  { command: "insertUnorderedList", label: "• List", title: "Bullet points" },
+  { command: "insertOrderedList", label: "1. List", title: "Numbered list" },
+];
 
-  function apply(next: string, selStart: number, selEnd: number) {
-    const el = ref.current;
+// A formatted text box for long-text fields (meeting minutes, notes,
+// descriptions): bold, italic, underline and bullet/numbered lists show
+// as you type, like a word processor. Behind the scenes the value is
+// stored as plain text with light markers (see richText.ts) — readable in
+// CSV exports and the AI assistant, and shown formatted by FormattedText
+// and in the meeting minutes PDF. Pasted content comes in as plain text,
+// so formatting from Word or email can't bring in stray styles or markup.
+export default function RichTextArea({
+  value,
+  onChange,
+  rows = 3,
+  placeholder,
+  required,
+  className,
+  id,
+  disabled,
+  "aria-label": ariaLabel,
+}: Props) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  // The last value this editor produced, so an incoming value that merely
+  // echoes the user's own typing doesn't re-render (and move the cursor).
+  const lastValueRef = useRef<string | null>(null);
+  const [active, setActive] = useState<Partial<Record<Command, boolean>>>({});
+
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el || value === lastValueRef.current) return;
+    renderInto(el, value);
+    lastValueRef.current = value;
+  }, [value]);
+
+  function emit() {
+    const el = editorRef.current;
     if (!el) return;
-    setNativeValue(el, next);
-    el.focus();
-    // After React re-renders with the new value.
-    requestAnimationFrame(() => el.setSelectionRange(selStart, selEnd));
+    const next = readFrom(el);
+    if (next === lastValueRef.current) return;
+    lastValueRef.current = next;
+    onChange?.({ target: { value: next } });
   }
 
-  function wrap(mark: Mark) {
-    const el = ref.current;
-    if (!el) return;
-    const { selectionStart: start, selectionEnd: end, value } = el;
-    const selected = value.slice(start, end);
-    // Already wrapped → unwrap.
-    if (
-      value.slice(start - mark.length, start) === mark &&
-      value.slice(end, end + mark.length) === mark
-    ) {
-      apply(
-        value.slice(0, start - mark.length) + selected + value.slice(end + mark.length),
-        start - mark.length,
-        end - mark.length
-      );
-      return;
-    }
-    apply(
-      value.slice(0, start) + mark + selected + mark + value.slice(end),
-      start + mark.length,
-      end + mark.length
-    );
-  }
-
-  function list(numbered: boolean) {
-    const el = ref.current;
-    if (!el) return;
-    const { value } = el;
-    const lineStart = value.lastIndexOf("\n", el.selectionStart - 1) + 1;
-    const nl = value.indexOf("\n", Math.max(el.selectionEnd - 1, el.selectionStart));
-    const lineEnd = nl === -1 ? value.length : nl;
-    const lines = value.slice(lineStart, lineEnd).split("\n");
-    const pattern = numbered ? /^\s*\d+[.)]\s+/ : /^\s*[-*•]\s+/;
-    const allListed = lines.every((l) => pattern.test(l));
-    const next = lines
-      .map((l, i) =>
-        allListed ? l.replace(pattern, "") : `${numbered ? `${i + 1}. ` : "- "}${l.replace(/^\s*(\d+[.)]|[-*•])\s+/, "")}`
-      )
-      .join("\n");
-    apply(value.slice(0, lineStart) + next + value.slice(lineEnd), lineStart, lineStart + next.length);
-  }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.ctrlKey || e.metaKey) {
-      const key = e.key.toLowerCase();
-      if (key === "b" || key === "i" || key === "u") {
-        e.preventDefault();
-        wrap(key === "b" ? "**" : key === "i" ? "*" : "__");
-        return;
+  function refreshActive() {
+    const next: Partial<Record<Command, boolean>> = {};
+    for (const b of BUTTONS) {
+      try {
+        next[b.command] = document.queryCommandState(b.command);
+      } catch {
+        next[b.command] = false;
       }
     }
-    onKeyDown?.(e);
+    setActive(next);
   }
 
-  const buttons: { label: string; title: string; className?: string; run: () => void }[] = [
-    { label: "B", title: "Bold (Ctrl+B)", className: "font-bold", run: () => wrap("**") },
-    { label: "I", title: "Italic (Ctrl+I)", className: "italic", run: () => wrap("*") },
-    { label: "U", title: "Underline (Ctrl+U)", className: "underline", run: () => wrap("__") },
-    { label: "• List", title: "Bullet points", run: () => list(false) },
-    { label: "1. List", title: "Numbered list", run: () => list(true) },
-  ];
+  function run(command: Command) {
+    const el = editorRef.current;
+    if (!el || disabled) return;
+    el.focus();
+    // Use <b>/<i>/<u> rather than inline styles, and <div> for new lines.
+    document.execCommand("styleWithCSS", false, "false");
+    document.execCommand("defaultParagraphSeparator", false, "div");
+    document.execCommand(command);
+    emit();
+    refreshActive();
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const key = e.key.toLowerCase();
+    const command = key === "b" ? "bold" : key === "i" ? "italic" : key === "u" ? "underline" : null;
+    if (command) {
+      e.preventDefault();
+      run(command);
+    }
+  }
+
+  function handlePaste(e: ClipboardEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, text);
+  }
+
+  // Roughly the height a textarea with this many rows would have.
+  const minHeight = `${rows * 1.5 + 1}rem`;
 
   return (
-    <div>
+    <div className="relative">
       <div className="flex items-center gap-1 mb-1" role="toolbar" aria-label="Formatting">
-        {buttons.map((b) => (
+        {BUTTONS.map((b) => (
           <button
-            key={b.label}
+            key={b.command}
             type="button"
             title={b.title}
             aria-label={b.title}
-            // Keep the textarea's selection when the button is pressed.
+            aria-pressed={!!active[b.command]}
+            disabled={disabled}
+            // Keep the editor's selection when the button is pressed.
             onMouseDown={(e) => e.preventDefault()}
-            onClick={b.run}
-            className={`px-2 py-0.5 text-xs rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 ${b.className ?? ""}`}
+            onClick={() => run(b.command)}
+            className={`px-2 py-0.5 text-xs rounded border ${
+              active[b.command]
+                ? "bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-slate-100"
+                : "border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+            } disabled:opacity-50 ${b.className ?? ""}`}
           >
             {b.label}
           </button>
         ))}
       </div>
-      <textarea ref={ref} className={className} onKeyDown={handleKeyDown} {...props} />
+      <div
+        ref={editorRef}
+        id={id}
+        role="textbox"
+        aria-multiline="true"
+        aria-label={ariaLabel}
+        aria-required={required}
+        contentEditable={!disabled}
+        suppressContentEditableWarning
+        onInput={emit}
+        onBlur={emit}
+        onKeyDown={handleKeyDown}
+        onKeyUp={refreshActive}
+        onMouseUp={refreshActive}
+        onFocus={refreshActive}
+        onPaste={handlePaste}
+        style={{ minHeight }}
+        className={`${className ?? ""} resize-y overflow-auto whitespace-pre-wrap break-words focus:outline-none focus:ring-2 focus:ring-blue-500 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5`}
+      />
+      {!value && placeholder && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-8 text-sm text-slate-400 dark:text-slate-500"
+        >
+          {placeholder}
+        </div>
+      )}
+      {required && (
+        // A visually hidden copy of the value so the form's own "required"
+        // check still stops an empty submit, as it did with a textarea.
+        <textarea
+          required
+          value={value}
+          onChange={() => {}}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="absolute left-2 bottom-0 h-px w-px opacity-0 pointer-events-none"
+        />
+      )}
     </div>
   );
 }

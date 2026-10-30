@@ -1,4 +1,6 @@
 import { FormEvent, useRef, useState } from "react";
+import { buildMeetingMinutesPdf } from "../meetingMinutesPdf";
+import { previewText } from "../richText";
 import FormattedText from "./FormattedText";
 import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import {
@@ -398,6 +400,35 @@ export default function MeetingMinutesPanel({
     (a, b) => new Date(b.meetingDate).getTime() - new Date(a.meetingDate).getTime()
   );
 
+  // The minutes as a formatted PDF (bold, lists etc. kept), with the
+  // actions raised at this meeting listed at the end.
+  function downloadPdf(meeting: MeetingMinutes) {
+    const blob = buildMeetingMinutesPdf(projectName, {
+      title: meeting.title,
+      meetingDate: meeting.meetingDate,
+      meetingType: meeting.meetingType,
+      location: meeting.location,
+      attendees: meeting.attendees,
+      summary: meeting.summary,
+      notes: meeting.notes,
+      actions: actionItems
+        .filter((a) => a.meetingMinutesId === meeting.id)
+        .map((a) => ({
+          title: a.title,
+          ownerName: a.ownerName,
+          dueDateHint: a.dueDate ? `due ${formatDate(a.dueDate)}` : null,
+        })),
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `meeting-minutes-${meeting.meetingDate.slice(0, 10)}${
+      meeting.title ? `-${meeting.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}` : ""
+    }.pdf`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   const shown = useShowMore(sorted);
 
   return (
@@ -465,11 +496,18 @@ export default function MeetingMinutesPanel({
                       </div>
                       {meeting.summary && (
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
-                          {meeting.summary}
+                          {previewText(meeting.summary)}
                         </p>
                       )}
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <button
+                        onClick={() => downloadPdf(meeting)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        title="Download these minutes as a formatted PDF"
+                      >
+                        PDF
+                      </button>
                       <button
                         onClick={() => openEdit(meeting)}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline"

@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { toPlainText } from "./richText";
+import { Inline, parseBlocks } from "./richText";
 import { formatDate } from "./format";
 
 interface MeetingMinutesPdfAction {
@@ -55,6 +55,101 @@ export function buildMeetingMinutesPdf(projectName: string, input: MeetingMinute
     y += lines.length * 5 + 3;
   }
 
+  // Draws formatted text (see richText.ts) with its bold, italic and
+  // underlined runs and its bullet/numbered lists, wrapping words to the
+  // page width with a hanging indent for list items.
+  const LINE_HEIGHT = 5;
+  const LIST_INDENT = 6;
+
+  interface Run {
+    text: string;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+  }
+
+  function flatten(nodes: Inline[], style: Omit<Run, "text">, out: Run[] = []): Run[] {
+    for (const node of nodes) {
+      if (node.type === "text") out.push({ ...style, text: node.text });
+      else flatten(node.children, { ...style, [node.type]: true }, out);
+    }
+    return out;
+  }
+
+  function setRunFont(run: Omit<Run, "text">) {
+    const variant =
+      run.bold && run.italic ? "bolditalic" : run.bold ? "bold" : run.italic ? "italic" : "normal";
+    pdf.setFont("helvetica", variant);
+  }
+
+  function drawRuns(runs: Run[], left: number, firstLinePrefix?: string) {
+    const right = marginX + maxWidth;
+    ensureSpace(1, LINE_HEIGHT);
+    if (firstLinePrefix) {
+      pdf.setFont("helvetica", "normal");
+      pdf.text(firstLinePrefix, marginX + 1, y);
+    }
+    let x = left;
+    let lineHasText = false;
+    // Where the current underlined phrase started, so the spaces between
+    // its words are underlined too.
+    let underlineStart: number | null = null;
+    // Words keep their trailing spaces; each is drawn in its run's style.
+    const tokens = runs.flatMap((run) =>
+      (run.text.match(/\S+\s*|\s+/g) ?? []).map((text) => ({ ...run, text }))
+    );
+    for (const token of tokens) {
+      setRunFont(token);
+      const word = token.text.trimEnd();
+      const wordWidth = pdf.getTextWidth(word);
+      if (lineHasText && word && x + wordWidth > right) {
+        y += LINE_HEIGHT;
+        ensureSpace(1, LINE_HEIGHT);
+        x = left;
+        lineHasText = false;
+        underlineStart = null;
+      }
+      if (!lineHasText && !word) continue; // no leading spaces on a new line
+      pdf.text(token.text, x, y);
+      const width = pdf.getTextWidth(token.text);
+      if (token.underline && word) {
+        underlineStart ??= x;
+        pdf.line(underlineStart, y + 0.8, x + wordWidth, y + 0.8);
+      } else if (!token.underline) {
+        underlineStart = null;
+      }
+      x += width;
+      lineHasText = true;
+    }
+    y += LINE_HEIGHT;
+    pdf.setFont("helvetica", "normal");
+  }
+
+  function formatted(text: string) {
+    const plain = { bold: false, italic: false, underline: false };
+    pdf.setFontSize(10);
+    pdf.setLineWidth(0.2);
+    for (const block of parseBlocks(text)) {
+      switch (block.type) {
+        case "blank":
+          y += LINE_HEIGHT / 2;
+          break;
+        case "line":
+          drawRuns(flatten(block.content, plain), marginX);
+          break;
+        case "ul":
+          block.items.forEach((item) => drawRuns(flatten(item, plain), marginX + LIST_INDENT, "•"));
+          break;
+        case "ol":
+          block.items.forEach((item, i) =>
+            drawRuns(flatten(item, plain), marginX + LIST_INDENT, `${block.start + i}.`)
+          );
+          break;
+      }
+    }
+    y += 3;
+  }
+
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(16);
   const titleLines = pdf.splitTextToSize(
@@ -86,11 +181,11 @@ export function buildMeetingMinutesPdf(projectName: string, input: MeetingMinute
   }
   if (input.summary) {
     heading("Summary");
-    paragraph(toPlainText(input.summary));
+    formatted(input.summary);
   }
   if (input.notes) {
     heading("Notes");
-    paragraph(toPlainText(input.notes));
+    formatted(input.notes);
   }
   if (input.actions.length > 0) {
     heading("Actions");

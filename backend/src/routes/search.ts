@@ -1,4 +1,5 @@
 import { Request, Response, Router } from "express";
+import { stripFormatting } from "../plainText";
 import { prisma } from "../prisma";
 import { rankResults } from "../searchRank";
 
@@ -560,7 +561,7 @@ searchRouter.get("/", async (req: Request, res: Response) => {
       id: e.id,
       projectId: e.project.id,
       projectName: e.project.name,
-      title: e.description,
+      title: stripFormatting(e.description),
       subtitle: e.contactName,
       date: e.createdAt,
     })),

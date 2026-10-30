@@ -1838,16 +1838,31 @@ projects, as a spreadsheet" is two clicks from a saved view.
 ## Text Formatting
 
 Long-text fields — meeting minutes summary and notes, site visit notes,
-descriptions, notes and similar boxes across the registers — have a small
-toolbar: **B**old, *I*talic, U̲nderline, **• List** and **1. List**
-(Ctrl/Cmd+B, I and U work too). Formatting is stored as light markers in
-the text itself (`**bold**`, `*italic*`, `__underline__`, lines starting
-`- ` or `1. `; see `frontend/src/richText.ts`), so the raw text stays
-readable in CSV exports, search and the AI assistant, and existing entries
-look exactly as before. Wherever the text is shown it's rendered with that
-formatting by `FormattedText` — built from React elements, never raw HTML,
-so nothing typed into a field can inject markup. The meeting minutes PDF
-prints it as clean text with bullets.
+descriptions, notes and similar boxes across the registers — are
+**formatted text boxes**: the toolbar's **B**old, *I*talic, U̲nderline,
+**• List** and **1. List** (and Ctrl/Cmd+B, I, U) format the text right in
+the box as you type, like a word processor — no symbols to learn
+(`components/RichTextArea.tsx`, a contenteditable editor). Pasting from
+Word or email brings the text in without its styling, so no stray fonts,
+colours or markup come along.
+
+Behind the scenes the formatting is saved as light markers in the text
+(`**bold**`, `*italic*`, `__underline__`, lines starting `- ` or `1. `; see
+`frontend/src/richText.ts`, and `richTextDom.ts` for converting to and from
+the editor), so the raw text stays readable in CSV exports, search and the
+AI assistant, and older entries need no conversion. Everywhere the text is
+shown it's rendered with its formatting by `FormattedText` — built from
+React elements, never raw HTML, so nothing typed into a field can inject
+markup. One-line previews (e.g. a meeting's summary in the list) show it
+as plain text, and the backend strips the markers where text goes into the
+monthly report workbook or search results (`backend/src/plainText.ts`).
+
+**PDFs keep the formatting.** Each meeting in Meeting Minutes has a **PDF**
+button that downloads the minutes — summary and notes with their bold,
+italic, underline, bullet and numbered lists, plus the actions raised at
+the meeting (`meetingMinutesPdf.ts`); the same PDF is attached
+automatically when minutes are generated from a transcript. The monthly
+and closeout report PDFs capture the formatted page as shown.
 
 ## Cost Inputs (Excl. GST)
 
