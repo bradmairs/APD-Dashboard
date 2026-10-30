@@ -88,3 +88,13 @@ export function toPlainText(text: string): string {
     })
     .join("\n");
 }
+
+// A one-line plain preview (for truncated list rows): no markers, lines
+// joined with " · ".
+export function previewText(text: string): string {
+  return toPlainText(text)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" · ");
+}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { previewText } from "../richText";
 import FormattedText from "./FormattedText";
 import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { CommunityEnquiry, CommunityEnquiryInput, EnquiryStatus } from "../types";
@@ -110,7 +111,7 @@ export default function EnquiriesPanel({ enquiries, onCreate, onUpdate, onDelete
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
                           {enquiry.reference ? `${enquiry.reference}: ` : ""}
-                          {enquiry.description}
+                          {previewText(enquiry.description)}
                         </span>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
                           {ENQUIRY_CATEGORY_LABELS[enquiry.category]}

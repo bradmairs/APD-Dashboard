@@ -1,3 +1,4 @@
+import { stripFormatting } from "../plainText";
 import {
   FY_MONTH_NAMES,
   Health,
@@ -254,7 +255,7 @@ export function buildAutofill(
         // milestone; keep the PM's last one, defaulting to the original.
         approved: prev?.approved ?? iso(m.originalCompletion),
         forecast: iso(m.actualCompletion ?? m.forecastedCompletion) ?? prev?.forecast ?? null,
-        notes: m.notes || prev?.notes || "-",
+        notes: (m.notes && stripFormatting(m.notes)) || prev?.notes || "-",
       };
     });
     auto.push("milestones");

@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import FormattedText from "../components/FormattedText";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTabParam } from "../useTabParam";
 import {
@@ -1542,9 +1543,10 @@ export default function ProjectDetailPage() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {project.description && (
-          <p className="text-slate-700 dark:text-slate-300 text-sm">
-            {project.description}
-          </p>
+          <FormattedText
+            className="text-slate-700 dark:text-slate-300 text-sm"
+            text={project.description}
+          />
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

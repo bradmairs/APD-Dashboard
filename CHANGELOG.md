@@ -5,6 +5,12 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.41 - 2026-10-30
+
+- Long-text boxes are now true formatted editors: bold, italic, underline and bullet/numbered lists show in the box as you type (no `**` symbols); pasted text comes in without outside styling
+- Meeting minutes **PDF** button on every meeting; the PDF keeps the formatting (bold, italic, underline, bullets, numbering)
+- One-line previews, the monthly report workbook and search results show formatted fields as clean text
+
 ## 1.4 - 2026-10-30
 
 - Long lists in a project (more than 5 items) show 5 with a **Show more** button; charts and totals always show. Cash Flow shows the 5 months nearest today when shortened. **Expand all / Collapse all** per tab, remembered per section

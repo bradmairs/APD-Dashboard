@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { previewText } from "../richText";
 import { CommunityEnquiry } from "../types";
 import { ENQUIRY_STATUS_COLORS, ENQUIRY_STATUS_LABELS, enquiryStatusRank } from "../enquiryMeta";
 import { formatDate } from "../format";
@@ -45,7 +46,7 @@ export default function OpenEnquiriesPanel({ enquiries, limit = 8 }: Props) {
                     </span>
                     <span className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
                       {enquiry.reference ? `${enquiry.reference}: ` : ""}
-                      {enquiry.description}
+                      {previewText(enquiry.description)}
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
                       Received {formatDate(enquiry.dateReceived)}

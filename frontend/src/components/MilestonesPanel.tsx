@@ -1,4 +1,5 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
 import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Milestone, MilestoneInput } from "../types";
 import { formatDate } from "../format";
@@ -162,9 +163,10 @@ export default function MilestonesPanel({
                       </div>
 
                       {milestone.notes && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                          {milestone.notes}
-                        </p>
+                        <FormattedText
+                          className="text-xs text-slate-500 dark:text-slate-400 mt-1.5"
+                          text={milestone.notes}
+                        />
                       )}
                     </div>
 
