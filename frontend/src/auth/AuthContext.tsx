@@ -23,6 +23,9 @@ interface AuthContextValue {
   completeTwoFactor: (challengeToken: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  // Applies a change already saved on the server to the cached user, e.g. a
+  // preference, without re-fetching it.
+  patchUser: (changes: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -58,10 +61,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await getMe());
   }
 
+  function patchUser(changes: Partial<User>) {
+    setUser((prev) => (prev ? { ...prev, ...changes } : prev));
+  }
+
   const isViewer = user?.role === "VIEWER";
 
   return (
-    <AuthContext.Provider value={{ user, loading, isViewer, login, completeTwoFactor, logout, refreshUser }}>
+    <AuthContext.Provider value={{
+        user,
+        loading,
+        isViewer,
+        login,
+        completeTwoFactor,
+        logout,
+        refreshUser,
+        patchUser,
+      }}>
       {children}
     </AuthContext.Provider>
   );

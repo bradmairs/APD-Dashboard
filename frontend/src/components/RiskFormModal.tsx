@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import {
   Risk,
   RiskConsequence,
@@ -152,7 +153,7 @@ export default function RiskFormModal({ risk, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -246,7 +247,7 @@ export default function RiskFormModal({ risk, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Mitigation / Response
             </label>
-            <textarea
+            <RichTextArea
               value={mitigation}
               onChange={(e) => setMitigation(e.target.value)}
               rows={2}

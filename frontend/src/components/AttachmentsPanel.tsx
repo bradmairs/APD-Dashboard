@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Attachment } from "../types";
 import { formatDate, formatFileSize } from "../format";
 import { attachmentDownloadUrl } from "../api";
@@ -28,6 +29,8 @@ export default function AttachmentsPanel({ attachments, onUpload, onDelete }: Pr
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
+
+  const shown = useShowMore(attachments);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
@@ -61,30 +64,33 @@ export default function AttachmentsPanel({ attachments, onUpload, onDelete }: Pr
           No files attached yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {attachments.map((a) => (
-            <li key={a.id} className="py-2 flex items-center justify-between text-sm">
-              <div className="min-w-0">
-                <a
-                  href={attachmentDownloadUrl(a.id)}
-                  className="text-blue-600 dark:text-blue-400 hover:underline font-medium truncate block"
-                >
-                  {a.originalName}
-                </a>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  {formatFileSize(a.size)} · uploaded by {a.uploadedByName} on{" "}
-                  {formatDate(a.createdAt)}
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((a) => (
+              <li key={a.id} className="py-2 flex items-center justify-between text-sm">
+                <div className="min-w-0">
+                  <a
+                    href={attachmentDownloadUrl(a.id)}
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium truncate block"
+                  >
+                    {a.originalName}
+                  </a>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {formatFileSize(a.size)} · uploaded by {a.uploadedByName} on{" "}
+                    {formatDate(a.createdAt)}
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={() => onDelete(a)}
-                className="text-xs text-red-600 dark:text-red-400 hover:underline ml-3 shrink-0"
-              >
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
+                <button
+                  onClick={() => onDelete(a)}
+                  className="text-xs text-red-600 dark:text-red-400 hover:underline ml-3 shrink-0"
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+          <ShowMoreButton state={shown} noun="files" />
+        </>
       )}
     </div>
   );

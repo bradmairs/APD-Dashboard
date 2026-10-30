@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { ContractPartyType, ContractRecord, ContractRecordInput, ContractStatus } from "../types";
 import {
   ALL_CONTRACT_PARTY_TYPES,
@@ -188,7 +189,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Contract Value
+                Contract Value ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -201,7 +202,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
             </div>
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Contingency
+                Contingency ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -241,7 +242,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
             </div>
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Provisional Items
+                Provisional Items ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -307,7 +308,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

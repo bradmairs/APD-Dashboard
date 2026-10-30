@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { SqeRecord, SqeRecordInput, SqeStatus } from "../types";
 import { formatDate } from "../format";
 import {
@@ -64,6 +66,8 @@ export default function SqePanel({ records, onCreate, onUpdate, onDelete }: Prop
     (a, b) => sqeSeverityRank(b.severity) - sqeSeverityRank(a.severity)
   );
 
+  const shown = useShowMore(sorted);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -93,101 +97,100 @@ export default function SqePanel({ records, onCreate, onUpdate, onDelete }: Prop
           No safety, quality, or environmental issues logged yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {sorted.map((record) => {
-            const isExpanded = expandedId === record.id;
-            return (
-              <li key={record.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : record.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${SQE_CATEGORY_COLORS[record.category]}`}
-                      >
-                        {SQE_CATEGORY_LABELS[record.category]}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${SQE_SEVERITY_COLORS[record.severity]}`}
-                      >
-                        {SQE_SEVERITY_LABELS[record.severity]}
-                      </span>
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {record.title}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${SQE_STATUS_COLORS[record.status]}`}
-                      >
-                        {SQE_STATUS_LABELS[record.status]}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      <span>Occurred {formatDate(record.dateOccurred)}</span>
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <select
-                      value={record.status}
-                      onChange={(e) =>
-                        handleStatusChange(record, e.target.value as SqeStatus)
-                      }
-                      className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
-                    >
-                      {ALL_SQE_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {SQE_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((record) => {
+              const isExpanded = expandedId === record.id;
+              return (
+                <li key={record.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
                     <button
-                      onClick={() => openEdit(record)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      onClick={() => setExpandedId(isExpanded ? null : record.id)}
+                      className="flex-1 min-w-0 text-left"
                     >
-                      Edit
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${SQE_CATEGORY_COLORS[record.category]}`}
+                        >
+                          {SQE_CATEGORY_LABELS[record.category]}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${SQE_SEVERITY_COLORS[record.severity]}`}
+                        >
+                          {SQE_SEVERITY_LABELS[record.severity]}
+                        </span>
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {record.title}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${SQE_STATUS_COLORS[record.status]}`}
+                        >
+                          {SQE_STATUS_LABELS[record.status]}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                        <span>Occurred {formatDate(record.dateOccurred)}</span>
+                      </div>
                     </button>
-                    <button
-                      onClick={() => handleDelete(record)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <select
+                        value={record.status}
+                        onChange={(e) =>
+                          handleStatusChange(record, e.target.value as SqeStatus)
+                        }
+                        className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+                      >
+                        {ALL_SQE_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {SQE_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(record)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(record)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {isExpanded && (record.description || record.correctiveAction) && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {record.description && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Description
+                  {isExpanded && (record.description || record.correctiveAction) && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {record.description && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Description
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={record.description} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {record.description}
-                        </p>
-                      </div>
-                    )}
-                    {record.correctiveAction && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Corrective Action
+                      )}
+                      {record.correctiveAction && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Corrective Action
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={record.correctiveAction} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {record.correctiveAction}
-                        </p>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Reported by {record.reportedByName}
+                        {record.dateClosed && ` · Closed ${formatDate(record.dateClosed)}`}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Reported by {record.reportedByName}
-                      {record.dateClosed && ` · Closed ${formatDate(record.dateClosed)}`}
                     </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="records" />
+        </>
       )}
 
       {showModal && (

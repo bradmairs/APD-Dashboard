@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { ActionItem, ActionItemInput, ActionItemStatus, ActionType } from "../types";
 import {
   ALL_ACTION_STATUSES,
@@ -144,7 +145,7 @@ export default function ActionItemFormModal({ actionItem, onClose, onSave }: Pro
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -210,7 +211,7 @@ export default function ActionItemFormModal({ actionItem, onClose, onSave }: Pro
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { TenderPackage, TenderPackageInput, TenderStatus } from "../types";
 import { formatCurrency, formatDate } from "../format";
 import {
@@ -73,6 +75,8 @@ export default function TenderPackagesPanel({
     return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
   });
 
+  const shown = useShowMore(sorted);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -102,110 +106,109 @@ export default function TenderPackagesPanel({
           No tender packages raised yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {sorted.map((tenderPackage) => {
-            const isExpanded = expandedId === tenderPackage.id;
-            return (
-              <li key={tenderPackage.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : tenderPackage.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {tenderPackage.packageNumber && (
-                        <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                          {tenderPackage.packageNumber}
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((tenderPackage) => {
+              const isExpanded = expandedId === tenderPackage.id;
+              return (
+                <li key={tenderPackage.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : tenderPackage.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {tenderPackage.packageNumber && (
+                          <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                            {tenderPackage.packageNumber}
+                          </span>
+                        )}
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {tenderPackage.title}
                         </span>
-                      )}
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {tenderPackage.title}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${TENDER_STATUS_COLORS[tenderPackage.status]}`}
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${TENDER_STATUS_COLORS[tenderPackage.status]}`}
+                        >
+                          {TENDER_STATUS_LABELS[tenderPackage.status]}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                        <span>{TENDER_METHOD_LABELS[tenderPackage.method]}</span>
+                        {tenderPackage.closingDate && (
+                          <span>Closes {formatDate(tenderPackage.closingDate)}</span>
+                        )}
+                        {tenderPackage.estimatedValue !== null && (
+                          <span>Est. {formatCurrency(tenderPackage.estimatedValue)}</span>
+                        )}
+                        {tenderPackage.status === "AWARDED" && tenderPackage.awardedTo && (
+                          <span>
+                            Awarded to {tenderPackage.awardedTo}
+                            {tenderPackage.awardedValue !== null &&
+                              ` (${formatCurrency(tenderPackage.awardedValue)})`}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <select
+                        value={tenderPackage.status}
+                        onChange={(e) =>
+                          handleStatusChange(tenderPackage, e.target.value as TenderStatus)
+                        }
+                        className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
                       >
-                        {TENDER_STATUS_LABELS[tenderPackage.status]}
-                      </span>
+                        {ALL_TENDER_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {TENDER_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(tenderPackage)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(tenderPackage)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      <span>{TENDER_METHOD_LABELS[tenderPackage.method]}</span>
-                      {tenderPackage.closingDate && (
-                        <span>Closes {formatDate(tenderPackage.closingDate)}</span>
-                      )}
-                      {tenderPackage.estimatedValue !== null && (
-                        <span>Est. {formatCurrency(tenderPackage.estimatedValue)}</span>
-                      )}
-                      {tenderPackage.status === "AWARDED" && tenderPackage.awardedTo && (
-                        <span>
-                          Awarded to {tenderPackage.awardedTo}
-                          {tenderPackage.awardedValue !== null &&
-                            ` (${formatCurrency(tenderPackage.awardedValue)})`}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <select
-                      value={tenderPackage.status}
-                      onChange={(e) =>
-                        handleStatusChange(tenderPackage, e.target.value as TenderStatus)
-                      }
-                      className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
-                    >
-                      {ALL_TENDER_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {TENDER_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => openEdit(tenderPackage)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(tenderPackage)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
                   </div>
-                </div>
 
-                {isExpanded && (tenderPackage.description || tenderPackage.notes) && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {tenderPackage.description && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Description
+                  {isExpanded && (tenderPackage.description || tenderPackage.notes) && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {tenderPackage.description && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Description
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={tenderPackage.description} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {tenderPackage.description}
-                        </p>
-                      </div>
-                    )}
-                    {tenderPackage.notes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Notes
+                      )}
+                      {tenderPackage.notes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Notes
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={tenderPackage.notes} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {tenderPackage.notes}
-                        </p>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Managed by {tenderPackage.managedByName}
+                        {tenderPackage.submissionsReceived !== null &&
+                          ` · ${tenderPackage.submissionsReceived} submission${tenderPackage.submissionsReceived === 1 ? "" : "s"} received`}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Managed by {tenderPackage.managedByName}
-                      {tenderPackage.submissionsReceived !== null &&
-                        ` · ${tenderPackage.submissionsReceived} submission${tenderPackage.submissionsReceived === 1 ? "" : "s"} received`}
                     </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="packages" />
+        </>
       )}
 
       {showModal && (

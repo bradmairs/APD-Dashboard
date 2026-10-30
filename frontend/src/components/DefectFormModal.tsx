@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { DefectItem, DefectItemInput, DefectStatus } from "../types";
 import {
   ALL_DEFECT_STATUSES,
@@ -121,7 +122,7 @@ export default function DefectFormModal({ defect, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -143,7 +144,7 @@ export default function DefectFormModal({ defect, onClose, onSave }: Props) {
             </div>
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Retention Held ($)
+                Retention Held ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -203,7 +204,7 @@ export default function DefectFormModal({ defect, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

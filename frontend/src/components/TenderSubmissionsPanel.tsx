@@ -1,4 +1,6 @@
 import { FormEvent, useState } from "react";
+import FormattedText from "./FormattedText";
+import RichTextArea from "./RichTextArea";
 import { TenderPackage, TenderSubmission, TenderSubmissionInput } from "../types";
 import { formatCurrency, formatDate } from "../format";
 import { TENDER_STATUS_COLORS, TENDER_STATUS_LABELS } from "../tenderMeta";
@@ -142,9 +144,7 @@ export default function TenderSubmissionsPanel({
                                 </span>
                               )}
                               {s.notes && (
-                                <p className="text-xs text-slate-500 dark:text-slate-400 whitespace-pre-line mt-0.5">
-                                  {s.notes}
-                                </p>
+                                <FormattedText className="text-xs text-slate-500 dark:text-slate-400 mt-0.5" text={s.notes} />
                               )}
                             </td>
                             <td className="py-2 pr-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">
@@ -288,7 +288,7 @@ function SubmissionFormModal({
               />
             </div>
             <div className="min-w-0">
-              <label className={LABEL_CLASS}>Tender Price ($, ex GST)</label>
+              <label className={LABEL_CLASS}>Tender Price ($, Excl. GST)</label>
               <input
                 type="number"
                 min={0}
@@ -350,7 +350,7 @@ function SubmissionFormModal({
 
           <div>
             <label className={LABEL_CLASS}>Assessment Notes</label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}

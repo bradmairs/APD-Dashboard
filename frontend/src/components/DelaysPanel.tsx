@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Delay, DelayInput, DelayStatus } from "../types";
 import { formatDate } from "../format";
 import {
@@ -59,6 +61,8 @@ export default function DelaysPanel({ delays, onCreate, onUpdate, onDelete }: Pr
     await onUpdate(delay, { status });
   }
 
+  const shown = useShowMore(delays);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -86,97 +90,100 @@ export default function DelaysPanel({ delays, onCreate, onUpdate, onDelete }: Pr
       {delays.length === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">No delays logged yet.</p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {delays.map((delay) => {
-            const isExpanded = expandedId === delay.id;
-            const days = delayDays(delay);
-            const hasDetail = delay.description || delay.mitigation || delay.notes;
-            return (
-              <li key={delay.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : delay.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {delay.title}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${DELAY_STATUS_COLORS[delay.status]}`}>
-                        {DELAY_STATUS_LABELS[delay.status]}
-                      </span>
-                      {delay.criticalPath && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
-                          Critical path
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((delay) => {
+              const isExpanded = expandedId === delay.id;
+              const days = delayDays(delay);
+              const hasDetail = delay.description || delay.mitigation || delay.notes;
+              return (
+                <li key={delay.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : delay.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {delay.title}
                         </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      <span>
-                        {days} day{days === 1 ? "" : "s"}
-                        {delay.daysImpact === null && " (from dates)"}
-                      </span>
-                      <span>
-                        {formatDate(delay.dateStarted)}
-                        {delay.dateEnded ? ` – ${formatDate(delay.dateEnded)}` : " – ongoing"}
-                      </span>
-                      {delay.category && <span>{delay.category}</span>}
-                      {delay.responsibleParty && <span>Responsible: {delay.responsibleParty}</span>}
-                      {delay.eotReference && <span>{delay.eotReference}</span>}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <select
-                      value={delay.status}
-                      onChange={(e) => handleStatusChange(delay, e.target.value as DelayStatus)}
-                      className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
-                    >
-                      {ALL_DELAY_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {DELAY_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => openEdit(delay)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${DELAY_STATUS_COLORS[delay.status]}`}>
+                          {DELAY_STATUS_LABELS[delay.status]}
+                        </span>
+                        {delay.criticalPath && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                            Critical path
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                        <span>
+                          {days} day{days === 1 ? "" : "s"}
+                          {delay.daysImpact === null && " (from dates)"}
+                        </span>
+                        <span>
+                          {formatDate(delay.dateStarted)}
+                          {delay.dateEnded ? ` – ${formatDate(delay.dateEnded)}` : " – ongoing"}
+                        </span>
+                        {delay.category && <span>{delay.category}</span>}
+                        {delay.responsibleParty && <span>Responsible: {delay.responsibleParty}</span>}
+                        {delay.eotReference && <span>{delay.eotReference}</span>}
+                      </div>
                     </button>
-                    <button
-                      onClick={() => handleDelete(delay)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <select
+                        value={delay.status}
+                        onChange={(e) => handleStatusChange(delay, e.target.value as DelayStatus)}
+                        className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+                      >
+                        {ALL_DELAY_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {DELAY_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(delay)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(delay)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {isExpanded && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {[
-                      ["Description", delay.description],
-                      ["Mitigation / recovery action", delay.mitigation],
-                      ["Notes", delay.notes],
-                    ].map(
-                      ([label, value]) =>
-                        value && (
-                          <div key={label}>
-                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{label}</div>
-                            <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">{value}</p>
-                          </div>
-                        )
-                    )}
-                    {!hasDetail && (
-                      <p className="text-xs text-slate-400 dark:text-slate-500">No further detail recorded.</p>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">Logged by {delay.raisedByName}</div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  {isExpanded && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {[
+                        ["Description", delay.description],
+                        ["Mitigation / recovery action", delay.mitigation],
+                        ["Notes", delay.notes],
+                      ].map(
+                        ([label, value]) =>
+                          value && (
+                            <div key={label}>
+                              <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{label}</div>
+                              <FormattedText className="text-slate-700 dark:text-slate-300" text={value} />
+                            </div>
+                          )
+                      )}
+                      {!hasDetail && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500">No further detail recorded.</p>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">Logged by {delay.raisedByName}</div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="delays" />
+        </>
       )}
 
       {showModal && (

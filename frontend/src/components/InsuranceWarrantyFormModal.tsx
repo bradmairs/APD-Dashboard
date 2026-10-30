@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { InsuranceWarranty, InsuranceWarrantyInput, InsuranceWarrantyType } from "../types";
 import {
   ALL_INSURANCE_WARRANTY_TYPES,
@@ -123,7 +124,7 @@ export default function InsuranceWarrantyFormModal({ item, onClose, onSave }: Pr
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Coverage Details
             </label>
-            <textarea
+            <RichTextArea
               value={coverageDetails}
               onChange={(e) => setCoverageDetails(e.target.value)}
               rows={2}
@@ -161,7 +162,7 @@ export default function InsuranceWarrantyFormModal({ item, onClose, onSave }: Pr
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

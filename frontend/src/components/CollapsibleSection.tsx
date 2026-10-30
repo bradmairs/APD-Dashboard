@@ -1,12 +1,15 @@
-import { ReactNode, useCallback, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useState } from "react";
 
-// A project section only becomes collapsible once it lists more than this
-// many items — shorter ones are left as they are.
+// A project section's list shows this many items until "Show all" is
+// clicked. Only lists longer than this get the button.
 export const COLLAPSE_THRESHOLD = 5;
 
-const STORAGE_KEY = "apd.collapsedSections";
+// Sections the user has expanded, remembered in this browser per section
+// (e.g. "risks"), so a list you open stays open on every project until you
+// click Show less. (A new key: the old one stored whole-panel collapses.)
+const STORAGE_KEY = "apd.expandedSections";
 
-function loadCollapsed(): Set<string> {
+function loadExpanded(): Set<string> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return new Set(raw ? (JSON.parse(raw) as string[]) : []);
@@ -15,7 +18,7 @@ function loadCollapsed(): Set<string> {
   }
 }
 
-function saveCollapsed(ids: Set<string>) {
+function saveExpanded(ids: Set<string>) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(ids)));
   } catch {
@@ -23,91 +26,118 @@ function saveCollapsed(ids: Set<string>) {
   }
 }
 
-// Which project sections are collapsed. Remembered in this browser per
-// section (e.g. "risks"), so a section you collapse stays collapsed on
-// every project until you expand it again.
-export function useCollapsedSections() {
-  const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsed);
+export function useExpandedSections() {
+  const [expanded, setExpandedState] = useState<Set<string>>(loadExpanded);
 
-  const update = useCallback((ids: string[], value: boolean) => {
-    setCollapsed((prev) => {
+  const setExpanded = useCallback((ids: string[], value: boolean) => {
+    setExpandedState((prev) => {
       const next = new Set(prev);
       for (const id of ids) {
         if (value) next.add(id);
         else next.delete(id);
       }
-      saveCollapsed(next);
+      saveExpanded(next);
       return next;
     });
   }, []);
 
-  return { collapsed, setCollapsed: update };
+  return { expanded, setExpanded };
 }
+
+interface ShowMoreContextValue {
+  expanded: boolean;
+  setExpanded: (value: boolean) => void;
+}
+
+const ShowMoreContext = createContext<ShowMoreContextValue | null>(null);
 
 interface Props {
   id: string;
-  label: string;
-  count: number;
-  collapsed: boolean;
-  onToggle: (collapsed: boolean) => void;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
   className?: string;
   children: ReactNode;
 }
 
-// Wraps one project panel. With more than COLLAPSE_THRESHOLD items it gets a
-// Collapse control, and when collapsed shows a one-line summary in place of
-// the panel. The id stays on the wrapper so the Jump-to links still work.
+// Wraps one project panel. It keeps the id the Jump-to links scroll to, and
+// tells the panel's list (through useShowMore) whether to show everything or
+// just the first few items. Everything else in the panel — charts, totals,
+// filters — is always shown.
 export default function CollapsibleSection({
   id,
-  label,
-  count,
-  collapsed,
-  onToggle,
+  expanded,
+  onExpandedChange,
   className,
   children,
 }: Props) {
-  if (count <= COLLAPSE_THRESHOLD) {
-    return (
-      <div id={id} className={className}>
-        {children}
-      </div>
-    );
-  }
-
-  if (collapsed) {
-    return (
-      <div id={id}>
-        <button
-          type="button"
-          onClick={() => onToggle(false)}
-          aria-expanded={false}
-          className="w-full flex items-center justify-between gap-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50"
-        >
-          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            {label}
-            <span className="ml-2 text-xs font-normal text-slate-500 dark:text-slate-400">
-              {count} items
-            </span>
-          </span>
-          <span className="text-xs text-blue-600 dark:text-blue-400 shrink-0">Expand ▾</span>
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div id={id} className={className}>
-      <div className="flex justify-end -mb-1">
-        <button
-          type="button"
-          onClick={() => onToggle(true)}
-          aria-expanded={true}
-          className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 px-1"
-        >
-          Collapse {label} ({count}) ▴
-        </button>
-      </div>
-      {children}
+      <ShowMoreContext.Provider value={{ expanded, setExpanded: onExpandedChange }}>
+        {children}
+      </ShowMoreContext.Provider>
+    </div>
+  );
+}
+
+export interface ShowMoreState<T> {
+  visible: T[];
+  total: number;
+  hiddenCount: number;
+  expanded: boolean;
+  setExpanded: (value: boolean) => void;
+  // False outside a project section, where lists are never limited.
+  limitable: boolean;
+}
+
+// Which of a panel's items to render. Inside a project section with more
+// than COLLAPSE_THRESHOLD items it returns just the first few (or, with
+// `pickCollapsed`, a chosen few — e.g. the cash flow months nearest today)
+// until the section is expanded. Outside a project section (e.g. the same
+// panel on the dashboard) it always returns everything.
+export function useShowMore<T>(
+  items: T[],
+  pickCollapsed?: (items: T[], limit: number) => T[]
+): ShowMoreState<T> {
+  const ctx = useContext(ShowMoreContext);
+  const limited = !!ctx && !ctx.expanded && items.length > COLLAPSE_THRESHOLD;
+  const visible = limited
+    ? pickCollapsed
+      ? pickCollapsed(items, COLLAPSE_THRESHOLD)
+      : items.slice(0, COLLAPSE_THRESHOLD)
+    : items;
+  return {
+    visible,
+    total: items.length,
+    hiddenCount: items.length - visible.length,
+    expanded: ctx?.expanded ?? true,
+    setExpanded: ctx?.setExpanded ?? (() => {}),
+    limitable: !!ctx,
+  };
+}
+
+// The "Show all N" / "Show less" control under a limited list. Renders
+// nothing for a list that fits.
+export function ShowMoreButton<T>({
+  state,
+  noun = "items",
+}: {
+  state: ShowMoreState<T>;
+  noun?: string;
+}) {
+  if (!state.limitable || state.total <= COLLAPSE_THRESHOLD) return null;
+  if (!state.expanded && state.hiddenCount <= 0) return null;
+  return (
+    <div className="pt-2 flex justify-center">
+      <button
+        type="button"
+        onClick={() => state.setExpanded(!state.expanded)}
+        aria-expanded={state.expanded}
+        className="text-xs px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-700"
+      >
+        {state.expanded
+          ? "Show less ▴"
+          : `Show more — all ${state.total} ${noun} (${state.hiddenCount} hidden) ▾`}
+      </button>
     </div>
   );
 }

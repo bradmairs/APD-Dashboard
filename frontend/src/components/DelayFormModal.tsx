@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { Delay, DelayInput, DelayStatus } from "../types";
 import {
   ALL_DELAY_STATUSES,
@@ -130,7 +131,7 @@ export default function DelayFormModal({ delay, onClose, onSave }: Props) {
 
           <div>
             <label className={labelClass}>Description</label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -209,7 +210,7 @@ export default function DelayFormModal({ delay, onClose, onSave }: Props) {
 
           <div>
             <label className={labelClass}>Mitigation / Recovery Action</label>
-            <textarea
+            <RichTextArea
               value={mitigation}
               onChange={(e) => setMitigation(e.target.value)}
               rows={2}
@@ -219,7 +220,7 @@ export default function DelayFormModal({ delay, onClose, onSave }: Props) {
 
           <div>
             <label className={labelClass}>Notes</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} />
+            <RichTextArea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

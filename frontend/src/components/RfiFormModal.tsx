@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { Rfi, RfiInput, RfiStatus } from "../types";
 import { ALL_RFI_STATUSES, RFI_STATUS_LABELS } from "../rfiMeta";
 
@@ -97,7 +98,7 @@ export default function RfiFormModal({ rfi, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Question
             </label>
-            <textarea
+            <RichTextArea
               required
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -110,7 +111,7 @@ export default function RfiFormModal({ rfi, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Response
             </label>
-            <textarea
+            <RichTextArea
               value={response}
               onChange={(e) => setResponse(e.target.value)}
               rows={3}
@@ -179,7 +180,7 @@ export default function RfiFormModal({ rfi, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

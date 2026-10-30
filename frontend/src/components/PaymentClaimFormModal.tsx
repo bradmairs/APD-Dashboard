@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { ContractRecord, PaymentClaim, PaymentClaimInput, PaymentClaimStatus } from "../types";
 import { ALL_PAYMENT_CLAIM_STATUSES, PAYMENT_CLAIM_STATUS_LABELS } from "../paymentClaimMeta";
 
@@ -31,6 +32,7 @@ export default function PaymentClaimFormModal({ claim, contracts, onClose, onSav
     toDateInputValue(claim?.dateSubmitted ?? null) || new Date().toISOString().substring(0, 10)
   );
   const [notes, setNotes] = useState(claim?.notes ?? "");
+  const [trimLink, setTrimLink] = useState(claim?.trimLink ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +49,7 @@ export default function PaymentClaimFormModal({ claim, contracts, onClose, onSav
         status,
         dateSubmitted: new Date(dateSubmitted).toISOString(),
         notes: notes || null,
+        trimLink: trimLink.trim() || null,
         contractId: contractId || null,
       });
     } catch (err) {
@@ -117,7 +120,7 @@ export default function PaymentClaimFormModal({ claim, contracts, onClose, onSav
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Claimed Amount ($)
+                Claimed Amount ($, Excl. GST)
               </label>
               <input
                 required
@@ -131,7 +134,7 @@ export default function PaymentClaimFormModal({ claim, contracts, onClose, onSav
             </div>
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Certified Amount ($)
+                Certified Amount ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -178,9 +181,21 @@ export default function PaymentClaimFormModal({ claim, contracts, onClose, onSav
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              TRIM Link
+            </label>
+            <input
+              value={trimLink}
+              onChange={(e) => setTrimLink(e.target.value)}
+              placeholder="TRIM web link or record number for this claim (optional)"
+              className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

@@ -106,7 +106,7 @@ export default function CashFlowEntryFormModal({
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Amount ($)
+              Amount ($, Excl. GST)
             </label>
             <input
               type="number"

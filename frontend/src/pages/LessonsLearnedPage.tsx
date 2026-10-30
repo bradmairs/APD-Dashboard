@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import FormattedText from "../components/FormattedText";
 import { Link } from "react-router-dom";
 import { getAllLessonsLearned } from "../api";
 import { LessonLearned, LessonType } from "../types";
@@ -172,18 +173,14 @@ export default function LessonsLearnedPage() {
                 )}
 
                 {lesson.description && (
-                  <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line mt-2">
-                    {lesson.description}
-                  </p>
+                  <FormattedText className="text-sm text-slate-700 dark:text-slate-300 mt-2" text={lesson.description} />
                 )}
                 {lesson.recommendation && (
                   <div className="mt-2 text-sm">
                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                       Recommendation:{" "}
                     </span>
-                    <span className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                      {lesson.recommendation}
-                    </span>
+                    <FormattedText className="text-slate-700 dark:text-slate-300" text={lesson.recommendation} />
                   </div>
                 )}
               </li>

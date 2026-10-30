@@ -8,7 +8,8 @@ import {
 } from "../types";
 import { formatCurrency, formatReportMonth } from "../format";
 import { approvedVariationsTotal, revisedBudget } from "../variations";
-import { expenditureToDate, forecastAtCompletion } from "../cashflow";
+import { entriesNearestNow, expenditureToDate, forecastAtCompletion } from "../cashflow";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import CashFlowChart from "../charts/CashFlowChart";
 import CumulativeSpendChart from "../charts/CumulativeSpendChart";
 import CashFlowEntryFormModal from "./CashFlowEntryFormModal";
@@ -100,6 +101,10 @@ export default function CashFlowPanel({
     await onDelete(entry);
   }
 
+  // Collapsed, the list shows the months nearest today (latest actuals and
+  // next forecasts); the charts above always cover every month.
+  const shown = useShowMore(entries, (items, limit) => entriesNearestNow(items, limit));
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -160,7 +165,7 @@ export default function CashFlowPanel({
             <CashFlowChart entries={entries} />
           </div>
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-            {entries.map((entry) => (
+            {shown.visible.map((entry) => (
               <li
                 key={entry.id}
                 className="py-2 flex items-center justify-between text-sm"
@@ -214,6 +219,7 @@ export default function CashFlowPanel({
               </li>
             ))}
           </ul>
+          <ShowMoreButton state={shown} noun="entries" />
         </>
       )}
 

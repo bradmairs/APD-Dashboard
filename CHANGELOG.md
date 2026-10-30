@@ -5,6 +5,16 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.4 - 2026-10-30
+
+- Long lists in a project (more than 5 items) show 5 with a **Show more** button; charts and totals always show. Cash Flow shows the 5 months nearest today when shortened. **Expand all / Collapse all** per tab, remembered per section
+- The project **Jump to** row now stays pinned under the header while scrolling
+- **TRIM Link** on each payment claim
+- All cost inputs are labelled **($, Excl. GST)**
+- Dashboard **TRIM & GVW Links** tab: click a link's title to open it (web addresses work with or without https://); new **General GVW Links** section for things like GVW's design guidelines
+- The main dashboard remembers your last view (tab and Projects filters) on your account
+- Formatting toolbar (bold, italic, underline, bullet and numbered lists) on meeting minutes and other long-text fields, shown formatted everywhere
+
 ## 1.3 - 2026-10-29
 
 - New **Monthly Reporting** tab on every project, laid out exactly like the Monthly Report tab of the GVW monthly report workbook, with its formulas recalculating live (replaces the old Monthly Reports panel; existing reports carry over)

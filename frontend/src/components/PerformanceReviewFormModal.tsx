@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { PerformanceReview, PerformanceReviewInput } from "../types";
 import { ALL_RATINGS, RATING_LABELS } from "../performanceMeta";
 
@@ -156,7 +157,7 @@ export default function PerformanceReviewFormModal({ item, onClose, onSave }: Pr
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Comments
             </label>
-            <textarea
+            <RichTextArea
               value={comments}
               onChange={(e) => setComments(e.target.value)}
               rows={3}

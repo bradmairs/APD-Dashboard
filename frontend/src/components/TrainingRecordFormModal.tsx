@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { TrainingRecord, TrainingRecordInput } from "../types";
 import { TRAINING_TYPE_SUGGESTIONS } from "../trainingMeta";
 
@@ -148,7 +149,7 @@ export default function TrainingRecordFormModal({ item, onClose, onSave }: Props
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

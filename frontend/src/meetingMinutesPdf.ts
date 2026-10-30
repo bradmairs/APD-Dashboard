@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { toPlainText } from "./richText";
 import { formatDate } from "./format";
 
 interface MeetingMinutesPdfAction {
@@ -85,11 +86,11 @@ export function buildMeetingMinutesPdf(projectName: string, input: MeetingMinute
   }
   if (input.summary) {
     heading("Summary");
-    paragraph(input.summary);
+    paragraph(toPlainText(input.summary));
   }
   if (input.notes) {
     heading("Notes");
-    paragraph(input.notes);
+    paragraph(toPlainText(input.notes));
   }
   if (input.actions.length > 0) {
     heading("Actions");

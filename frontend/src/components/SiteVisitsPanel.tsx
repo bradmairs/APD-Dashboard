@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { SiteVisit, SiteVisitInput, SiteVisitPhoto } from "../types";
 import { formatDateTime } from "../format";
 import SiteVisitFormModal from "./SiteVisitFormModal";
@@ -82,6 +84,8 @@ export default function SiteVisitsPanel({
     await onDelete(siteVisit);
   }
 
+  const shown = useShowMore(siteVisits);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -149,92 +153,89 @@ export default function SiteVisitsPanel({
           No site visits logged yet.
         </p>
       ) : (
-        <div className="space-y-3">
-          {siteVisits.map((siteVisit) => {
-            const isExpanded = expandedId === siteVisit.id;
-            const photos = photosByVisit[siteVisit.id] ?? [];
-            return (
-              <div
-                key={siteVisit.id}
-                className="rounded-lg border border-slate-200 dark:border-slate-700 p-3"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : siteVisit.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {formatDateTime(siteVisit.visitDate)}
-                    </div>
-                    <div className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">
-                      {siteVisit.location}
-                    </div>
-                    <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                      Visited by {siteVisit.visitedByName}
-                      {photos.length > 0 &&
-                        ` · ${photos.length} photo${photos.length === 1 ? "" : "s"}`}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-3 shrink-0 pt-0.5">
+        <>
+          <div className="space-y-3">
+            {shown.visible.map((siteVisit) => {
+              const isExpanded = expandedId === siteVisit.id;
+              const photos = photosByVisit[siteVisit.id] ?? [];
+              return (
+                <div
+                  key={siteVisit.id}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
                     <button
-                      onClick={() => openEdit(siteVisit)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      onClick={() => setExpandedId(isExpanded ? null : siteVisit.id)}
+                      className="flex-1 min-w-0 text-left"
                     >
-                      Edit
+                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {formatDateTime(siteVisit.visitDate)}
+                      </div>
+                      <div className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">
+                        {siteVisit.location}
+                      </div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                        Visited by {siteVisit.visitedByName}
+                        {photos.length > 0 &&
+                          ` · ${photos.length} photo${photos.length === 1 ? "" : "s"}`}
+                      </div>
                     </button>
-                    <button
-                      onClick={() => handleDelete(siteVisit)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-3 shrink-0 pt-0.5">
+                      <button
+                        onClick={() => openEdit(siteVisit)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(siteVisit)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {isExpanded && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {siteVisit.notes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Site Visit Purpose
+                  {isExpanded && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {siteVisit.notes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Site Visit Purpose
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={siteVisit.notes} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {siteVisit.notes}
-                        </p>
-                      </div>
-                    )}
-                    {siteVisit.discussionNotes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Site Visit Notes
+                      )}
+                      {siteVisit.discussionNotes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Site Visit Notes
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={siteVisit.discussionNotes} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {siteVisit.discussionNotes}
-                        </p>
-                      </div>
-                    )}
-                    {siteVisit.outcomesAndActions && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Site Visit Outcomes and Actions
+                      )}
+                      {siteVisit.outcomesAndActions && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Site Visit Outcomes and Actions
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={siteVisit.outcomesAndActions} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {siteVisit.outcomesAndActions}
-                        </p>
-                      </div>
-                    )}
-                    <SiteVisitPhotoGrid
-                      photos={photos}
-                      onUpload={(files) => onUploadPhotos(siteVisit, files)}
-                      onDelete={onDeletePhoto}
-                      onSyncToArchive={onSyncPhotoToArchive}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                      )}
+                      <SiteVisitPhotoGrid
+                        photos={photos}
+                        onUpload={(files) => onUploadPhotos(siteVisit, files)}
+                        onDelete={onDeletePhoto}
+                        onSyncToArchive={onSyncPhotoToArchive}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <ShowMoreButton state={shown} noun="visits" />
+        </>
       )}
 
       {showModal && (

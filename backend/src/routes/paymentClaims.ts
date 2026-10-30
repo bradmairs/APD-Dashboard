@@ -63,6 +63,7 @@ projectPaymentClaimsRouter.post("/", async (req: Request<ProjectParams>, res: Re
     status,
     dateSubmitted,
     notes,
+    trimLink,
     contractId,
   } = req.body as Record<string, unknown>;
 
@@ -101,6 +102,7 @@ projectPaymentClaimsRouter.post("/", async (req: Request<ProjectParams>, res: Re
       raisedById: req.user!.sub,
       raisedByName: req.user!.name,
       notes: (notes as string) || null,
+      trimLink: typeof trimLink === "string" && trimLink.trim() ? trimLink.trim() : null,
       contractId: resolvedContractId ?? null,
     },
   });
@@ -143,6 +145,7 @@ paymentClaimsRouter.put("/:id", async (req, res) => {
     status,
     dateSubmitted,
     notes,
+    trimLink,
     contractId,
   } = req.body as Record<string, unknown>;
 
@@ -170,6 +173,9 @@ paymentClaimsRouter.put("/:id", async (req, res) => {
   const submitted = parseDate(dateSubmitted);
   if (submitted !== undefined) data.dateSubmitted = submitted ?? before.dateSubmitted;
   if (notes !== undefined) data.notes = notes || null;
+  if (trimLink !== undefined) {
+    data.trimLink = typeof trimLink === "string" && trimLink.trim() ? trimLink.trim() : null;
+  }
   if (status !== undefined) {
     if (!STATUSES.includes(status as string)) {
       return res
