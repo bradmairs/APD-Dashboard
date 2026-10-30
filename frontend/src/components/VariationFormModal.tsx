@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { Variation, VariationInput, VariationStatus } from "../types";
 import { ALL_VARIATION_STATUSES, VARIATION_STATUS_LABELS } from "../variationMeta";
 
@@ -126,7 +127,7 @@ export default function VariationFormModal({ variation, onClose, onSave }: Props
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -137,7 +138,7 @@ export default function VariationFormModal({ variation, onClose, onSave }: Props
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Cost Impact ($)
+                Cost Impact ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -196,7 +197,7 @@ export default function VariationFormModal({ variation, onClose, onSave }: Props
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

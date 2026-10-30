@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { Project, ProjectInput, ProjectStatus, UserOption } from "../types";
 import { ALL_STATUSES, STATUS_LABELS } from "../statusMeta";
 import { getUserOptions } from "../api";
@@ -143,7 +144,7 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -312,7 +313,7 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Original Budget ($)
+                Original Budget ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -323,7 +324,7 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Latest Approved Budget ($)
+                Latest Approved Budget ($, Excl. GST)
               </label>
               <input
                 type="number"

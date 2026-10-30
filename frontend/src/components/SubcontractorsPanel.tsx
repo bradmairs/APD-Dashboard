@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Subcontractor, SubcontractorInput, SubcontractorStatus } from "../types";
 import { formatCurrency, formatDate } from "../format";
 import {
@@ -112,6 +114,8 @@ export default function SubcontractorsPanel({
     (a, b) => subcontractorStatusRank(a.status) - subcontractorStatusRank(b.status)
   );
 
+  const shown = useShowMore(sorted);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -196,133 +200,134 @@ export default function SubcontractorsPanel({
           No subcontractors logged yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {sorted.map((subcontractor) => {
-            const isExpanded = expandedId === subcontractor.id;
-            const expired = isSubcontractorInsuranceExpired(subcontractor);
-            const expiringSoon = isSubcontractorInsuranceExpiringSoon(subcontractor);
-            return (
-              <li key={subcontractor.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selection.isSelected(subcontractor.id)}
-                    onChange={() => selection.toggle(subcontractor.id)}
-                    className="mt-1.5 h-4 w-4 shrink-0"
-                  />
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : subcontractor.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {subcontractor.companyName}
-                      </span>
-                      {subcontractor.trade && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
-                          {subcontractor.trade}
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((subcontractor) => {
+              const isExpanded = expandedId === subcontractor.id;
+              const expired = isSubcontractorInsuranceExpired(subcontractor);
+              const expiringSoon = isSubcontractorInsuranceExpiringSoon(subcontractor);
+              return (
+                <li key={subcontractor.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(subcontractor.id)}
+                      onChange={() => selection.toggle(subcontractor.id)}
+                      className="mt-1.5 h-4 w-4 shrink-0"
+                    />
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : subcontractor.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {subcontractor.companyName}
                         </span>
-                      )}
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${SUBCONTRACTOR_STATUS_COLORS[subcontractor.status]}`}
-                      >
-                        {SUBCONTRACTOR_STATUS_LABELS[subcontractor.status]}
-                      </span>
-                      {expired && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
-                          Insurance Expired
-                        </span>
-                      )}
-                      {!expired && expiringSoon && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                          Insurance Expiring Soon
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      {subcontractor.contractValue && (
-                        <span>{formatCurrency(subcontractor.contractValue)}</span>
-                      )}
-                      {subcontractor.startDate && (
-                        <span>Started {formatDate(subcontractor.startDate)}</span>
-                      )}
-                      {subcontractor.insuranceExpiry && (
+                        {subcontractor.trade && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                            {subcontractor.trade}
+                          </span>
+                        )}
                         <span
-                          className={
-                            expired
-                              ? "text-red-600 dark:text-red-400 font-medium"
-                              : expiringSoon
-                              ? "text-amber-600 dark:text-amber-400 font-medium"
-                              : ""
-                          }
+                          className={`text-xs px-2 py-0.5 rounded-full ${SUBCONTRACTOR_STATUS_COLORS[subcontractor.status]}`}
                         >
-                          Insurance expires {formatDate(subcontractor.insuranceExpiry)}
+                          {SUBCONTRACTOR_STATUS_LABELS[subcontractor.status]}
                         </span>
-                      )}
+                        {expired && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                            Insurance Expired
+                          </span>
+                        )}
+                        {!expired && expiringSoon && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                            Insurance Expiring Soon
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                        {subcontractor.contractValue && (
+                          <span>{formatCurrency(subcontractor.contractValue)}</span>
+                        )}
+                        {subcontractor.startDate && (
+                          <span>Started {formatDate(subcontractor.startDate)}</span>
+                        )}
+                        {subcontractor.insuranceExpiry && (
+                          <span
+                            className={
+                              expired
+                                ? "text-red-600 dark:text-red-400 font-medium"
+                                : expiringSoon
+                                ? "text-amber-600 dark:text-amber-400 font-medium"
+                                : ""
+                            }
+                          >
+                            Insurance expires {formatDate(subcontractor.insuranceExpiry)}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <select
+                        value={subcontractor.status}
+                        onChange={(e) =>
+                          handleStatusChange(subcontractor, e.target.value as SubcontractorStatus)
+                        }
+                        className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+                      >
+                        {ALL_SUBCONTRACTOR_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {SUBCONTRACTOR_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(subcontractor)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(subcontractor)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <select
-                      value={subcontractor.status}
-                      onChange={(e) =>
-                        handleStatusChange(subcontractor, e.target.value as SubcontractorStatus)
-                      }
-                      className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
-                    >
-                      {ALL_SUBCONTRACTOR_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {SUBCONTRACTOR_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => openEdit(subcontractor)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(subcontractor)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
                   </div>
-                </div>
 
-                {isExpanded && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {(subcontractor.contactName || subcontractor.contactDetails) && (
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {subcontractor.contactName}
-                        {subcontractor.contactName && subcontractor.contactDetails ? " · " : ""}
-                        {subcontractor.contactDetails}
-                      </div>
-                    )}
-                    {subcontractor.endDate && (
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        End date {formatDate(subcontractor.endDate)}
-                      </div>
-                    )}
-                    {subcontractor.notes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Notes
+                  {isExpanded && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {(subcontractor.contactName || subcontractor.contactDetails) && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {subcontractor.contactName}
+                          {subcontractor.contactName && subcontractor.contactDetails ? " · " : ""}
+                          {subcontractor.contactDetails}
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {subcontractor.notes}
-                        </p>
+                      )}
+                      {subcontractor.endDate && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          End date {formatDate(subcontractor.endDate)}
+                        </div>
+                      )}
+                      {subcontractor.notes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Notes
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={subcontractor.notes} />
+                        </div>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Added by {subcontractor.addedByName}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Added by {subcontractor.addedByName}
                     </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="subcontractors" />
+        </>
       )}
 
       {showModal && (

@@ -731,7 +731,9 @@ claim-and-certify record. A claim has a Claim Number, an optional
 Period Ending date, a Claimed Amount (what the contractor asked for),
 a Certified Amount (what the PM actually certifies — often less, so
 it's a separate field rather than the claimed amount rewritten in
-place), a Status, the date submitted, and Notes.
+place), a Status, the date submitted, a **TRIM Link** (the web link or
+record number where the claim's documents are filed — shown as a
+"TRIM ↗" link on the claim when it's a web link), and Notes.
 
 Status runs the normal path SUBMITTED → CERTIFIED → PAID, with a
 DISPUTED status for a claim the PM contests. Certification and payment
@@ -1169,20 +1171,29 @@ panel lists every flagged item across every project, soonest first,
 linking back to its project — alongside the other exception panels.
 Open to any logged-in user to edit.
 
-## TRIM Links
+## TRIM & GVW Links
 
-The Dashboard's **TRIM Links** tab collects links into TRIM (the records
-management system) in one place:
+The Dashboard's **TRIM & GVW Links** tab collects useful links in one
+place:
 
-- **TRIM Links** — shared links anyone except a Viewer can add: a title,
-  the TRIM web link *or* a record/container number, an optional category
-  (links are grouped by it) and description. The person who added a link,
-  or an admin, can edit or delete it. Only `http(s)` values become
-  clickable links.
+- **TRIM Links** — shared links into TRIM (the records management system):
+  a title, the TRIM web link *or* a record/container number, an optional
+  category (links are grouped by it) and description.
+- **General GVW Links** — the same, for other GVW resources such as the
+  design guidelines on GVW's website (`TrimLink.kind = GENERAL`).
+
+Anyone except a Viewer can add links; the person who added one, or an
+admin, can edit or delete it. **Clicking a link's title opens it** in a new
+tab. Web addresses work with or without `https://` (e.g.
+`www.gvw.com.au/...`); only web links are ever made clickable, so a pasted
+`javascript:` value can't become a link. A record number has no address to
+open, so it shows with a **Copy** button for pasting into TRIM's search.
+The tab also lists:
+
 - **Project TRIM Folders** — every project's own **TRIM Folder** (set on
   the project's Edit form, next to Project Number), linking to the project.
 
-The list is searchable across both.
+The page is searchable across all three.
 
 ## Tool Suggestions
 
@@ -1700,25 +1711,33 @@ Several project detail tabs still stack many panels (Budget & Contract
 alone has eight), so a **Jump to:** row of pills
 (`components/SectionJumpNav.tsx`) sits just below the tab bar, one pill per
 panel in that tab, in the same top-to-bottom order they're stacked in.
+The row is sticky: it stays pinned just under the page header while you
+scroll, so you can jump between sections from anywhere on the tab.
 Clicking one smooth-scrolls straight to that panel rather than scrolling
 past everything above it first, stopping with the panel's top just below
-the sticky page header (offset by the header's height, so the panel's
-heading isn't hidden underneath it). Each panel is wrapped in a `<div id="...">` in
+the header and the Jump-to row (offset by their combined height, so the
+panel's heading isn't hidden underneath them). Each panel is wrapped in a `<div id="...">` in
 `ProjectDetailPage.tsx` that the matching pill targets; the list of
 {id, label} pairs per tab is a static map there (`TAB_SECTIONS`) rather
 than derived from the JSX, since the panel components themselves don't
 know their own tab or position. A tab with only one section (AI Assistant)
 shows no jump row at all, since there'd be nowhere else to jump to.
 
-### Collapsing long sections
+### Show more on long lists
 
-Any project section listing more than 5 items (`COLLAPSE_THRESHOLD` in
-`components/CollapsibleSection.tsx`) gets a **Collapse** link above it;
-collapsed, it shrinks to a one-line summary ("Risk Register · 12 items —
-Expand"). When a tab has any such sections, **Expand all | Collapse all**
-appears at the end of its Jump-to row. Choices are remembered in the
-browser per section (so collapsing Risks keeps it collapsed on every
-project), and jumping to a collapsed section expands it.
+Any project section whose list has more than 5 items (`COLLAPSE_THRESHOLD`
+in `components/CollapsibleSection.tsx`) shows only 5 of them, with a
+**Show more — all N items** button under the list (and **Show less** to go
+back). Only the list is shortened: charts, totals, filters and buttons in
+the panel always show. Most lists show their first 5 items in their usual
+order; **Cash Flow** shows the 5 months nearest the current month (the
+latest actuals and the next forecasts), while its charts still cover every
+month. When a tab has any long lists, **Expand all | Collapse all** at the
+end of its Jump-to row opens or shortens them all at once. Choices are
+remembered in the browser per section, so opening the Risk Register keeps
+it open on every project. Panels use the `useShowMore` hook and
+`ShowMoreButton`; outside a project page (e.g. the dashboard) lists are
+never shortened.
 
 ### Today & Upcoming
 
@@ -1803,9 +1822,40 @@ filter state can be saved as a named view via **Save current view** —
 stored in the browser's `localStorage` (`frontend/src/savedViews.ts`), not
 on the server, so views are per-browser rather than shared across a team.
 A **Saved views** dropdown re-applies one in a click; **Delete view**
-removes the currently-selected one. The Export CSV button next to these
+removes the currently-selected one.
+
+Separately, the dashboard **remembers your last view**: the tab you were
+on and the Projects filters (status, health, manager, overdue, search) are
+saved to your account (`User.dashboardView`, via `PUT
+/api/auth/preferences`) a moment after you change them, and restored when
+you next open the dashboard, on any device. So a PM who filters to their
+own projects sees just those every time they come back. A link to a
+specific tab (`/?tab=charts`) still opens that tab. The Export CSV button
+next to these
 filters exports the currently-filtered project list, so "my overdue
 projects, as a spreadsheet" is two clicks from a saved view.
+
+## Text Formatting
+
+Long-text fields — meeting minutes summary and notes, site visit notes,
+descriptions, notes and similar boxes across the registers — have a small
+toolbar: **B**old, *I*talic, U̲nderline, **• List** and **1. List**
+(Ctrl/Cmd+B, I and U work too). Formatting is stored as light markers in
+the text itself (`**bold**`, `*italic*`, `__underline__`, lines starting
+`- ` or `1. `; see `frontend/src/richText.ts`), so the raw text stays
+readable in CSV exports, search and the AI assistant, and existing entries
+look exactly as before. Wherever the text is shown it's rendered with that
+formatting by `FormattedText` — built from React elements, never raw HTML,
+so nothing typed into a field can inject markup. The meeting minutes PDF
+prints it as clean text with bullets.
+
+## Cost Inputs (Excl. GST)
+
+Every dollar input — budgets, contract values, contingency, provisional
+items, payment claims, cash flow amounts, variations, tender estimates,
+prices and awarded values, subcontract values and retention held — is
+labelled **($, Excl. GST)**, so figures are entered consistently without
+GST.
 
 ## Tasks
 

@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import FormattedText from "../components/FormattedText";
+import RichTextArea from "../components/RichTextArea";
 import { Link } from "react-router-dom";
 import {
   createToolSuggestion,
@@ -267,18 +269,14 @@ export default function ToolSuggestionsPage() {
                         {formatDate(suggestion.createdAt)}
                       </p>
                       {suggestion.description && (
-                        <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line mt-2">
-                          {suggestion.description}
-                        </p>
+                        <FormattedText className="text-sm text-slate-700 dark:text-slate-300 mt-2" text={suggestion.description} />
                       )}
                       {suggestion.response && (
                         <div className="mt-2 text-sm bg-slate-50 dark:bg-slate-700/50 rounded p-2">
                           <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                             Response:{" "}
                           </span>
-                          <span className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                            {suggestion.response}
-                          </span>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={suggestion.response} />
                         </div>
                       )}
                     </>
@@ -359,7 +357,7 @@ function NewSuggestionForm({
           ))}
         </select>
       </div>
-      <textarea
+      <RichTextArea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={3}
@@ -443,7 +441,7 @@ function EditSuggestionForm({
           ))}
         </select>
       </div>
-      <textarea
+      <RichTextArea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={3}
@@ -451,7 +449,7 @@ function EditSuggestionForm({
         className={INPUT_CLASS}
       />
       {isAdmin && (
-        <textarea
+        <RichTextArea
           value={response}
           onChange={(e) => setResponse(e.target.value)}
           rows={2}

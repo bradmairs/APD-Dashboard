@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import {
   EnvironmentalMonitoringRecord,
   EnvironmentalMonitoringRecordInput,
@@ -185,7 +186,7 @@ export default function EnvironmentalMonitoringFormModal({ record, onClose, onSa
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Corrective Action
             </label>
-            <textarea
+            <RichTextArea
               value={correctiveAction}
               onChange={(e) => setCorrectiveAction(e.target.value)}
               rows={2}
@@ -197,7 +198,7 @@ export default function EnvironmentalMonitoringFormModal({ record, onClose, onSa
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

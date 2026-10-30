@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { Correspondence, CorrespondenceDirection, CorrespondenceInput, CorrespondenceStatus } from "../types";
 import {
   ALL_CORRESPONDENCE_DIRECTIONS,
@@ -132,7 +133,7 @@ export default function CorrespondenceFormModal({ item, onClose, onSave }: Props
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Summary
             </label>
-            <textarea
+            <RichTextArea
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               rows={3}
@@ -186,7 +187,7 @@ export default function CorrespondenceFormModal({ item, onClose, onSave }: Props
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

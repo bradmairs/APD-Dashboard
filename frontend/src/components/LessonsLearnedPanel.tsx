@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { LessonLearned, LessonLearnedInput } from "../types";
 import { LESSON_TYPE_COLORS, LESSON_TYPE_LABELS } from "../lessonMeta";
 import LessonLearnedFormModal from "./LessonLearnedFormModal";
@@ -49,6 +51,8 @@ export default function LessonsLearnedPanel({
     await onDelete(lesson);
   }
 
+  const shown = useShowMore(lessons);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -71,79 +75,78 @@ export default function LessonsLearnedPanel({
           No lessons logged yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {lessons.map((lesson) => {
-            const isExpanded = expandedId === lesson.id;
-            return (
-              <li key={lesson.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : lesson.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${LESSON_TYPE_COLORS[lesson.type]}`}
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((lesson) => {
+              const isExpanded = expandedId === lesson.id;
+              return (
+                <li key={lesson.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : lesson.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${LESSON_TYPE_COLORS[lesson.type]}`}
+                        >
+                          {LESSON_TYPE_LABELS[lesson.type]}
+                        </span>
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {lesson.title}
+                        </span>
+                      </div>
+                      {lesson.category && (
+                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {lesson.category}
+                        </div>
+                      )}
+                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <button
+                        onClick={() => openEdit(lesson)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        {LESSON_TYPE_LABELS[lesson.type]}
-                      </span>
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {lesson.title}
-                      </span>
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(lesson)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
-                    {lesson.category && (
-                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {lesson.category}
-                      </div>
-                    )}
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <button
-                      onClick={() => openEdit(lesson)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(lesson)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
                   </div>
-                </div>
 
-                {isExpanded && (lesson.description || lesson.recommendation) && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {lesson.description && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          What happened
+                  {isExpanded && (lesson.description || lesson.recommendation) && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {lesson.description && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            What happened
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={lesson.description} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {lesson.description}
-                        </p>
-                      </div>
-                    )}
-                    {lesson.recommendation && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Recommendation
+                      )}
+                      {lesson.recommendation && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Recommendation
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={lesson.recommendation} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {lesson.recommendation}
-                        </p>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Logged by {lesson.createdByName}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Logged by {lesson.createdByName}
                     </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="lessons" />
+        </>
       )}
 
       {showModal && (

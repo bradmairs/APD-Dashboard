@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { SqeCategory, SqeRecord, SqeRecordInput, SqeSeverity, SqeStatus } from "../types";
 import {
   ALL_SQE_CATEGORIES,
@@ -120,7 +121,7 @@ export default function SqeFormModal({ record, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -132,7 +133,7 @@ export default function SqeFormModal({ record, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Corrective Action
             </label>
-            <textarea
+            <RichTextArea
               value={correctiveAction}
               onChange={(e) => setCorrectiveAction(e.target.value)}
               rows={2}

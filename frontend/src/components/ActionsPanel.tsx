@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { ActionItem, ActionItemInput, ActionItemStatus } from "../types";
 import { formatDate } from "../format";
 import {
@@ -79,6 +81,8 @@ export default function ActionsPanel({
     await onUpdate(actionItem, { status });
   }
 
+  const shown = useShowMore(actionItems);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -155,108 +159,107 @@ export default function ActionsPanel({
           No actions or decisions logged yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {actionItems.map((actionItem) => {
-            const isExpanded = expandedId === actionItem.id;
-            return (
-              <li key={actionItem.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selection.isSelected(actionItem.id)}
-                    onChange={() => selection.toggle(actionItem.id)}
-                    className="mt-1.5 h-4 w-4 shrink-0"
-                  />
-                  <button
-                    onClick={() =>
-                      setExpandedId(isExpanded ? null : actionItem.id)
-                    }
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${ACTION_TYPE_COLORS[actionItem.type]}`}
-                      >
-                        {ACTION_TYPE_LABELS[actionItem.type]}
-                      </span>
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {actionItem.title}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${ACTION_STATUS_COLORS[actionItem.status]}`}
-                      >
-                        {ACTION_STATUS_LABELS[actionItem.status]}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      {actionItem.ownerName && <span>Owner: {actionItem.ownerName}</span>}
-                      {actionItem.dueDate && <span>Due {formatDate(actionItem.dueDate)}</span>}
-                      <span>Raised {formatDate(actionItem.dateRaised)}</span>
-                      {actionItem.category && <span>{actionItem.category}</span>}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <select
-                      value={actionItem.status}
-                      onChange={(e) =>
-                        handleStatusChange(actionItem, e.target.value as ActionItemStatus)
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((actionItem) => {
+              const isExpanded = expandedId === actionItem.id;
+              return (
+                <li key={actionItem.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(actionItem.id)}
+                      onChange={() => selection.toggle(actionItem.id)}
+                      className="mt-1.5 h-4 w-4 shrink-0"
+                    />
+                    <button
+                      onClick={() =>
+                        setExpandedId(isExpanded ? null : actionItem.id)
                       }
-                      className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+                      className="flex-1 min-w-0 text-left"
                     >
-                      {ALL_ACTION_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {ACTION_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => openEdit(actionItem)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(actionItem)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-
-                {isExpanded && (actionItem.description || actionItem.notes) && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {actionItem.description && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Description
-                        </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {actionItem.description}
-                        </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${ACTION_TYPE_COLORS[actionItem.type]}`}
+                        >
+                          {ACTION_TYPE_LABELS[actionItem.type]}
+                        </span>
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {actionItem.title}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${ACTION_STATUS_COLORS[actionItem.status]}`}
+                        >
+                          {ACTION_STATUS_LABELS[actionItem.status]}
+                        </span>
                       </div>
-                    )}
-                    {actionItem.notes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Notes
-                        </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {actionItem.notes}
-                        </p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                        {actionItem.ownerName && <span>Owner: {actionItem.ownerName}</span>}
+                        {actionItem.dueDate && <span>Due {formatDate(actionItem.dueDate)}</span>}
+                        <span>Raised {formatDate(actionItem.dateRaised)}</span>
+                        {actionItem.category && <span>{actionItem.category}</span>}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Raised by {actionItem.raisedByName}
-                      {actionItem.dateClosed &&
-                        ` · Closed ${formatDate(actionItem.dateClosed)}`}
+                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <select
+                        value={actionItem.status}
+                        onChange={(e) =>
+                          handleStatusChange(actionItem, e.target.value as ActionItemStatus)
+                        }
+                        className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+                      >
+                        {ALL_ACTION_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {ACTION_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(actionItem)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(actionItem)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+
+                  {isExpanded && (actionItem.description || actionItem.notes) && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {actionItem.description && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Description
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={actionItem.description} />
+                        </div>
+                      )}
+                      {actionItem.notes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Notes
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={actionItem.notes} />
+                        </div>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Raised by {actionItem.raisedByName}
+                        {actionItem.dateClosed &&
+                          ` · Closed ${formatDate(actionItem.dateClosed)}`}
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="actions" />
+        </>
       )}
 
       {showModal && (

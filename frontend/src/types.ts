@@ -13,6 +13,8 @@ export interface User {
   emailDigestOptIn?: boolean;
   // Own record only — the saved Today & Upcoming project manager filter.
   upcomingManagerFilter?: string | null;
+  // Own record only — the main dashboard's last view (see DashboardPage).
+  dashboardView?: Record<string, unknown> | null;
   // Own record (login/me) and the admin Users list — see backend/src/twoFactor.ts.
   twoFactorEnabled?: boolean;
 }
@@ -715,6 +717,8 @@ export interface PaymentClaim {
   raisedById: string | null;
   raisedByName: string;
   notes: string | null;
+  // TRIM link or record number for the claim's documents.
+  trimLink: string | null;
   contractId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -1206,8 +1210,11 @@ export type ToolSuggestionInput = Pick<
   "title" | "description" | "category" | "status" | "response"
 >;
 
+export type TrimLinkKind = "TRIM" | "GENERAL";
+
 export interface TrimLink {
   id: string;
+  kind: TrimLinkKind;
   title: string;
   // A URL, or a TRIM record/container number.
   location: string;
@@ -1219,7 +1226,10 @@ export interface TrimLink {
   updatedAt: string;
 }
 
-export type TrimLinkInput = Pick<TrimLink, "title" | "location" | "category" | "description">;
+export type TrimLinkInput = Pick<
+  TrimLink,
+  "kind" | "title" | "location" | "category" | "description"
+>;
 
 export interface TenderSubmission {
   id: string;

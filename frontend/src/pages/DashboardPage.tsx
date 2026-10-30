@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTabParam } from "../useTabParam";
 import {
   ActionItem,
@@ -61,6 +61,7 @@ import {
   updateActionItem,
   updateProject,
   updateTask,
+  updateDashboardView,
 } from "../api";
 import StatCards from "../components/StatCards";
 import { isProjectOverdue } from "../statusMeta";
@@ -123,13 +124,46 @@ const DASHBOARD_TABS: { id: DashboardTabId; label: string }[] = [
   { id: "alerts", label: "Alerts" },
   { id: "charts", label: "Charts" },
   { id: "activity", label: "Activity" },
-  { id: "trim", label: "TRIM Links" },
+  { id: "trim", label: "TRIM & GVW Links" },
   { id: "ai", label: "AI Assistant" },
 ];
 
+// The dashboard's last view, saved on the user's account (User.dashboardView)
+// so it comes back on their next visit, on any device.
+interface DashboardViewState {
+  tab: DashboardTabId;
+  statusFilter: ProjectStatus | "ALL";
+  healthFilter: RagStatus | "ALL";
+  overdueOnly: boolean;
+  projectManager: string;
+  search: string;
+}
+
+const RAG_FILTERS: (RagStatus | "ALL")[] = ["ALL", "GREEN", "AMBER", "RED"];
+
+// Reads a saved view defensively — it's stored JSON, so anything unknown
+// (e.g. a status that no longer exists) falls back to the default.
+function parseDashboardView(raw: unknown): Partial<DashboardViewState> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const v = raw as Record<string, unknown>;
+  const view: Partial<DashboardViewState> = {};
+  if (DASHBOARD_TABS.some((t) => t.id === v.tab)) view.tab = v.tab as DashboardTabId;
+  if (v.statusFilter === "ALL" || ALL_STATUSES.includes(v.statusFilter as ProjectStatus)) {
+    view.statusFilter = v.statusFilter as ProjectStatus | "ALL";
+  }
+  if (RAG_FILTERS.includes(v.healthFilter as RagStatus | "ALL")) {
+    view.healthFilter = v.healthFilter as RagStatus | "ALL";
+  }
+  if (typeof v.overdueOnly === "boolean") view.overdueOnly = v.overdueOnly;
+  if (typeof v.projectManager === "string") view.projectManager = v.projectManager;
+  if (typeof v.search === "string") view.search = v.search;
+  return view;
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user, isViewer } = useAuth();
+  const { user, isViewer, patchUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const { theme } = useTheme();
   const { notifyUndo } = useUndoToast();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -171,6 +205,51 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useTabParam(DASHBOARD_TABS, "projects");
   const [savedViews, setSavedViews] = useState<DashboardView[]>([]);
   const [selectedViewId, setSelectedViewId] = useState("");
+
+  // Restore the user's last dashboard view once, on arrival. An explicit
+  // ?tab= in the URL (a link to a specific tab) wins over the saved tab.
+  const viewRestoredRef = useRef(false);
+  useEffect(() => {
+    if (viewRestoredRef.current || !user) return;
+    viewRestoredRef.current = true;
+    const view = parseDashboardView(user.dashboardView);
+    if (!view) return;
+    if (view.statusFilter) setStatusFilter(view.statusFilter);
+    if (view.healthFilter) setHealthFilter(view.healthFilter);
+    if (view.overdueOnly !== undefined) setOverdueOnly(view.overdueOnly);
+    if (view.projectManager !== undefined) setPmFilter(view.projectManager);
+    if (view.search !== undefined) setSearch(view.search);
+    if (view.tab && !searchParams.has("tab")) setActiveTab(view.tab);
+    // Only on first arrival — later user changes are saved below.
+  }, [user]);
+
+  // Save the view whenever it changes (debounced, and only when it actually
+  // differs from what's saved).
+  const lastSavedViewRef = useRef(JSON.stringify(user?.dashboardView ?? null));
+  useEffect(() => {
+    if (!viewRestoredRef.current) return;
+    const view: DashboardViewState = {
+      tab: activeTab,
+      statusFilter,
+      healthFilter,
+      overdueOnly,
+      projectManager: pmFilter,
+      search,
+    };
+    const json = JSON.stringify(view);
+    if (json === lastSavedViewRef.current) return;
+    const timer = setTimeout(() => {
+      updateDashboardView({ ...view })
+        .then(() => {
+          lastSavedViewRef.current = json;
+          patchUser({ dashboardView: { ...view } });
+        })
+        .catch(() => {
+          // Not worth interrupting anyone over: the view just isn't saved.
+        });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [activeTab, statusFilter, healthFilter, overdueOnly, pmFilter, search]);
 
   useEffect(() => {
     setSavedViews(loadSavedViews());

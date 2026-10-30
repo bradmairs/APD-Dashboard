@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { EnvironmentalMonitoringRecord, EnvironmentalMonitoringRecordInput } from "../types";
 import { formatDate } from "../format";
 import { environmentalMonitoringRank, isExceedance } from "../environmentalMeta";
@@ -61,6 +63,8 @@ export default function EnvironmentalMonitoringPanel({
     return new Date(b.monitoringDate).getTime() - new Date(a.monitoringDate).getTime();
   });
 
+  const shown = useShowMore(sorted);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -90,84 +94,83 @@ export default function EnvironmentalMonitoringPanel({
           No environmental monitoring readings logged yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {sorted.map((record) => {
-            const isExpanded = expandedId === record.id;
-            const exceeded = isExceedance(record);
-            return (
-              <li key={record.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : record.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {record.parameter}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {record.readingValue} {record.unit}
-                        {record.limitValue !== null &&
-                          ` (limit ${record.limitType === "MAX" ? "≤" : "≥"} ${record.limitValue} ${record.unit})`}
-                      </span>
-                      {exceeded && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
-                          Exceedance
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((record) => {
+              const isExpanded = expandedId === record.id;
+              const exceeded = isExceedance(record);
+              return (
+                <li key={record.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : record.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {record.parameter}
                         </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      <span>{formatDate(record.monitoringDate)}</span>
-                      {record.location && <span>{record.location}</span>}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <button
-                      onClick={() => openEdit(record)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {record.readingValue} {record.unit}
+                          {record.limitValue !== null &&
+                            ` (limit ${record.limitType === "MAX" ? "≤" : "≥"} ${record.limitValue} ${record.unit})`}
+                        </span>
+                        {exceeded && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                            Exceedance
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                        <span>{formatDate(record.monitoringDate)}</span>
+                        {record.location && <span>{record.location}</span>}
+                      </div>
                     </button>
-                    <button
-                      onClick={() => handleDelete(record)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <button
+                        onClick={() => openEdit(record)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(record)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {isExpanded && (record.correctiveAction || record.notes) && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {record.correctiveAction && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Corrective Action
+                  {isExpanded && (record.correctiveAction || record.notes) && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {record.correctiveAction && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Corrective Action
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={record.correctiveAction} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {record.correctiveAction}
-                        </p>
-                      </div>
-                    )}
-                    {record.notes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Notes
+                      )}
+                      {record.notes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Notes
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={record.notes} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {record.notes}
-                        </p>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Monitored by {record.monitoredByName}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Monitored by {record.monitoredByName}
                     </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="records" />
+        </>
       )}
 
       {showModal && (

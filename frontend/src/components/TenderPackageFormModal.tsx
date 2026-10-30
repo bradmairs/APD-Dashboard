@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { TenderMethod, TenderPackage, TenderPackageInput, TenderStatus } from "../types";
 import {
   ALL_TENDER_METHODS,
@@ -135,7 +136,7 @@ export default function TenderPackageFormModal({ tenderPackage, onClose, onSave 
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -185,7 +186,7 @@ export default function TenderPackageFormModal({ tenderPackage, onClose, onSave 
             </div>
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Estimated Value
+                Estimated Value ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -230,7 +231,7 @@ export default function TenderPackageFormModal({ tenderPackage, onClose, onSave 
               </div>
               <div className="min-w-0">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Awarded Value
+                  Awarded Value ($, Excl. GST)
                 </label>
                 <input
                   type="number"
@@ -249,7 +250,7 @@ export default function TenderPackageFormModal({ tenderPackage, onClose, onSave 
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

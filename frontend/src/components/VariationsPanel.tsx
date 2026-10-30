@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Variation, VariationInput, VariationStatus } from "../types";
 import { formatCurrency, formatDate } from "../format";
 import { approvedVariationsTotal } from "../variations";
@@ -85,6 +87,8 @@ export default function VariationsPanel({
     await onUpdate(variation, { status });
   }
 
+  const shown = useShowMore(variations);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -163,123 +167,122 @@ export default function VariationsPanel({
           No variations raised yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {variations.map((variation) => {
-            const isExpanded = expandedId === variation.id;
-            const costPositive = Number(variation.costImpact) >= 0;
-            return (
-              <li key={variation.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selection.isSelected(variation.id)}
-                    onChange={() => selection.toggle(variation.id)}
-                    className="mt-1.5 h-4 w-4 shrink-0"
-                  />
-                  <button
-                    onClick={() =>
-                      setExpandedId(isExpanded ? null : variation.id)
-                    }
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {variation.reference && (
-                        <span className="text-xs text-slate-400 dark:text-slate-500">
-                          {variation.reference}
-                        </span>
-                      )}
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {variation.title}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${VARIATION_STATUS_COLORS[variation.status]}`}
-                      >
-                        {VARIATION_STATUS_LABELS[variation.status]}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      <span
-                        className={
-                          costPositive
-                            ? "text-slate-700 dark:text-slate-300"
-                            : "text-green-700 dark:text-green-400"
-                        }
-                      >
-                        {formatCostImpact(variation.costImpact)}
-                      </span>
-                      {variation.timeImpactDays !== null && (
-                        <span>
-                          {variation.timeImpactDays >= 0 ? "+" : ""}
-                          {variation.timeImpactDays} day
-                          {Math.abs(variation.timeImpactDays) === 1 ? "" : "s"}
-                        </span>
-                      )}
-                      <span>Raised {formatDate(variation.dateRaised)}</span>
-                      {variation.category && <span>{variation.category}</span>}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <select
-                      value={variation.status}
-                      onChange={(e) =>
-                        handleStatusChange(variation, e.target.value as VariationStatus)
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((variation) => {
+              const isExpanded = expandedId === variation.id;
+              const costPositive = Number(variation.costImpact) >= 0;
+              return (
+                <li key={variation.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(variation.id)}
+                      onChange={() => selection.toggle(variation.id)}
+                      className="mt-1.5 h-4 w-4 shrink-0"
+                    />
+                    <button
+                      onClick={() =>
+                        setExpandedId(isExpanded ? null : variation.id)
                       }
-                      className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+                      className="flex-1 min-w-0 text-left"
                     >
-                      {ALL_VARIATION_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {VARIATION_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => openEdit(variation)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(variation)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-
-                {isExpanded && (variation.description || variation.notes) && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {variation.description && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Description
-                        </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {variation.description}
-                        </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {variation.reference && (
+                          <span className="text-xs text-slate-400 dark:text-slate-500">
+                            {variation.reference}
+                          </span>
+                        )}
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {variation.title}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${VARIATION_STATUS_COLORS[variation.status]}`}
+                        >
+                          {VARIATION_STATUS_LABELS[variation.status]}
+                        </span>
                       </div>
-                    )}
-                    {variation.notes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Notes
-                        </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {variation.notes}
-                        </p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                        <span
+                          className={
+                            costPositive
+                              ? "text-slate-700 dark:text-slate-300"
+                              : "text-green-700 dark:text-green-400"
+                          }
+                        >
+                          {formatCostImpact(variation.costImpact)}
+                        </span>
+                        {variation.timeImpactDays !== null && (
+                          <span>
+                            {variation.timeImpactDays >= 0 ? "+" : ""}
+                            {variation.timeImpactDays} day
+                            {Math.abs(variation.timeImpactDays) === 1 ? "" : "s"}
+                          </span>
+                        )}
+                        <span>Raised {formatDate(variation.dateRaised)}</span>
+                        {variation.category && <span>{variation.category}</span>}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Raised by {variation.raisedByName}
-                      {variation.dateDecided &&
-                        ` · Decided ${formatDate(variation.dateDecided)}`}
+                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <select
+                        value={variation.status}
+                        onChange={(e) =>
+                          handleStatusChange(variation, e.target.value as VariationStatus)
+                        }
+                        className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+                      >
+                        {ALL_VARIATION_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {VARIATION_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(variation)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(variation)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+
+                  {isExpanded && (variation.description || variation.notes) && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {variation.description && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Description
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={variation.description} />
+                        </div>
+                      )}
+                      {variation.notes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Notes
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={variation.notes} />
+                        </div>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Raised by {variation.raisedByName}
+                        {variation.dateDecided &&
+                          ` · Decided ${formatDate(variation.dateDecided)}`}
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="variations" />
+        </>
       )}
 
       {showModal && (

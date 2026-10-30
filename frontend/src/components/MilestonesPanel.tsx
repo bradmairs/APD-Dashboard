@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Milestone, MilestoneInput } from "../types";
 import { formatDate } from "../format";
 import MilestoneFormModal from "./MilestoneFormModal";
@@ -62,6 +63,8 @@ export default function MilestonesPanel({
     await onDelete(milestone);
   }
 
+  const shown = useShowMore(milestones);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -92,96 +95,99 @@ export default function MilestonesPanel({
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <ul className="divide-y divide-slate-100 dark:divide-slate-700 min-w-[640px]">
-            {milestones.map((milestone, index) => (
-              <li key={milestone.id} className="py-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex flex-col shrink-0 pt-0.5">
-                    <button
-                      onClick={() => onReorder(milestone, "up")}
-                      disabled={index === 0}
-                      className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed leading-none text-xs"
-                      aria-label="Move up"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      onClick={() => onReorder(milestone, "down")}
-                      disabled={index === milestones.length - 1}
-                      className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed leading-none text-xs"
-                      aria-label="Move down"
-                    >
-                      ▼
-                    </button>
-                  </div>
+          <>
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700 min-w-[640px]">
+              {shown.visible.map((milestone, index) => (
+                <li key={milestone.id} className="py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex flex-col shrink-0 pt-0.5">
+                      <button
+                        onClick={() => onReorder(milestone, "up")}
+                        disabled={index === 0}
+                        className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed leading-none text-xs"
+                        aria-label="Move up"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => onReorder(milestone, "down")}
+                        disabled={index === milestones.length - 1}
+                        className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed leading-none text-xs"
+                        aria-label="Move down"
+                      >
+                        ▼
+                      </button>
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {milestone.wbsItem && (
-                        <span className="text-xs text-slate-400 dark:text-slate-500">
-                          {milestone.wbsItem}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {milestone.wbsItem && (
+                          <span className="text-xs text-slate-400 dark:text-slate-500">
+                            {milestone.wbsItem}
+                          </span>
+                        )}
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {milestone.taskActivity}
                         </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <div className="w-32 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                          <div
+                            className="h-full bg-blue-600 dark:bg-blue-500"
+                            style={{ width: `${milestone.percentComplete}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {milestone.percentComplete}%
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        <div>
+                          Start:{" "}
+                          {milestone.startDate
+                            ? formatDate(milestone.startDate)
+                            : "After previous"}
+                        </div>
+                        <div>
+                          Original: {formatDate(milestone.originalCompletion)}
+                        </div>
+                        <div>
+                          Forecast: {formatDate(milestone.forecastedCompletion)}
+                        </div>
+                        <div>
+                          Actual: {formatDate(milestone.actualCompletion)}
+                        </div>
+                      </div>
+
+                      {milestone.notes && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                          {milestone.notes}
+                        </p>
                       )}
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {milestone.taskActivity}
-                      </span>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <div className="w-32 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                        <div
-                          className="h-full bg-blue-600 dark:bg-blue-500"
-                          style={{ width: `${milestone.percentComplete}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {milestone.percentComplete}%
-                      </span>
+                    <div className="flex items-center gap-3 shrink-0 pt-0.5">
+                      <button
+                        onClick={() => openEdit(milestone)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(milestone)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      <div>
-                        Start:{" "}
-                        {milestone.startDate
-                          ? formatDate(milestone.startDate)
-                          : "After previous"}
-                      </div>
-                      <div>
-                        Original: {formatDate(milestone.originalCompletion)}
-                      </div>
-                      <div>
-                        Forecast: {formatDate(milestone.forecastedCompletion)}
-                      </div>
-                      <div>
-                        Actual: {formatDate(milestone.actualCompletion)}
-                      </div>
-                    </div>
-
-                    {milestone.notes && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                        {milestone.notes}
-                      </p>
-                    )}
                   </div>
-
-                  <div className="flex items-center gap-3 shrink-0 pt-0.5">
-                    <button
-                      onClick={() => openEdit(milestone)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(milestone)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+            <ShowMoreButton state={shown} noun="milestones" />
+          </>
         </div>
       )}
 

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Rfi, RfiInput, RfiStatus } from "../types";
 import { formatDate } from "../format";
 import {
@@ -76,6 +78,8 @@ export default function RfisPanel({ rfis, onCreate, onUpdate, onDelete }: Props)
 
   const sorted = [...rfis].sort((a, b) => rfiStatusRank(a.status) - rfiStatusRank(b.status));
 
+  const shown = useShowMore(sorted);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -148,115 +152,112 @@ export default function RfisPanel({ rfis, onCreate, onUpdate, onDelete }: Props)
       {rfis.length === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">No RFIs raised yet.</p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {sorted.map((rfi) => {
-            const isExpanded = expandedId === rfi.id;
-            const overdue = isRfiOverdue(rfi);
-            return (
-              <li key={rfi.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selection.isSelected(rfi.id)}
-                    onChange={() => selection.toggle(rfi.id)}
-                    className="mt-1.5 h-4 w-4 shrink-0"
-                  />
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : rfi.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {rfi.rfiNumber}: {rfi.subject}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${RFI_STATUS_COLORS[rfi.status]}`}
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((rfi) => {
+              const isExpanded = expandedId === rfi.id;
+              const overdue = isRfiOverdue(rfi);
+              return (
+                <li key={rfi.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(rfi.id)}
+                      onChange={() => selection.toggle(rfi.id)}
+                      className="mt-1.5 h-4 w-4 shrink-0"
+                    />
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : rfi.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {rfi.rfiNumber}: {rfi.subject}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${RFI_STATUS_COLORS[rfi.status]}`}
+                        >
+                          {RFI_STATUS_LABELS[rfi.status]}
+                        </span>
+                        {overdue && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                            Overdue
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                        {rfi.raisedTo && <span>To {rfi.raisedTo}</span>}
+                        <span>Raised {formatDate(rfi.dateRaised)}</span>
+                        {rfi.dateRequired && (
+                          <span className={overdue ? "text-red-600 dark:text-red-400 font-medium" : ""}>
+                            Due {formatDate(rfi.dateRequired)}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <select
+                        value={rfi.status}
+                        onChange={(e) => handleStatusChange(rfi, e.target.value as RfiStatus)}
+                        className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
                       >
-                        {RFI_STATUS_LABELS[rfi.status]}
-                      </span>
-                      {overdue && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
-                          Overdue
-                        </span>
-                      )}
+                        {ALL_RFI_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {RFI_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(rfi)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(rfi)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      {rfi.raisedTo && <span>To {rfi.raisedTo}</span>}
-                      <span>Raised {formatDate(rfi.dateRaised)}</span>
-                      {rfi.dateRequired && (
-                        <span className={overdue ? "text-red-600 dark:text-red-400 font-medium" : ""}>
-                          Due {formatDate(rfi.dateRequired)}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <select
-                      value={rfi.status}
-                      onChange={(e) => handleStatusChange(rfi, e.target.value as RfiStatus)}
-                      className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
-                    >
-                      {ALL_RFI_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {RFI_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => openEdit(rfi)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(rfi)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
                   </div>
-                </div>
 
-                {isExpanded && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    <div>
-                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                        Question
-                      </div>
-                      <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                        {rfi.question}
-                      </p>
-                    </div>
-                    {rfi.response && (
+                  {isExpanded && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
                       <div>
                         <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Response
+                          Question
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {rfi.response}
-                        </p>
+                        <FormattedText className="text-slate-700 dark:text-slate-300" text={rfi.question} />
                       </div>
-                    )}
-                    {rfi.notes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Notes
+                      {rfi.response && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Response
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={rfi.response} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {rfi.notes}
-                        </p>
+                      )}
+                      {rfi.notes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Notes
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={rfi.notes} />
+                        </div>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Raised by {rfi.raisedByName}
+                        {rfi.dateAnswered && ` · Answered ${formatDate(rfi.dateAnswered)}`}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Raised by {rfi.raisedByName}
-                      {rfi.dateAnswered && ` · Answered ${formatDate(rfi.dateAnswered)}`}
                     </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="RFIs" />
+        </>
       )}
 
       {showModal && (

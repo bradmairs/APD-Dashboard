@@ -8,6 +8,12 @@ import { prisma } from "../prisma";
 const router = Router();
 
 const MAX_TEXT_LENGTH = 2000;
+const KINDS = ["TRIM", "GENERAL"] as const;
+type Kind = (typeof KINDS)[number];
+
+function isKind(value: unknown): value is Kind {
+  return KINDS.includes(value as Kind);
+}
 
 function text(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -29,8 +35,12 @@ router.post("/", async (req, res) => {
   if (!location) {
     return res.status(400).json({ error: "A link or TRIM record number is required" });
   }
+  if (req.body?.kind !== undefined && !isKind(req.body.kind)) {
+    return res.status(400).json({ error: "kind must be TRIM or GENERAL" });
+  }
   const link = await prisma.trimLink.create({
     data: {
+      kind: isKind(req.body?.kind) ? req.body.kind : "TRIM",
       title,
       location,
       category: text(req.body?.category),
@@ -48,8 +58,12 @@ router.put("/:id", async (req, res) => {
   if (before.createdById && before.createdById !== req.user!.sub && req.user!.role !== "ADMIN") {
     return res.status(403).json({ error: "Only the person who added this link or an admin can edit it" });
   }
-  const { title, location, category, description } = req.body as Record<string, unknown>;
+  const { kind, title, location, category, description } = req.body as Record<string, unknown>;
   const data: Record<string, unknown> = {};
+  if (kind !== undefined) {
+    if (!isKind(kind)) return res.status(400).json({ error: "kind must be TRIM or GENERAL" });
+    data.kind = kind;
+  }
   if (title !== undefined) {
     data.title = text(title);
     if (!data.title) return res.status(400).json({ error: "Title is required" });
@@ -57,7 +71,7 @@ router.put("/:id", async (req, res) => {
   if (location !== undefined) {
     data.location = text(location);
     if (!data.location) {
-      return res.status(400).json({ error: "A link or TRIM record number is required" });
+      return res.status(400).json({ error: "A link or record number is required" });
     }
   }
   if (category !== undefined) data.category = text(category);

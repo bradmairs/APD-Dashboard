@@ -278,6 +278,10 @@ model User {
   // (a project manager's display name), so it sticks across logins and
   // devices. Null = all project managers.
   upcomingManagerFilter          String?
+  // The main dashboard's last view (tab and project filters), restored on
+  // the next visit so nobody has to re-apply their filters. Shape is owned
+  // by the frontend (DashboardViewState in DashboardPage.tsx).
+  dashboardView                  Json?
   // Opt-in TOTP two-factor auth (authenticator app) — see backend/src/twoFactor.ts.
   // The secret is stored AES-GCM encrypted (not plaintext) and is set while a
   // user is still enrolling (twoFactorEnabled=false) until they confirm a code.
@@ -1091,6 +1095,8 @@ model PaymentClaim {
   raisedById      String?
   raisedByName    String
   notes           String?
+  // Where the claim's documents are filed in TRIM: a link or record number.
+  trimLink        String?
   // Which Contracts register entry this claim draws down, so the contract
   // can show its remaining value (contractValue minus claims to date).
   // Optional and SetNull on delete — a claim isn't required to be against
@@ -1617,17 +1623,20 @@ model ToolSuggestion {
 // dashboard: frequently used folders, templates and procedures. Not tied to
 // a project — a project's own folder is Project.trimFolder.
 model TrimLink {
-  id            String   @id @default(cuid())
+  id            String       @id @default(cuid())
+  // TRIM = a link into TRIM; GENERAL = a general GVW link (e.g. design
+  // guidelines on GVW's website), shown in its own section.
+  kind          TrimLinkKind @default(TRIM)
   title         String
   // A URL, or a TRIM record/container number when there's no web link.
   location      String
   category      String?
   description   String?
-  createdBy     User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy     User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdById   String?
   createdByName String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 // A user's Microsoft sign-in for SharePoint sync (delegated device-code
@@ -1640,4 +1649,9 @@ model SharePointConnection {
   accountName  String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+enum TrimLinkKind {
+  TRIM
+  GENERAL
 }

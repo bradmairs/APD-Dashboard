@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../prisma";
@@ -19,6 +20,10 @@ import {
 } from "../twoFactor";
 
 const router = Router();
+
+// The saved dashboard view is a handful of filter values; anything bigger is
+// not a dashboard view.
+const MAX_DASHBOARD_VIEW_LENGTH = 2000;
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -53,6 +58,7 @@ type SessionUser = {
   emailDigestOptIn: boolean;
   twoFactorEnabled: boolean;
   upcomingManagerFilter: string | null;
+  dashboardView: Prisma.JsonValue | null;
 };
 
 function toSessionUser(user: SessionUser) {
@@ -65,6 +71,7 @@ function toSessionUser(user: SessionUser) {
     emailDigestOptIn: user.emailDigestOptIn,
     twoFactorEnabled: user.twoFactorEnabled,
     upcomingManagerFilter: user.upcomingManagerFilter,
+    dashboardView: user.dashboardView,
   };
 }
 
@@ -211,7 +218,12 @@ router.get("/me", requireAuth, async (req, res) => {
   // and baking it into the token would mean it goes stale until next login.
   const user = await prisma.user.findUnique({
     where: { id: req.user!.sub },
-    select: { emailDigestOptIn: true, twoFactorEnabled: true, upcomingManagerFilter: true },
+    select: {
+      emailDigestOptIn: true,
+      twoFactorEnabled: true,
+      upcomingManagerFilter: true,
+      dashboardView: true,
+    },
   });
   res.json({
     id: req.user!.sub,
@@ -222,17 +234,36 @@ router.get("/me", requireAuth, async (req, res) => {
     emailDigestOptIn: user?.emailDigestOptIn ?? false,
     twoFactorEnabled: user?.twoFactorEnabled ?? false,
     upcomingManagerFilter: user?.upcomingManagerFilter ?? null,
+    dashboardView: user?.dashboardView ?? null,
   });
 });
 
 // Per-user settings that should follow someone across logins and devices.
 // Each field is optional, so a client can save one without touching others.
 router.put("/preferences", requireAuth, async (req, res) => {
-  const { emailDigestOptIn, upcomingManagerFilter } = req.body as {
+  const { emailDigestOptIn, upcomingManagerFilter, dashboardView } = req.body as {
     emailDigestOptIn?: unknown;
     upcomingManagerFilter?: unknown;
+    dashboardView?: unknown;
   };
-  const data: { emailDigestOptIn?: boolean; upcomingManagerFilter?: string | null } = {};
+  const data: {
+    emailDigestOptIn?: boolean;
+    upcomingManagerFilter?: string | null;
+    dashboardView?: Prisma.InputJsonValue | typeof Prisma.DbNull;
+  } = {};
+  if (dashboardView !== undefined) {
+    if (dashboardView === null) {
+      data.dashboardView = Prisma.DbNull;
+    } else if (
+      typeof dashboardView !== "object" ||
+      Array.isArray(dashboardView) ||
+      JSON.stringify(dashboardView).length > MAX_DASHBOARD_VIEW_LENGTH
+    ) {
+      return res.status(400).json({ error: "dashboardView must be a small object" });
+    } else {
+      data.dashboardView = dashboardView as Prisma.InputJsonValue;
+    }
+  }
   if (emailDigestOptIn !== undefined) {
     if (typeof emailDigestOptIn !== "boolean") {
       return res.status(400).json({ error: "emailDigestOptIn must be true or false" });
@@ -251,7 +282,7 @@ router.put("/preferences", requireAuth, async (req, res) => {
   const user = await prisma.user.update({
     where: { id: req.user!.sub },
     data,
-    select: { emailDigestOptIn: true, upcomingManagerFilter: true },
+    select: { emailDigestOptIn: true, upcomingManagerFilter: true, dashboardView: true },
   });
   res.json(user);
 });

@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import FormattedText from "./FormattedText";
 import { RagStatus } from "../types";
 import { RAG_COLORS, RAG_LABELS } from "../ragMeta";
 
@@ -41,7 +42,7 @@ export function NarrativeBlock({ title, text }: { title: string; text: string })
   return (
     <div className="mb-3 last:mb-0">
       <div className="text-xs font-medium text-slate-500 mb-1">{title}</div>
-      <p className="text-sm text-slate-700 whitespace-pre-line">{text}</p>
+      <FormattedText className="text-sm text-slate-700" text={text} />
     </div>
   );
 }

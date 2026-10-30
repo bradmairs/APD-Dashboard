@@ -255,7 +255,7 @@ import ChecklistPanel from "../components/ChecklistPanel";
 import TenderSubmissionsPanel from "../components/TenderSubmissionsPanel";
 import CollapsibleSection, {
   COLLAPSE_THRESHOLD,
-  useCollapsedSections,
+  useExpandedSections,
 } from "../components/CollapsibleSection";
 import { STANDARD_PROCUREMENT_CHECKLIST } from "../checklistMeta";
 import DefectsPanel from "../components/DefectsPanel";
@@ -402,8 +402,8 @@ export default function ProjectDetailPage() {
   const [safetyInspections, setSafetyInspections] = useState<SafetyInspection[]>([]);
   const [tenderPackages, setTenderPackages] = useState<TenderPackage[]>([]);
   const [tenderSubmissions, setTenderSubmissions] = useState<TenderSubmission[]>([]);
-  const { collapsed: collapsedSections, setCollapsed: setSectionsCollapsed } =
-    useCollapsedSections();
+  const { expanded: expandedSections, setExpanded: setSectionsExpanded } =
+    useExpandedSections();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -1423,9 +1423,9 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // Item counts per section, for CollapsibleSection: a section with more
-  // than COLLAPSE_THRESHOLD items can be collapsed (see Expand/Collapse all
-  // in the Jump-to row).
+  // Item counts per section: a section whose list has more than
+  // COLLAPSE_THRESHOLD items shows only the first few until expanded (see
+  // useShowMore), and gets Expand all / Collapse all in the Jump-to row.
   const sectionCounts: Record<string, number> = {
     "stakeholders": stakeholders.length,
     "actions": actionItems.length,
@@ -1463,21 +1463,14 @@ export default function ProjectDetailPage() {
     "training-records": trainingRecords.length,
     "toolbox-talks": toolboxTalks.length,
   };
-  const sectionLabels = new Map(
-    Object.values(TAB_SECTIONS)
-      .flat()
-      .map((sec) => [sec.id, sec.label])
-  );
   const collapsibleInTab = TAB_SECTIONS[activeTab]
     .map((sec) => sec.id)
     .filter((sectionId) => (sectionCounts[sectionId] ?? 0) > COLLAPSE_THRESHOLD);
   function section(sectionId: string) {
     return {
       id: sectionId,
-      label: sectionLabels.get(sectionId) ?? sectionId,
-      count: sectionCounts[sectionId] ?? 0,
-      collapsed: collapsedSections.has(sectionId),
-      onToggle: (value: boolean) => setSectionsCollapsed([sectionId], value),
+      expanded: expandedSections.has(sectionId),
+      onExpandedChange: (value: boolean) => setSectionsExpanded([sectionId], value),
     };
   }
 
@@ -1610,10 +1603,9 @@ export default function ProjectDetailPage() {
         <Tabs tabs={PROJECT_TABS} active={activeTab} onChange={setActiveTab} />
         <SectionJumpNav
           sections={TAB_SECTIONS[activeTab]}
-          onJump={(sectionId) => setSectionsCollapsed([sectionId], false)}
           {...(collapsibleInTab.length > 0 && {
-            onExpandAll: () => setSectionsCollapsed(collapsibleInTab, false),
-            onCollapseAll: () => setSectionsCollapsed(collapsibleInTab, true),
+            onExpandAll: () => setSectionsExpanded(collapsibleInTab, true),
+            onCollapseAll: () => setSectionsExpanded(collapsibleInTab, false),
           })}
         />
 

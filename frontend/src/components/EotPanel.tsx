@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FormattedText from "./FormattedText";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { EotClaim, EotClaimInput, EotStatus } from "../types";
 import { formatDate } from "../format";
 import { approvedEotDaysTotal } from "../eot";
@@ -53,6 +55,8 @@ export default function EotPanel({ claims, onCreate, onUpdate, onDelete }: Props
     await onUpdate(claim, { status });
   }
 
+  const shown = useShowMore(claims);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -83,105 +87,104 @@ export default function EotPanel({ claims, onCreate, onUpdate, onDelete }: Props
           No EOT claims raised yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {claims.map((claim) => {
-            const isExpanded = expandedId === claim.id;
-            return (
-              <li key={claim.id} className="py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : claim.id)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {claim.reference && (
-                        <span className="text-xs text-slate-400 dark:text-slate-500">
-                          {claim.reference}
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((claim) => {
+              const isExpanded = expandedId === claim.id;
+              return (
+                <li key={claim.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : claim.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {claim.reference && (
+                          <span className="text-xs text-slate-400 dark:text-slate-500">
+                            {claim.reference}
+                          </span>
+                        )}
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {claim.title}
                         </span>
-                      )}
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {claim.title}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${EOT_STATUS_COLORS[claim.status]}`}
-                      >
-                        {EOT_STATUS_LABELS[claim.status]}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                      <span>
-                        {claim.daysClaimed} day{claim.daysClaimed === 1 ? "" : "s"} claimed
-                      </span>
-                      {claim.daysGranted !== null && (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${EOT_STATUS_COLORS[claim.status]}`}
+                        >
+                          {EOT_STATUS_LABELS[claim.status]}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
                         <span>
-                          {claim.daysGranted} day{claim.daysGranted === 1 ? "" : "s"} granted
+                          {claim.daysClaimed} day{claim.daysClaimed === 1 ? "" : "s"} claimed
                         </span>
-                      )}
-                      <span>Submitted {formatDate(claim.dateSubmitted)}</span>
-                      {claim.cause && <span>{claim.cause}</span>}
+                        {claim.daysGranted !== null && (
+                          <span>
+                            {claim.daysGranted} day{claim.daysGranted === 1 ? "" : "s"} granted
+                          </span>
+                        )}
+                        <span>Submitted {formatDate(claim.dateSubmitted)}</span>
+                        {claim.cause && <span>{claim.cause}</span>}
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                      <select
+                        value={claim.status}
+                        onChange={(e) =>
+                          handleStatusChange(claim, e.target.value as EotStatus)
+                        }
+                        className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+                      >
+                        {ALL_EOT_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {EOT_STATUS_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => openEdit(claim)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(claim)}
+                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    <select
-                      value={claim.status}
-                      onChange={(e) =>
-                        handleStatusChange(claim, e.target.value as EotStatus)
-                      }
-                      className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
-                    >
-                      {ALL_EOT_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {EOT_STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => openEdit(claim)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(claim)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
-                      Delete
-                    </button>
                   </div>
-                </div>
 
-                {isExpanded && (claim.description || claim.notes) && (
-                  <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {claim.description && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Description
+                  {isExpanded && (claim.description || claim.notes) && (
+                    <div className="mt-3 space-y-3 text-sm border-t border-slate-100 dark:border-slate-700 pt-3">
+                      {claim.description && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Description
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={claim.description} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {claim.description}
-                        </p>
-                      </div>
-                    )}
-                    {claim.notes && (
-                      <div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Notes
+                      )}
+                      {claim.notes && (
+                        <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Notes
+                          </div>
+                          <FormattedText className="text-slate-700 dark:text-slate-300" text={claim.notes} />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line">
-                          {claim.notes}
-                        </p>
+                      )}
+                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                        Raised by {claim.raisedByName}
+                        {claim.dateDecided && ` · Decided ${formatDate(claim.dateDecided)}`}
                       </div>
-                    )}
-                    <div className="text-xs text-slate-400 dark:text-slate-500">
-                      Raised by {claim.raisedByName}
-                      {claim.dateDecided && ` · Decided ${formatDate(claim.dateDecided)}`}
                     </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ShowMoreButton state={shown} noun="claims" />
+        </>
       )}
 
       {showModal && (

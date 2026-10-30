@@ -211,6 +211,16 @@ export function updateUpcomingManagerFilter(
   }).then((res) => handle(res));
 }
 
+export function updateDashboardView(
+  dashboardView: Record<string, unknown> | null
+): Promise<{ dashboardView: Record<string, unknown> | null }> {
+  return fetch(`${API_BASE}/auth/preferences`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dashboardView }),
+  }).then((res) => handle(res));
+}
+
 export function getTrimLinks(): Promise<TrimLink[]> {
   return fetch(`${API_BASE}/trim-links`).then((res) => handle(res));
 }

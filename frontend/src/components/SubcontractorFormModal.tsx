@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { Subcontractor, SubcontractorInput, SubcontractorStatus } from "../types";
 import {
   ALL_SUBCONTRACTOR_STATUSES,
@@ -130,7 +131,7 @@ export default function SubcontractorFormModal({ subcontractor, onClose, onSave 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="min-w-0">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Contract Value
+                Contract Value ($, Excl. GST)
               </label>
               <input
                 type="number"
@@ -199,7 +200,7 @@ export default function SubcontractorFormModal({ subcontractor, onClose, onSave 
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

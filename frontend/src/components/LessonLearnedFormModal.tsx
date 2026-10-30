@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { LessonLearned, LessonLearnedInput, LessonType } from "../types";
 import { ALL_LESSON_TYPES, LESSON_TYPE_LABELS } from "../lessonMeta";
 
@@ -112,7 +113,7 @@ export default function LessonLearnedFormModal({ lesson, onClose, onSave }: Prop
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               What happened
             </label>
-            <textarea
+            <RichTextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -124,7 +125,7 @@ export default function LessonLearnedFormModal({ lesson, onClose, onSave }: Prop
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Recommendation for future projects
             </label>
-            <textarea
+            <RichTextArea
               value={recommendation}
               onChange={(e) => setRecommendation(e.target.value)}
               rows={3}

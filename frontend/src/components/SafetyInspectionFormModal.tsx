@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { SafetyInspection, SafetyInspectionInput, SafetyInspectionStatus } from "../types";
 import {
   ALL_SAFETY_INSPECTION_STATUSES,
@@ -168,7 +169,7 @@ export default function SafetyInspectionFormModal({ inspection, onClose, onSave 
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Findings
             </label>
-            <textarea
+            <RichTextArea
               value={findings}
               onChange={(e) => setFindings(e.target.value)}
               rows={3}
@@ -180,7 +181,7 @@ export default function SafetyInspectionFormModal({ inspection, onClose, onSave 
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Corrective Action
             </label>
-            <textarea
+            <RichTextArea
               value={correctiveAction}
               onChange={(e) => setCorrectiveAction(e.target.value)}
               rows={2}

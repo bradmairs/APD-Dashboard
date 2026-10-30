@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { ArchiveItemType, ArchiveLink, ArchiveSearchResult } from "../types";
 import { searchArchive } from "../api";
 import { formatDate } from "../format";
@@ -48,6 +49,8 @@ export default function ArchiveLinksPanel({ links, onCreate, onDelete }: Props) 
   }
 
   const alreadyLinked = new Set(links.map((l) => l.archiveId));
+
+  const shown = useShowMore(links);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
@@ -122,32 +125,35 @@ export default function ArchiveLinksPanel({ links, onCreate, onDelete }: Props) 
           No Engineering Archive items linked yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {links.map((link) => (
-            <li key={link.id} className="py-2 flex items-center justify-between text-sm">
-              <div className="min-w-0">
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline font-medium truncate block"
-                >
-                  {link.label}
-                </a>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  {TYPE_LABELS[link.archiveType]} · linked by {link.createdByName} on{" "}
-                  {formatDate(link.createdAt)}
+        <>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            {shown.visible.map((link) => (
+              <li key={link.id} className="py-2 flex items-center justify-between text-sm">
+                <div className="min-w-0">
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium truncate block"
+                  >
+                    {link.label}
+                  </a>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {TYPE_LABELS[link.archiveType]} · linked by {link.createdByName} on{" "}
+                    {formatDate(link.createdAt)}
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={() => onDelete(link)}
-                className="text-xs text-red-600 dark:text-red-400 hover:underline ml-3 shrink-0"
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
+                <button
+                  onClick={() => onDelete(link)}
+                  className="text-xs text-red-600 dark:text-red-400 hover:underline ml-3 shrink-0"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+          <ShowMoreButton state={shown} noun="links" />
+        </>
       )}
     </div>
   );

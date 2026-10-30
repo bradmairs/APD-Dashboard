@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import RichTextArea from "./RichTextArea";
 import { CommunityEnquiry, CommunityEnquiryInput, EnquiryCategory, EnquiryStatus } from "../types";
 import { ALL_ENQUIRY_CATEGORIES, ALL_ENQUIRY_STATUSES, ENQUIRY_CATEGORY_LABELS, ENQUIRY_STATUS_LABELS } from "../enquiryMeta";
 
@@ -102,7 +103,7 @@ export default function EnquiryFormModal({ enquiry, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
-            <textarea
+            <RichTextArea
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -193,7 +194,7 @@ export default function EnquiryFormModal({ enquiry, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Resolution
             </label>
-            <textarea
+            <RichTextArea
               value={resolution}
               onChange={(e) => setResolution(e.target.value)}
               rows={2}
@@ -206,7 +207,7 @@ export default function EnquiryFormModal({ enquiry, onClose, onSave }: Props) {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
-            <textarea
+            <RichTextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

@@ -27,3 +27,31 @@ export function forecastAtCompletion(entries: CashFlowEntry[]): number {
   }
   return total;
 }
+
+// The cash flow entries for the `months` calendar months nearest the current
+// month (ties go to the earlier month, so recent actuals win over far
+// forecasts), in their original order. Used for the Cash Flow list's
+// collapsed view: the latest actuals and the next forecasts, rather than the
+// first few months of the project.
+export function entriesNearestNow(
+  entries: CashFlowEntry[],
+  months: number,
+  now: Date = new Date()
+): CashFlowEntry[] {
+  const monthIndex = (key: string) => {
+    const [y, m] = key.substring(0, 7).split("-").map(Number);
+    return y * 12 + (m - 1);
+  };
+  const current = now.getFullYear() * 12 + now.getMonth();
+  const keys = Array.from(new Set(entries.map((e) => e.month.substring(0, 7))));
+  const nearest = new Set(
+    keys
+      .sort((a, b) => {
+        const da = Math.abs(monthIndex(a) - current);
+        const db = Math.abs(monthIndex(b) - current);
+        return da - db || monthIndex(a) - monthIndex(b);
+      })
+      .slice(0, months)
+  );
+  return entries.filter((e) => nearest.has(e.month.substring(0, 7)));
+}
