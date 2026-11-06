@@ -1258,3 +1258,18 @@ export interface TenderSubmissionInput {
   recommended: boolean;
   notes: string | null;
 }
+
+// Returned with a Word (.docx) file attached to a meeting: the project
+// manager's actions read from the document's action table.
+export interface ActionImportResult {
+  manager: string | null;
+  found: number;
+  added: string[];
+  skippedOthers: number;
+  skippedClosed: number;
+  skippedDuplicates: number;
+}
+
+export type AttachmentUploadResult = Attachment & {
+  actionImport?: ActionImportResult | { error: string };
+};

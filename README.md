@@ -1008,6 +1008,38 @@ This uses two separate Ollama model slots — `OLLAMA_CHAT_MODEL` for text
 reasoning and `OLLAMA_VISION_MODEL` for reading a photo — rather than one
 model for everything; see **AI Assistant → Configuration** below.
 
+
+### Importing actions from Word minutes (no AI needed)
+
+Attach a **Word (.docx)** minutes document to a meeting — in the New
+Meeting form's **Minutes Document** field, or with **+ Attach file** on a
+saved meeting — and the dashboard reads its action table and adds the
+**project manager's** actions to Actions & Decisions, linked to that
+meeting. It's rule-based (`backend/src/minutesActions.ts`), so it works
+without the AI assistant:
+
+- **Finding the table:** any table whose header row has an action column
+  (Action, Action Required, Task, Description, Item…) and an owner column
+  (Owner, Responsible, Who, Action By, Assigned To…). A Due / By When /
+  Date column and a Status column are used when present; column order and
+  extra columns don't matter, and other tables (attendees, details) are
+  ignored.
+- **Whose actions:** only rows whose owner names the project's **Project
+  Manager** — full name, initials ("BM"), "B Mairs", "Brad M", surname, or
+  first name alone when no other owner shares it. Rows shared with others
+  ("Brad Mairs / Lachlan McGregor") count; rows owned only by others are
+  left out.
+- **What's added:** each action with the PM as owner, the due date when
+  it's a date (5 Nov 2026, 05/11/2026, 2026-11-05; "TBC" leaves it blank
+  and is noted), raised on the meeting date, and a note naming the file.
+  Rows already marked Closed/Complete, and actions already on the project
+  (e.g. the same file attached twice), are skipped.
+
+A message above the meeting list says what was added and what was left
+out. Actions written only as sentences, not in a table, aren't imported —
+nor are PDF minutes, whose tables can't be read reliably without AI. The
+project needs a Project Manager set for anything to be matched.
+
 ## Correspondence
 
 Each project has a **Correspondence Register** — a log of formal letters

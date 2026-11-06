@@ -1,4 +1,6 @@
 import fs from "fs";
+import path from "path";
+import { ActionImportResult, importMinutesActions } from "../minutesActionImport";
 import { Router } from "express";
 import { prisma } from "../prisma";
 import projectTasksRouter from "./tasks";
@@ -187,7 +189,26 @@ router.post(
       action: `uploaded file "${attachment.originalName}"`,
     });
 
-    res.status(201).json(attachment);
+    // A Word minutes document attached to a meeting: add the project
+    // manager's actions from its action table (see minutesActionImport.ts).
+    // Never fails the upload itself — a file it can't read just adds none.
+    let actionImport: ActionImportResult | { error: string } | undefined;
+    if (meetingMinutesId && path.extname(attachment.originalName).toLowerCase() === ".docx") {
+      try {
+        actionImport = await importMinutesActions({
+          projectId: req.params.id,
+          meetingId: meetingMinutesId,
+          filePath: req.file.path,
+          fileName: attachment.originalName,
+          user: req.user!,
+        });
+      } catch (err) {
+        console.error("Importing actions from minutes failed:", err);
+        actionImport = { error: "Couldn't read actions from this document" };
+      }
+    }
+
+    res.status(201).json(actionImport ? { ...attachment, actionImport } : attachment);
   }
 );
 
