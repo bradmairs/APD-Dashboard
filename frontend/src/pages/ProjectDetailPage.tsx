@@ -1369,8 +1369,9 @@ export default function ProjectDetailPage() {
 
   async function handleUploadMeetingAttachment(meetingId: string, file: File) {
     if (!project) return;
-    await uploadAttachment(project.id, file, meetingId);
+    const result = await uploadAttachment(project.id, file, meetingId);
     await load();
+    return result.actionImport;
   }
 
   async function handleGenerateMeetingMinutesDraft(input: {

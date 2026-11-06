@@ -5,6 +5,10 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.42 - 2026-11-06
+
+- Attaching Word (.docx) meeting minutes to a meeting now adds the **project manager's actions** from the document's action table to Actions & Decisions (linked to the meeting, with due dates), without needing AI; actions assigned only to others, closed ones and duplicates are left out, and a message shows what was added
+
 ## 1.41 - 2026-10-30
 
 - Long-text boxes are now true formatted editors: bold, italic, underline and bullet/numbered lists show in the box as you type (no `**` symbols); pasted text comes in without outside styling

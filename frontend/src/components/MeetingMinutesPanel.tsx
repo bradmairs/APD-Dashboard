@@ -26,6 +26,7 @@ import {
   suggestionToTask,
 } from "../meetingActionRouting";
 import MeetingMinutesFormModal from "./MeetingMinutesFormModal";
+import { ActionImportResult } from "../types";
 import SuggestedActionList from "./SuggestedActionList";
 import { useConfirm } from "../confirm/ConfirmContext";
 
@@ -42,7 +43,11 @@ interface Props {
     data: Partial<MeetingMinutesInput>
   ) => Promise<MeetingMinutes>;
   onDelete: (meeting: MeetingMinutes) => Promise<void>;
-  onUploadAttachment: (meetingId: string, file: File) => Promise<void>;
+  // Resolves with what was read from a Word minutes file's action table.
+  onUploadAttachment: (
+    meetingId: string,
+    file: File
+  ) => Promise<ActionImportResult | { error: string } | undefined>;
   onDeleteAttachment: (attachment: Attachment) => Promise<void>;
   onCreateAction: (data: Partial<ActionItemInput>) => Promise<void>;
   onExtractActions: (meetingId: string) => Promise<SuggestedAction[]>;
@@ -66,7 +71,7 @@ function MeetingAttachments({
 }: {
   meetingId: string;
   attachments: Attachment[];
-  onUpload: (meetingId: string, file: File) => Promise<void>;
+  onUpload: (meetingId: string, file: File) => Promise<unknown>;
   onDelete: (attachment: Attachment) => Promise<void>;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -366,6 +371,18 @@ export default function MeetingMinutesPanel({
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<MeetingMinutes | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [importNotice, setImportNotice] = useState<{
+    fileName: string;
+    result: ActionImportResult | { error: string };
+  } | null>(null);
+
+  // Every upload (the form's minutes document or + Attach file) goes
+  // through here, so the result of reading a Word file's action table is
+  // shown whichever way it was attached.
+  async function uploadAndReport(meetingId: string, file: File) {
+    const result = await onUploadAttachment(meetingId, file);
+    if (result) setImportNotice({ fileName: file.name, result });
+  }
 
   function openCreate() {
     setEditing(null);
@@ -451,6 +468,14 @@ export default function MeetingMinutesPanel({
           + New Meeting
         </button>
       </div>
+
+      {importNotice && (
+        <ActionImportNotice
+          fileName={importNotice.fileName}
+          result={importNotice.result}
+          onDismiss={() => setImportNotice(null)}
+        />
+      )}
 
       {meetings.length === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -553,7 +578,7 @@ export default function MeetingMinutesPanel({
                       <MeetingAttachments
                         meetingId={meeting.id}
                         attachments={attachments}
-                        onUpload={onUploadAttachment}
+                        onUpload={uploadAndReport}
                         onDelete={onDeleteAttachment}
                       />
 
@@ -593,9 +618,69 @@ export default function MeetingMinutesPanel({
           onGenerateDraft={onGenerateDraft}
           onCreateAction={onCreateAction}
           onCreateTask={onCreateTask}
-          onUploadAttachment={onUploadAttachment}
+          onUploadAttachment={uploadAndReport}
         />
       )}
+    </div>
+  );
+}
+
+// What happened when a Word minutes file was attached: the project
+// manager's actions added from its action table, and what was left out.
+function ActionImportNotice({
+  fileName,
+  result,
+  onDismiss,
+}: {
+  fileName: string;
+  result: ActionImportResult | { error: string };
+  onDismiss: () => void;
+}) {
+  let tone = "bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300";
+  let message: string;
+  let details: string[] = [];
+  if ("error" in result) {
+    tone = "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300";
+    message = `${result.error} (${fileName}). The file was still attached.`;
+  } else if (!result.manager) {
+    tone = "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300";
+    message = `No actions added from ${fileName}: this project has no Project Manager set, so there's no one to match the action owners against.`;
+  } else if (result.found === 0) {
+    message = `No action table found in ${fileName} (a table with Action and Owner/Responsible columns), so no actions were added.`;
+  } else {
+    tone =
+      result.added.length > 0
+        ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+        : "bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300";
+    message =
+      result.added.length > 0
+        ? `Added ${result.added.length} action${result.added.length === 1 ? "" : "s"} for ${result.manager} from ${fileName} to Actions & Decisions.`
+        : `No new actions for ${result.manager} in ${fileName}.`;
+    details = [
+      result.skippedOthers > 0 &&
+        `${result.skippedOthers} assigned to others left out`,
+      result.skippedDuplicates > 0 && `${result.skippedDuplicates} already on the project`,
+      result.skippedClosed > 0 && `${result.skippedClosed} already closed`,
+    ].filter((d): d is string => !!d);
+  }
+  return (
+    <div className={`mb-3 text-sm rounded p-3 ${tone}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p>{message}</p>
+          {details.length > 0 && <p className="text-xs mt-0.5 opacity-80">{details.join(" · ")}</p>}
+          {!("error" in result) && result.added.length > 0 && (
+            <ul className="list-disc pl-5 mt-1 text-xs space-y-0.5">
+              {result.added.map((title, i) => (
+                <li key={i}>{title}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <button onClick={onDismiss} className="text-xs hover:underline shrink-0" aria-label="Dismiss">
+          ✕
+        </button>
+      </div>
     </div>
   );
 }

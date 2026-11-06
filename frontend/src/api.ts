@@ -6,6 +6,7 @@ import {
   ArchiveLink,
   ArchiveSearchResult,
   Attachment,
+  AttachmentUploadResult,
   CashFlowEntry,
   CashFlowEntryInput,
   ChecklistItem,
@@ -390,7 +391,7 @@ export function uploadAttachment(
   projectId: string,
   file: File,
   meetingMinutesId?: string
-): Promise<Attachment> {
+): Promise<AttachmentUploadResult> {
   const formData = new FormData();
   formData.append("file", file);
   if (meetingMinutesId) formData.append("meetingMinutesId", meetingMinutesId);

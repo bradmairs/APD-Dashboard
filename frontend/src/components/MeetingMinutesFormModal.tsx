@@ -31,7 +31,7 @@ interface Props {
   }) => Promise<MeetingMinutesDraft>;
   onCreateAction: (data: Partial<ActionItemInput>) => Promise<void>;
   onCreateTask: (data: Partial<TaskInput>) => Promise<void>;
-  onUploadAttachment: (meetingId: string, file: File) => Promise<void>;
+  onUploadAttachment: (meetingId: string, file: File) => Promise<unknown>;
 }
 
 // The Type dropdown's options. Anything else can still be typed in via
@@ -243,8 +243,10 @@ export default function MeetingMinutesFormModal({
               className="w-full text-sm text-slate-700 dark:text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-slate-100 dark:file:bg-slate-700 file:text-slate-700 dark:file:text-slate-300"
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Optional — attach an existing signed minutes document. You can also attach files
-              (or more than one) after saving, from the meeting's Attachments section.
+              Optional — attach an existing signed minutes document. A Word (.docx) file also adds
+              the project manager's actions from its action table to Actions &amp; Decisions. You
+              can also attach files (or more than one) after saving, from the meeting's
+              Attachments section.
             </p>
           </div>
 
