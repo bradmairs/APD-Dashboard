@@ -3,16 +3,33 @@ import { prisma } from "./prisma";
 import { logActivity } from "./activityLog";
 import { extractActionRows, isClosedStatus, ownerMatches, parseDueDate } from "./minutesActions";
 
-export interface ActionImportResult {
-  // Who the actions were matched against (the project manager), or null
-  // when the project has none set.
+// Importing the project manager's actions from a Word minutes document is
+// two steps, so the PM confirms before anything is added:
+//   1. preview — when the .docx is attached to a meeting, read its action
+//      table and list the PM's actions (see minutesActions.ts);
+//   2. add — the actions the PM ticked are created, linked to the meeting.
+
+export interface ActionCandidate {
+  action: string;
+  // The owner as written in the minutes, e.g. "Brad Mairs / Lachlan McGregor".
+  ownerInMinutes: string;
+  dueText: string;
+  dueDate: string | null;
+  // "new" can be added; "duplicate" is already on the project; "closed" is
+  // marked done in the minutes. Only "new" ones are ticked by default.
+  state: "new" | "duplicate" | "closed";
+}
+
+export interface ActionImportPreview {
+  // The project manager the owners were matched against, or null when the
+  // project has none set.
   manager: string | null;
+  fileName: string;
   // Rows found in the document's action table(s).
   found: number;
-  added: string[];
+  candidates: ActionCandidate[];
+  // Rows assigned only to other people (not offered).
   skippedOthers: number;
-  skippedClosed: number;
-  skippedDuplicates: number;
 }
 
 const MAX_TITLE = 200;
@@ -21,21 +38,23 @@ function normTitle(text: string): string {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-// When a Word minutes document is attached to a meeting, add the project
-// manager's actions from its action table to the project's Actions &
-// Decisions, linked to that meeting. Rule-based (see minutesActions.ts) —
-// no AI needed. Rows assigned only to other people, already-closed rows,
-// and actions the project already has (e.g. the same file attached twice)
-// are skipped and counted.
-export async function importMinutesActions(input: {
-  projectId: string;
-  meetingId: string;
-  filePath: string;
-  fileName: string;
-  user: { sub: string; name: string };
-}): Promise<ActionImportResult> {
+function oneLine(text: string): string {
+  return text.replace(/\s*\n\s*/g, " ").trim();
+}
+
+async function existingActionTexts(projectId: string): Promise<Set<string>> {
+  const actions = await prisma.actionItem.findMany({
+    where: { projectId },
+    select: { title: true, description: true },
+  });
+  return new Set(
+    actions.flatMap((a) => [normTitle(a.title), ...(a.description ? [normTitle(a.description)] : [])])
+  );
+}
+
+async function managerOf(projectId: string) {
   const project = await prisma.project.findUnique({
-    where: { id: input.projectId },
+    where: { id: projectId },
     select: {
       id: true,
       name: true,
@@ -43,86 +62,116 @@ export async function importMinutesActions(input: {
       projectManagerUser: { select: { name: true } },
     },
   });
-  const meeting = await prisma.meetingMinutes.findFirst({
-    where: { id: input.meetingId, projectId: input.projectId },
-    select: { id: true, meetingDate: true },
-  });
-  const result: ActionImportResult = {
-    manager: project?.projectManager ?? project?.projectManagerUser?.name ?? null,
+  if (!project) return null;
+  const names = [project.projectManager, project.projectManagerUser?.name].filter(
+    (n): n is string => !!n
+  );
+  return { project, names, manager: names[0] ?? null };
+}
+
+// Step 1: the project manager's actions in the document, nothing created.
+export async function previewMinutesActions(input: {
+  projectId: string;
+  filePath: string;
+  fileName: string;
+}): Promise<ActionImportPreview> {
+  const pm = await managerOf(input.projectId);
+  const preview: ActionImportPreview = {
+    manager: pm?.manager ?? null,
+    fileName: input.fileName,
     found: 0,
-    added: [],
+    candidates: [],
     skippedOthers: 0,
-    skippedClosed: 0,
-    skippedDuplicates: 0,
   };
-  if (!project || !meeting) return result;
+  if (!pm) return preview;
 
   const { value: html } = await mammoth.convertToHtml({ path: input.filePath });
   const rows = extractActionRows(html);
-  result.found = rows.length;
-  if (!result.manager || rows.length === 0) return result;
+  preview.found = rows.length;
+  if (!pm.manager || rows.length === 0) return preview;
 
-  const managerNames = [project.projectManager, project.projectManagerUser?.name].filter(
-    (n): n is string => !!n
-  );
   const allOwners = rows.map((r) => r.owner);
-  const existing = new Set(
-    (
-      await prisma.actionItem.findMany({
-        where: { projectId: project.id },
-        select: { title: true, description: true },
-      })
-    ).flatMap((a) => [normTitle(a.title), ...(a.description ? [normTitle(a.description)] : [])])
-  );
-
+  const existing = await existingActionTexts(pm.project.id);
   for (const row of rows) {
-    if (!ownerMatches(row.owner, managerNames, allOwners)) {
-      result.skippedOthers++;
+    if (!ownerMatches(row.owner, pm.names, allOwners)) {
+      preview.skippedOthers++;
       continue;
     }
-    if (isClosedStatus(row.status)) {
-      result.skippedClosed++;
-      continue;
-    }
-    const text = row.action.replace(/\s*\n\s*/g, " ").trim();
+    const text = oneLine(row.action);
+    const due = parseDueDate(row.due);
+    preview.candidates.push({
+      action: text,
+      ownerInMinutes: row.owner,
+      dueText: row.due,
+      dueDate: due ? due.toISOString() : null,
+      state: isClosedStatus(row.status) ? "closed" : existing.has(normTitle(text)) ? "duplicate" : "new",
+    });
+  }
+  return preview;
+}
+
+// Step 2: add the actions the project manager ticked, linked to the
+// meeting. Owner is the PM; due date as parsed. Actions already on the
+// project are skipped, so a double submit can't duplicate them.
+export async function addMinutesActions(input: {
+  meetingId: string;
+  fileName: string;
+  actions: { action: string; ownerInMinutes: string; dueText: string }[];
+  user: { sub: string; name: string };
+}): Promise<{ added: string[]; skippedDuplicates: number }> {
+  const meeting = await prisma.meetingMinutes.findUnique({
+    where: { id: input.meetingId },
+    select: { id: true, meetingDate: true, projectId: true },
+  });
+  if (!meeting) throw new Error("Meeting not found");
+  const pm = await managerOf(meeting.projectId);
+  if (!pm?.manager) throw new Error("This project has no Project Manager set");
+
+  const existing = await existingActionTexts(meeting.projectId);
+  const added: string[] = [];
+  let skippedDuplicates = 0;
+  for (const item of input.actions) {
+    const text = oneLine(item.action);
+    if (!text) continue;
     if (existing.has(normTitle(text))) {
-      result.skippedDuplicates++;
+      skippedDuplicates++;
       continue;
     }
     existing.add(normTitle(text));
-    const shared = row.owner.trim() !== result.manager;
+    const due = parseDueDate(item.dueText);
+    const shared = item.ownerInMinutes.trim() && item.ownerInMinutes.trim() !== pm.manager;
     await prisma.actionItem.create({
       data: {
-        projectId: project.id,
+        projectId: meeting.projectId,
         type: "ACTION",
         title: text.length > MAX_TITLE ? `${text.slice(0, MAX_TITLE - 1).trimEnd()}…` : text,
         // The full wording, also used to spot the same action next time.
         description: text,
-        ownerName: result.manager,
-        dueDate: parseDueDate(row.due),
+        ownerName: pm.manager,
+        dueDate: due,
         status: "OPEN",
         dateRaised: meeting.meetingDate,
         raisedById: input.user.sub,
         raisedByName: input.user.name,
-        notes: `Imported from ${input.fileName}${shared ? ` (owner in minutes: ${row.owner})` : ""}${
-          row.due && !parseDueDate(row.due) ? ` · due: ${row.due}` : ""
+        notes: `Imported from ${input.fileName}${shared ? ` (owner in minutes: ${item.ownerInMinutes.trim()})` : ""}${
+          item.dueText.trim() && !due ? ` · due: ${item.dueText.trim()}` : ""
         }`,
         meetingMinutesId: meeting.id,
       },
     });
-    result.added.push(text);
+    added.push(text);
   }
 
-  if (result.added.length > 0) {
+  if (added.length > 0) {
     await logActivity({
-      projectId: project.id,
-      projectName: project.name,
+      projectId: pm.project.id,
+      projectName: pm.project.name,
       userId: input.user.sub,
       userName: input.user.name,
-      action: `imported ${result.added.length} action${result.added.length === 1 ? "" : "s"} for ${
-        result.manager
-      } from "${input.fileName}"`,
+      action: `imported ${added.length} action${added.length === 1 ? "" : "s"} for ${pm.manager} from "${
+        input.fileName
+      }"`,
     });
   }
-  return result;
+  return { added, skippedDuplicates };
 }

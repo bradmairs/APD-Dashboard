@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { createTrimLink, deleteTrimLink, getTrimLinks, updateTrimLink } from "../api";
 import { Project, TrimLink, TrimLinkInput, TrimLinkKind } from "../types";
-import { trimHref } from "../trim";
+import { trimHref, useTrimRecordUrl } from "../trim";
 import { useAuth } from "../auth/AuthContext";
 import { useConfirm } from "../confirm/ConfirmContext";
 
@@ -255,7 +255,8 @@ function TrimLocation({
   location: string;
   compact?: boolean;
 }) {
-  const href = trimHref(location);
+  const recordUrl = useTrimRecordUrl();
+  const href = trimHref(location, recordUrl);
   const label = title ?? location;
   const [copied, setCopied] = useState(false);
 
@@ -400,8 +401,9 @@ function TrimLinkForm({
         />
       </div>
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        Paste the full web link to make the title open it directly; a record number shows with a
-        Copy button instead.
+        The title opens the link in a new tab — a web address, a network path (\\server\share)
+        or a TRIM link. A record number opens too when the TRIM web address is set up for the
+        dashboard; otherwise it shows a Copy button.
       </p>
       <div className="flex justify-end gap-3">
         <button

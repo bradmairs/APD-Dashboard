@@ -1260,16 +1260,24 @@ export interface TenderSubmissionInput {
 }
 
 // Returned with a Word (.docx) file attached to a meeting: the project
-// manager's actions read from the document's action table.
-export interface ActionImportResult {
+// manager's actions read from the document's action table, for them to
+// confirm before anything is added.
+export interface ActionCandidate {
+  action: string;
+  ownerInMinutes: string;
+  dueText: string;
+  dueDate: string | null;
+  state: "new" | "duplicate" | "closed";
+}
+
+export interface ActionImportPreview {
   manager: string | null;
+  fileName: string;
   found: number;
-  added: string[];
+  candidates: ActionCandidate[];
   skippedOthers: number;
-  skippedClosed: number;
-  skippedDuplicates: number;
 }
 
 export type AttachmentUploadResult = Attachment & {
-  actionImport?: ActionImportResult | { error: string };
+  actionImport?: ActionImportPreview | { error: string };
 };

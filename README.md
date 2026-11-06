@@ -307,7 +307,7 @@ and the backend already carry:
   applied in `backend/src/index.ts` — see the comments there for what's
   configurable via `FRONTEND_URL`.
 - Ollama's own exposure is a host-level concern this repo can't
-  control — see the warning under **AI Assistant → Configuration**
+  control — see the warning under **AI Assistant (archived) → Configuration**
   below if you're running it on the same host.
 
 None of this replaces a firewall — only the ports this app itself needs
@@ -956,13 +956,12 @@ Expanding a meeting reveals two linked sub-sections:
   with **AI: Suggest Actions from Notes**.
 
 That button sends the meeting's summary and notes to the same
-self-hosted Ollama model the AI Assistant uses (see below), asking it to
+self-hosted Ollama model configured under **AI Assistant (archived) → Configuration**, asking it to
 extract a list of candidate follow-up items — each with a title and,
 where the notes say so, an owner and a due-date hint. Nothing is created
 automatically: the suggestions appear as a checklist (all pre-selected)
 for you to review, deselect, and add. If Ollama can't be reached, the
-button shows the same clear inline error as the AI Assistant rather than
-failing silently.
+button shows a clear inline error rather than failing silently.
 
 **Your actions become Tasks.** Each suggestion in that checklist also has
 a **My task / Action** selector. Suggestions whose owner matches the
@@ -1006,16 +1005,21 @@ workflow.
 
 This uses two separate Ollama model slots — `OLLAMA_CHAT_MODEL` for text
 reasoning and `OLLAMA_VISION_MODEL` for reading a photo — rather than one
-model for everything; see **AI Assistant → Configuration** below.
+model for everything; see **AI Assistant (archived) → Configuration** below.
 
 
 ### Importing actions from Word minutes (no AI needed)
 
 Attach a **Word (.docx)** minutes document to a meeting — in the New
 Meeting form's **Minutes Document** field, or with **+ Attach file** on a
-saved meeting — and the dashboard reads its action table and adds the
-**project manager's** actions to Actions & Decisions, linked to that
-meeting. It's rule-based (`backend/src/minutesActions.ts`), so it works
+saved meeting — and the dashboard reads its action table and lists the
+**project manager's** actions in a **Confirm actions from the minutes**
+dialog: a summary (how many actions the table has, how many are the PM's,
+how many belong to others and won't be added) and a tick box per action.
+New actions start ticked; ones already on the project can't be added
+again; ones the minutes mark closed start unticked. Only the ticked
+actions are added to Actions & Decisions, linked to that meeting; **Don't
+add any** adds nothing (the file stays attached). It's rule-based (`backend/src/minutesActions.ts`), so it works
 without the AI assistant:
 
 - **Finding the table:** any table whose header row has an action column
@@ -1032,11 +1036,10 @@ without the AI assistant:
 - **What's added:** each action with the PM as owner, the due date when
   it's a date (5 Nov 2026, 05/11/2026, 2026-11-05; "TBC" leaves it blank
   and is noted), raised on the meeting date, and a note naming the file.
-  Rows already marked Closed/Complete, and actions already on the project
-  (e.g. the same file attached twice), are skipped.
+  Attaching the same file again offers only what wasn't added the first
+  time.
 
-A message above the meeting list says what was added and what was left
-out. Actions written only as sentences, not in a table, aren't imported —
+A message above the meeting list then confirms what was added. Actions written only as sentences, not in a table, aren't imported —
 nor are PDF minutes, whose tables can't be read reliably without AI. The
 project needs a Project Manager set for anything to be matched.
 
@@ -1216,10 +1219,21 @@ place:
 
 Anyone except a Viewer can add links; the person who added one, or an
 admin, can edit or delete it. **Clicking a link's title opens it** in a new
-tab. Web addresses work with or without `https://` (e.g.
-`www.gvw.com.au/...`); only web links are ever made clickable, so a pasted
-`javascript:` value can't become a link. A record number has no address to
-open, so it shows with a **Copy** button for pasting into TRIM's search.
+tab — and the same goes for every TRIM link in the dashboard (a project's
+**TRIM Folder**, payment claim TRIM links). What can be opened
+(`frontend/src/trim.ts`):
+
+- web addresses, with or without `https://` (e.g. `www.gvw.com.au/...`);
+- network paths (`\\server\share\folder`, opened as a `file:` link — some
+  browsers only open these for intranet sites they trust) and other app
+  links such as TRIM / Content Manager's own (`trim:…`, `hprm:…`);
+- TRIM **record numbers** (e.g. `D24/12345`), once `TRIM_RECORD_URL` is set
+  in `.env` to your TRIM web address with `{record}` where the number goes
+  (e.g. `https://trim.gvw.local/CMWebClient/Record?uri={record}`).
+  Without it, a record number shows a **Copy** button for pasting into
+  TRIM's search.
+
+Script links (`javascript:`, `data:` …) are never made clickable.
 The tab also lists:
 
 - **Project TRIM Folders** — every project's own **TRIM Folder** (set on
@@ -1565,30 +1579,14 @@ listing every open or in-progress inspection across every project,
 lowest score first, linking back to its project. Open to any logged-in
 user to edit.
 
-## AI Assistant
+## AI Assistant (archived)
 
-Both a project's detail page and the Dashboard have an **AI Assistant**
-tab — a simple ask-a-question panel backed by a self-hosted
-[Ollama](https://ollama.com) model, running on the same machine that
-hosts this app. There's no chat history stored anywhere: each question
-and answer lives only in that tab's state for the current browser
-session.
-
-- On a **project's** AI Assistant tab, questions are scoped to that
-  project — its budget vs. spend, schedule, and a summary of open items
-  across every register (risks, actions, defects, RFIs, SQE issues,
-  safety inspections, environmental exceedances, expired permits/
-  insurance/training, low-scoring performance reviews).
-- On the **Dashboard's** AI Assistant tab, questions are scoped to the
-  whole portfolio — status counts, total budget vs. spend, and a
-  per-project summary flagging which projects have open issues.
-
-The backend builds this context itself from the database on every
-question (`backend/src/aiContext.ts`) — a concise, bounded summary, not
-a dump of every row in every table — then sends it to Ollama's `/api/chat`
-endpoint alongside the question (`backend/src/ollama.ts`). No
-conversation state is kept server-side either; every question is
-answered fresh from the latest data.
+The AI Assistant tab — a chat box on each project and the Dashboard that
+answered questions using a locally hosted Ollama model — was retired in
+1.43. Its code is kept in `archive/ai-assistant/`, with instructions for
+restoring it. The meeting-minutes AI features (generate minutes from a
+transcript, suggest actions from notes) are unchanged and still use the
+Ollama settings below.
 
 ### Configuration
 
@@ -1752,8 +1750,8 @@ panel's heading isn't hidden underneath them). Each panel is wrapped in a `<div 
 `ProjectDetailPage.tsx` that the matching pill targets; the list of
 {id, label} pairs per tab is a static map there (`TAB_SECTIONS`) rather
 than derived from the JSX, since the panel components themselves don't
-know their own tab or position. A tab with only one section (AI Assistant)
-shows no jump row at all, since there'd be nowhere else to jump to.
+know their own tab or position. A tab with only one section shows no jump
+row at all, since there'd be nowhere else to jump to.
 
 ### Show more on long lists
 
@@ -2044,9 +2042,7 @@ table's Edit/Delete column (`canModifyProject`/`canModifyReport` in
 `frontend/src/permissions.ts` both return `false` for a Viewer) — rather
 than touching every one of the dozens of register panels individually;
 anywhere a Viewer does trigger a mutation, the backend's 403 surfaces
-through the same error-message UI every form already has. AI Assistant
-queries are intentionally exempt from the block, since they don't
-mutate project data.
+through the same error-message UI every form already has.
 
 ## Undo for Deletes
 

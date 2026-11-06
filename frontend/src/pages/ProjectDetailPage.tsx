@@ -83,6 +83,7 @@ import {
   createArchiveLink,
   createChecklistItem,
   createTenderSubmission,
+  importMeetingActions,
   deleteTenderSubmission,
   getTenderSubmissions,
   updateTenderSubmission,
@@ -94,7 +95,6 @@ import {
   createDelay,
   createEotClaim,
   createSafetyInspection,
-  askProjectAi,
   createInsuranceWarranty,
   createLessonLearned,
   createMeetingMinutes,
@@ -249,7 +249,6 @@ import SqePanel from "../components/SqePanel";
 import EnvironmentalMonitoringPanel from "../components/EnvironmentalMonitoringPanel";
 import SafetyInspectionsPanel from "../components/SafetyInspectionsPanel";
 import TenderPackagesPanel from "../components/TenderPackagesPanel";
-import AiAssistantPanel from "../components/AiAssistantPanel";
 import DelaysPanel from "../components/DelaysPanel";
 import EotPanel from "../components/EotPanel";
 import ChecklistPanel from "../components/ChecklistPanel";
@@ -273,7 +272,7 @@ import { computeProjectHealth } from "../health";
 import { revisedCompletionDate } from "../eot";
 import { STATUS_COLORS, STATUS_LABELS } from "../statusMeta";
 import { formatCurrency, formatDate, formatReportMonth } from "../format";
-import { trimHref } from "../trim";
+import { trimHref, useTrimRecordUrl } from "../trim";
 import { canModifyProject } from "../permissions";
 import UserMenu from "../components/UserMenu";
 import { useAuth } from "../auth/AuthContext";
@@ -289,8 +288,7 @@ type ProjectTabId =
   | "procurement"
   | "quality"
   | "site"
-  | "monthly-reporting"
-  | "ai";
+  | "monthly-reporting";
 
 const PROJECT_TABS: { id: ProjectTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -300,7 +298,6 @@ const PROJECT_TABS: { id: ProjectTabId; label: string }[] = [
   { id: "quality", label: "Quality & Risk" },
   { id: "site", label: "Site & Records" },
   { id: "monthly-reporting", label: "Monthly Reporting" },
-  { id: "ai", label: "AI Assistant" },
 ];
 
 // One entry per panel rendered in that tab below — same order top to bottom,
@@ -357,7 +354,6 @@ const TAB_SECTIONS: Record<ProjectTabId, JumpSection[]> = {
     { id: "toolbox-talks", label: "Toolbox Talks" },
   ],
   "monthly-reporting": [],
-  ai: [],
 };
 
 export default function ProjectDetailPage() {
@@ -405,6 +401,7 @@ export default function ProjectDetailPage() {
   const [tenderSubmissions, setTenderSubmissions] = useState<TenderSubmission[]>([]);
   const { expanded: expandedSections, setExpanded: setSectionsExpanded } =
     useExpandedSections();
+  const trimRecordUrl = useTrimRecordUrl();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -1374,6 +1371,16 @@ export default function ProjectDetailPage() {
     return result.actionImport;
   }
 
+  async function handleImportMeetingActions(
+    meetingId: string,
+    fileName: string,
+    actions: { action: string; ownerInMinutes: string; dueText: string }[]
+  ) {
+    const result = await importMeetingActions(meetingId, fileName, actions);
+    await load();
+    return result;
+  }
+
   async function handleGenerateMeetingMinutesDraft(input: {
     text?: string;
     file?: File;
@@ -1479,7 +1486,7 @@ export default function ProjectDetailPage() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <Link
             to="/"
             className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
@@ -1542,7 +1549,7 @@ export default function ProjectDetailPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {project.description && (
           <FormattedText
             className="text-slate-700 dark:text-slate-300 text-sm"
@@ -1563,9 +1570,9 @@ export default function ProjectDetailPage() {
           <Field
             label="TRIM Folder"
             value={
-              trimHref(project.trimFolder) ? (
+              trimHref(project.trimFolder, trimRecordUrl) ? (
                 <a
-                  href={trimHref(project.trimFolder)!}
+                  href={trimHref(project.trimFolder, trimRecordUrl)!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 dark:text-blue-400 hover:underline break-all"
@@ -1645,6 +1652,7 @@ export default function ProjectDetailPage() {
                   onUpdate={handleUpdateMeetingMinutes}
                   onDelete={handleDeleteMeetingMinutes}
                   onUploadAttachment={handleUploadMeetingAttachment}
+                  onImportActions={handleImportMeetingActions}
                   onDeleteAttachment={handleDeleteAttachment}
                   onCreateAction={handleCreateActionItem}
                   onExtractActions={handleExtractMeetingActions}
@@ -1996,14 +2004,6 @@ export default function ProjectDetailPage() {
             />
           )}
 
-          {activeTab === "ai" && project && (
-            <AiAssistantPanel
-              title="AI Assistant"
-              description="Ask questions about this project — its budget, schedule, risks, and open items across every register. Powered by a locally-hosted Ollama model."
-              suggestedQuestion="Summarize this project's health and its most pressing open items"
-              onAsk={(question) => askProjectAi(project.id, question)}
-            />
-          )}
         </div>
       </main>
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import FormattedText from "./FormattedText";
 import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
-import { trimHref } from "../trim";
+import { trimHref, useTrimRecordUrl } from "../trim";
 import { ContractRecord, PaymentClaim, PaymentClaimInput, PaymentClaimStatus } from "../types";
 import { formatCurrency, formatDate } from "../format";
 import {
@@ -29,6 +29,7 @@ export default function PaymentClaimsPanel({
   onUpdate,
   onDelete,
 }: Props) {
+  const trimRecordUrl = useTrimRecordUrl();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<PaymentClaim | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -145,9 +146,9 @@ export default function PaymentClaimsPanel({
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       {claim.trimLink &&
-                        (trimHref(claim.trimLink) ? (
+                        (trimHref(claim.trimLink, trimRecordUrl) ? (
                           <a
-                            href={trimHref(claim.trimLink)!}
+                            href={trimHref(claim.trimLink, trimRecordUrl)!}
                             target="_blank"
                             rel="noopener noreferrer"
                             title={claim.trimLink}
