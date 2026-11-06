@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { ActionImportResult, importMinutesActions } from "../minutesActionImport";
+import { ActionImportPreview, previewMinutesActions } from "../minutesActionImport";
 import { Router } from "express";
 import { prisma } from "../prisma";
 import projectTasksRouter from "./tasks";
@@ -36,7 +36,6 @@ import projectEnvironmentalMonitoringRouter from "./environmentalMonitoring";
 import projectSafetyInspectionsRouter from "./safetyInspections";
 import projectTenderPackagesRouter from "./tenderPackages";
 import { projectTenderSubmissionsRouter } from "./tenderSubmissions";
-import projectAiRouter from "./ai";
 import projectArchiveLinksRouter from "./archiveLinks";
 import { describeProjectChanges, logActivity } from "../activityLog";
 import { projectUploadDir, upload } from "../upload";
@@ -106,7 +105,6 @@ router.use("/:id/environmental-monitoring", projectEnvironmentalMonitoringRouter
 router.use("/:id/safety-inspections", projectSafetyInspectionsRouter);
 router.use("/:id/tender-packages", projectTenderPackagesRouter);
 router.use("/:id/tender-submissions", projectTenderSubmissionsRouter);
-router.use("/:id/ai", projectAiRouter);
 router.use("/:id/archive-links", projectArchiveLinksRouter);
 
 router.get("/", async (_req, res) => {
@@ -189,18 +187,17 @@ router.post(
       action: `uploaded file "${attachment.originalName}"`,
     });
 
-    // A Word minutes document attached to a meeting: add the project
-    // manager's actions from its action table (see minutesActionImport.ts).
-    // Never fails the upload itself — a file it can't read just adds none.
-    let actionImport: ActionImportResult | { error: string } | undefined;
+    // A Word minutes document attached to a meeting: list the project
+    // manager's actions from its action table for them to confirm (nothing
+    // is added yet — see minutesActionImport.ts). Never fails the upload
+    // itself — a file it can't read just offers none.
+    let actionImport: ActionImportPreview | { error: string } | undefined;
     if (meetingMinutesId && path.extname(attachment.originalName).toLowerCase() === ".docx") {
       try {
-        actionImport = await importMinutesActions({
+        actionImport = await previewMinutesActions({
           projectId: req.params.id,
-          meetingId: meetingMinutesId,
           filePath: req.file.path,
           fileName: attachment.originalName,
-          user: req.user!,
         });
       } catch (err) {
         console.error("Importing actions from minutes failed:", err);

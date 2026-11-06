@@ -1,4 +1,5 @@
 import { Request, Response, Router } from "express";
+import { addMinutesActions } from "../minutesActionImport";
 import { prisma } from "../prisma";
 import { describeMeetingMinutesUpdate, logActivity } from "../activityLog";
 import { randomUUID } from "crypto";
@@ -560,6 +561,36 @@ projectMeetingMinutesRouter.get(
 );
 
 export const meetingMinutesRouter = Router();
+
+// Adds the project manager's actions they ticked after attaching Word
+// minutes (the preview comes back from the attachment upload).
+meetingMinutesRouter.post("/:id/import-actions", async (req, res) => {
+  const { fileName, actions } = req.body as { fileName?: unknown; actions?: unknown };
+  if (
+    !Array.isArray(actions) ||
+    actions.length > 200 ||
+    !actions.every(
+      (a) =>
+        a &&
+        typeof a.action === "string" &&
+        typeof a.ownerInMinutes === "string" &&
+        typeof a.dueText === "string"
+    )
+  ) {
+    return res.status(400).json({ error: "actions must be a list of { action, ownerInMinutes, dueText }" });
+  }
+  try {
+    const result = await addMinutesActions({
+      meetingId: req.params.id,
+      fileName: typeof fileName === "string" && fileName.trim() ? fileName.trim().slice(0, 255) : "minutes",
+      actions: actions as { action: string; ownerInMinutes: string; dueText: string }[],
+      user: req.user!,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Couldn't add the actions" });
+  }
+});
 
 meetingMinutesRouter.post("/:id/ai/extract-actions", async (req, res) => {
   const meeting = await prisma.meetingMinutes.findUnique({ where: { id: req.params.id } });

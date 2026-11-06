@@ -5,6 +5,13 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.43 - 2026-11-06
+
+- Actions from Word meeting minutes are now confirmed before they're added: a summary plus a tick box per project manager action (Don't add any adds nothing)
+- The **AI Assistant** tab is removed from projects and the dashboard; its code is archived in `archive/ai-assistant/` (meeting-minutes AI features unchanged)
+- Tab bars no longer show scroll bars: project pages are wider, and tabs wrap on narrow screens instead of scrolling
+- TRIM and GVW links open in a new tab wherever they appear, including network paths and TRIM app links; set `TRIM_RECORD_URL` to make TRIM record numbers clickable too
+
 ## 1.42 - 2026-11-06
 
 - Attaching Word (.docx) meeting minutes to a meeting now adds the **project manager's actions** from the document's action table to Actions & Decisions (linked to the meeting, with due dates), without needing AI; actions assigned only to others, closed ones and duplicates are left out, and a message shows what was added

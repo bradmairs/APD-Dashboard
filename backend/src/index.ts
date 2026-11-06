@@ -40,7 +40,6 @@ import { environmentalMonitoringRouter } from "./routes/environmentalMonitoring"
 import { safetyInspectionsRouter } from "./routes/safetyInspections";
 import { tenderPackagesRouter } from "./routes/tenderPackages";
 import { searchRouter } from "./routes/search";
-import { aiRouter } from "./routes/ai";
 import { archiveLinksRouter, archiveSearchRouter } from "./routes/archiveLinks";
 import activityRouter from "./routes/activity";
 import attachmentsRouter from "./routes/attachments";
@@ -92,6 +91,17 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+// Deployment settings the frontend needs. TRIM_RECORD_URL turns TRIM
+// record numbers into links: a web address with {record} where the number
+// goes, e.g. https://trim.gvw.local/CMWebClient/Record?uri={record}. Only
+// an http(s) template is passed on.
+app.get("/api/config", requireAuth, (_req, res) => {
+  const template = process.env.TRIM_RECORD_URL?.trim() || "";
+  res.json({
+    trimRecordUrl: /^https?:\/\/\S+$/i.test(template) && template.includes("{record}") ? template : null,
+  });
+});
+
 // The Viewer role gets full read access but no create/update/delete anywhere
 // in the main app — enforced here in one place rather than in each of the
 // several dozen register routers below. AI (query, not mutation) is
@@ -135,7 +145,6 @@ app.use("/api/tender-packages", readOnlyGuarded, tenderPackagesRouter);
 app.use("/api/tender-submissions", readOnlyGuarded, tenderSubmissionsRouter);
 app.use("/api/trim-links", readOnlyGuarded, trimLinksRouter);
 app.use("/api/search", requireAuth, searchRouter);
-app.use("/api/ai", requireAuth, aiRouter);
 app.use("/api/archive-links", readOnlyGuarded, archiveLinksRouter);
 app.use("/api/archive-search", requireAuth, archiveSearchRouter);
 app.use("/api/activity", requireAuth, activityRouter);

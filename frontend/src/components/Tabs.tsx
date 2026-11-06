@@ -9,13 +9,15 @@ interface Props<T extends string> {
   onChange: (id: T) => void;
 }
 
-// A horizontally-scrollable underline tab bar — shared by any page that
-// needs to split a long stack of panels into sections (ProjectDetailPage,
-// DashboardPage) rather than reinventing the same button row per page.
+// An underline tab bar — shared by any page that needs to split a long
+// stack of panels into sections (ProjectDetailPage, DashboardPage) rather
+// than reinventing the same button row per page. On a narrow screen the
+// tabs wrap onto a second line instead of scrolling, so there are never
+// scroll bars on the bar itself.
 export default function Tabs<T extends string>({ tabs, active, onChange }: Props<T>) {
   return (
-    <div className="border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
-      <nav className="flex gap-1 min-w-max" aria-label="Tabs">
+    <div className="border-b border-slate-200 dark:border-slate-700">
+      <nav className="flex flex-wrap gap-x-1" aria-label="Tabs">
         {tabs.map((tab) => (
           <button
             key={tab.id}

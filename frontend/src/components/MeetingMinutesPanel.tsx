@@ -26,7 +26,8 @@ import {
   suggestionToTask,
 } from "../meetingActionRouting";
 import MeetingMinutesFormModal from "./MeetingMinutesFormModal";
-import { ActionImportResult } from "../types";
+import { ActionCandidate, ActionImportPreview } from "../types";
+import ActionImportReviewModal from "./ActionImportReviewModal";
 import SuggestedActionList from "./SuggestedActionList";
 import { useConfirm } from "../confirm/ConfirmContext";
 
@@ -47,7 +48,13 @@ interface Props {
   onUploadAttachment: (
     meetingId: string,
     file: File
-  ) => Promise<ActionImportResult | { error: string } | undefined>;
+  ) => Promise<ActionImportPreview | { error: string } | undefined>;
+  // Adds the actions ticked in the review after a Word minutes upload.
+  onImportActions: (
+    meetingId: string,
+    fileName: string,
+    actions: { action: string; ownerInMinutes: string; dueText: string }[]
+  ) => Promise<{ added: string[]; skippedDuplicates: number }>;
   onDeleteAttachment: (attachment: Attachment) => Promise<void>;
   onCreateAction: (data: Partial<ActionItemInput>) => Promise<void>;
   onExtractActions: (meetingId: string) => Promise<SuggestedAction[]>;
@@ -363,6 +370,7 @@ export default function MeetingMinutesPanel({
   onUpdate,
   onDelete,
   onUploadAttachment,
+  onImportActions,
   onDeleteAttachment,
   onCreateAction,
   onExtractActions,
@@ -371,18 +379,71 @@ export default function MeetingMinutesPanel({
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<MeetingMinutes | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // After Word minutes are attached: the PM's actions waiting to be
+  // confirmed, and then a one-line notice of what happened.
+  const [review, setReview] = useState<{ meetingId: string; preview: ActionImportPreview } | null>(
+    null
+  );
   const [importNotice, setImportNotice] = useState<{
-    fileName: string;
-    result: ActionImportResult | { error: string };
+    tone: "success" | "info" | "warning";
+    message: string;
+    items?: string[];
   } | null>(null);
 
   // Every upload (the form's minutes document or + Attach file) goes
-  // through here, so the result of reading a Word file's action table is
-  // shown whichever way it was attached.
+  // through here, so a Word file's actions are offered for review whichever
+  // way it was attached.
   async function uploadAndReport(meetingId: string, file: File) {
     const result = await onUploadAttachment(meetingId, file);
-    if (result) setImportNotice({ fileName: file.name, result });
+    if (!result) return;
+    setImportNotice(null);
+    if ("error" in result) {
+      setImportNotice({ tone: "warning", message: `${result.error} (${file.name}). The file was still attached.` });
+    } else if (!result.manager) {
+      setImportNotice({
+        tone: "warning",
+        message: `No actions offered from ${file.name}: this project has no Project Manager set, so there's no one to match the action owners against.`,
+      });
+    } else if (result.found === 0) {
+      setImportNotice({
+        tone: "info",
+        message: `No action table found in ${file.name} (a table with Action and Owner/Responsible columns).`,
+      });
+    } else if (result.candidates.length === 0) {
+      setImportNotice({
+        tone: "info",
+        message: `None of the ${result.found} actions in ${file.name} are assigned to ${result.manager}.`,
+      });
+    } else {
+      setReview({ meetingId, preview: result });
+    }
   }
+
+  async function confirmImport(actions: ActionCandidate[]) {
+    if (!review) return;
+    const { added, skippedDuplicates } = await onImportActions(
+      review.meetingId,
+      review.preview.fileName,
+      actions.map(({ action, ownerInMinutes, dueText }) => ({ action, ownerInMinutes, dueText }))
+    );
+    setImportNotice(
+      added.length > 0
+        ? {
+            tone: "success",
+            message: `Added ${added.length} action${added.length === 1 ? "" : "s"} for ${review.preview.manager} to Actions & Decisions.`,
+            items: added,
+          }
+        : {
+            tone: "info",
+            message:
+              skippedDuplicates > 0
+                ? "Those actions are already on the project, so none were added."
+                : "No actions were added.",
+          }
+    );
+    setReview(null);
+  }
+
 
   function openCreate() {
     setEditing(null);
@@ -470,10 +531,20 @@ export default function MeetingMinutesPanel({
       </div>
 
       {importNotice && (
-        <ActionImportNotice
-          fileName={importNotice.fileName}
-          result={importNotice.result}
-          onDismiss={() => setImportNotice(null)}
+        <ActionImportNotice notice={importNotice} onDismiss={() => setImportNotice(null)} />
+      )}
+
+      {review && (
+        <ActionImportReviewModal
+          preview={review.preview}
+          onConfirm={confirmImport}
+          onClose={() => {
+            setReview(null);
+            setImportNotice({
+              tone: "info",
+              message: `No actions added from ${review.preview.fileName}. The file is still attached.`,
+            });
+          }}
         />
       )}
 
@@ -625,53 +696,27 @@ export default function MeetingMinutesPanel({
   );
 }
 
-// What happened when a Word minutes file was attached: the project
-// manager's actions added from its action table, and what was left out.
+// What happened after Word minutes were attached and reviewed.
 function ActionImportNotice({
-  fileName,
-  result,
+  notice,
   onDismiss,
 }: {
-  fileName: string;
-  result: ActionImportResult | { error: string };
+  notice: { tone: "success" | "info" | "warning"; message: string; items?: string[] };
   onDismiss: () => void;
 }) {
-  let tone = "bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300";
-  let message: string;
-  let details: string[] = [];
-  if ("error" in result) {
-    tone = "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300";
-    message = `${result.error} (${fileName}). The file was still attached.`;
-  } else if (!result.manager) {
-    tone = "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300";
-    message = `No actions added from ${fileName}: this project has no Project Manager set, so there's no one to match the action owners against.`;
-  } else if (result.found === 0) {
-    message = `No action table found in ${fileName} (a table with Action and Owner/Responsible columns), so no actions were added.`;
-  } else {
-    tone =
-      result.added.length > 0
-        ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-        : "bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300";
-    message =
-      result.added.length > 0
-        ? `Added ${result.added.length} action${result.added.length === 1 ? "" : "s"} for ${result.manager} from ${fileName} to Actions & Decisions.`
-        : `No new actions for ${result.manager} in ${fileName}.`;
-    details = [
-      result.skippedOthers > 0 &&
-        `${result.skippedOthers} assigned to others left out`,
-      result.skippedDuplicates > 0 && `${result.skippedDuplicates} already on the project`,
-      result.skippedClosed > 0 && `${result.skippedClosed} already closed`,
-    ].filter((d): d is string => !!d);
-  }
+  const tone = {
+    success: "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300",
+    info: "bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300",
+    warning: "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300",
+  }[notice.tone];
   return (
     <div className={`mb-3 text-sm rounded p-3 ${tone}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p>{message}</p>
-          {details.length > 0 && <p className="text-xs mt-0.5 opacity-80">{details.join(" · ")}</p>}
-          {!("error" in result) && result.added.length > 0 && (
+          <p>{notice.message}</p>
+          {notice.items && notice.items.length > 0 && (
             <ul className="list-disc pl-5 mt-1 text-xs space-y-0.5">
-              {result.added.map((title, i) => (
+              {notice.items.map((title, i) => (
                 <li key={i}>{title}</li>
               ))}
             </ul>

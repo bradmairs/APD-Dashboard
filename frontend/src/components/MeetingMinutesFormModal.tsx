@@ -243,8 +243,8 @@ export default function MeetingMinutesFormModal({
               className="w-full text-sm text-slate-700 dark:text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-slate-100 dark:file:bg-slate-700 file:text-slate-700 dark:file:text-slate-300"
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Optional — attach an existing signed minutes document. A Word (.docx) file also adds
-              the project manager's actions from its action table to Actions &amp; Decisions. You
+              Optional — attach an existing signed minutes document. For a Word (.docx) file, the
+              project manager's actions in its action table are listed for you to tick and add. You
               can also attach files (or more than one) after saving, from the meeting's
               Attachments section.
             </p>

@@ -190,6 +190,11 @@ export function logout(): Promise<void> {
   );
 }
 
+// Deployment settings the frontend needs (see GET /api/config).
+export function getAppConfig(): Promise<{ trimRecordUrl: string | null }> {
+  return fetch(`${API_BASE}/config`).then((res) => handle(res));
+}
+
 export function getMe(): Promise<User> {
   return fetch(`${API_BASE}/auth/me`).then((res) => handle(res));
 }
@@ -398,6 +403,18 @@ export function uploadAttachment(
   return fetch(`${API_BASE}/projects/${projectId}/attachments`, {
     method: "POST",
     body: formData,
+  }).then((res) => handle(res));
+}
+
+export function importMeetingActions(
+  meetingId: string,
+  fileName: string,
+  actions: { action: string; ownerInMinutes: string; dueText: string }[]
+): Promise<{ added: string[]; skippedDuplicates: number }> {
+  return fetch(`${API_BASE}/meeting-minutes/${meetingId}/import-actions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileName, actions }),
   }).then((res) => handle(res));
 }
 
@@ -1764,22 +1781,6 @@ export function deleteTenderSubmission(id: string): Promise<void> {
   return fetch(`${API_BASE}/tender-submissions/${id}`, { method: "DELETE" }).then((res) =>
     handle(res)
   );
-}
-
-export function askProjectAi(projectId: string, question: string): Promise<{ answer: string }> {
-  return fetch(`${API_BASE}/projects/${projectId}/ai/ask`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
-  }).then((res) => handle(res));
-}
-
-export function askPortfolioAi(question: string): Promise<{ answer: string }> {
-  return fetch(`${API_BASE}/ai/ask`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
-  }).then((res) => handle(res));
 }
 
 export function searchAll(query: string): Promise<{ query: string; results: SearchResult[] }> {

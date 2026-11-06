@@ -43,7 +43,6 @@ import {
   getAllEnvironmentalMonitoring,
   getAllEotClaims,
   getAllSafetyInspections,
-  askPortfolioAi,
   getAllInsuranceWarranties,
   getAllPaymentClaims,
   getAllPermits,
@@ -77,7 +76,6 @@ import OpenSqePanel from "../components/OpenSqePanel";
 import EnvironmentalExceedancesPanel from "../components/EnvironmentalExceedancesPanel";
 import OpenSafetyInspectionsPanel from "../components/OpenSafetyInspectionsPanel";
 import ActiveTendersPanel from "../components/ActiveTendersPanel";
-import AiAssistantPanel from "../components/AiAssistantPanel";
 import TrimLinksPanel from "../components/TrimLinksPanel";
 import OpenDefectsPanel from "../components/OpenDefectsPanel";
 import OpenPaymentClaimsPanel from "../components/OpenPaymentClaimsPanel";
@@ -115,8 +113,7 @@ type DashboardTabId =
   | "alerts"
   | "charts"
   | "activity"
-  | "trim"
-  | "ai";
+  | "trim";
 
 const DASHBOARD_TABS: { id: DashboardTabId; label: string }[] = [
   { id: "projects", label: "Projects" },
@@ -125,7 +122,6 @@ const DASHBOARD_TABS: { id: DashboardTabId; label: string }[] = [
   { id: "charts", label: "Charts" },
   { id: "activity", label: "Activity" },
   { id: "trim", label: "TRIM & GVW Links" },
-  { id: "ai", label: "AI Assistant" },
 ];
 
 // The dashboard's last view, saved on the user's account (User.dashboardView)
@@ -832,14 +828,6 @@ export default function DashboardPage() {
 
         {activeTab === "trim" && <TrimLinksPanel projects={projects} />}
 
-        {activeTab === "ai" && (
-          <AiAssistantPanel
-            title="AI Assistant"
-            description="Ask questions across the whole portfolio — budgets, schedules, risks, and open items across every project. Powered by a locally-hosted Ollama model."
-            suggestedQuestion="Which projects need attention right now, and why?"
-            onAsk={askPortfolioAi}
-          />
-        )}
       </main>
 
       {showModal && (
