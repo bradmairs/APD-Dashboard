@@ -1,0 +1,52 @@
+name: Release
+
+# Merging a version bump (VERSION) to main tags it vX.Y.Z and publishes a
+# GitHub release from docs/releases/X.Y.Z.md. See docs/releases.md.
+#
+# Run it by hand (Actions → Release → Run workflow) to also tag and release
+# every older version listed in docs/renumbering.md on its merge commit.
+# Versions already released are skipped, so it is safe to run again.
+on:
+  push:
+    branches: [main]
+    paths: [VERSION]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag and release older versions
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Rows look like: | 1.3 | 2.0.0 | section | `37b44e3` |
+          grep -E '^\| [0-9.]+ \| [0-9]+\.[0-9]+\.[0-9]+ \|' docs/renumbering.md | while IFS='|' read -r _ old new kind commit _; do
+            version="$(echo "$new" | tr -d ' ')"
+            sha="$(git rev-parse "$(echo "$commit" | tr -d ' `')")"
+            tag="v$version"
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "$tag already released"; continue
+            fi
+            gh release create "$tag" --target "$sha" --title "APD Project Management Dashboard $version" \
+              --notes-file "docs/releases/$version.md" --latest=false
+          done
+      - name: Tag and release the current version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag already released"; exit 0
+          fi
+          notes="docs/releases/$version.md"
+          [ -f "$notes" ] || { echo "missing $notes"; exit 1; }
+          gh release create "$tag" --target "$GITHUB_SHA" --title "APD Project Management Dashboard $version" --notes-file "$notes" --latest

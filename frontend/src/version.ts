@@ -1,11 +1,9 @@
-// package.json holds semver (1.2.1) but releases are named X.YY (1.21) — see
-// CHANGELOG.md. A zero patch is just X.Y (1.1.0 -> 1.1); otherwise the patch
-// digit is appended to the minor (1.0.1 -> 1.01, 1.2.1 -> 1.21).
+// The app's version, Section.Feature.Fix (e.g. 2.6.1), from package.json,
+// which scripts/bump-version.sh keeps in step with /VERSION. See
+// docs/releases.md. Shown as is: every part counts on its own.
 export function formatVersion(semver: string): string {
   const match = /^(\d+)\.(\d+)\.(\d+)/.exec(semver);
-  if (!match) return semver;
-  const [, major, minor, patch] = match;
-  return patch === "0" ? `${major}.${minor}` : `${major}.${minor}${patch}`;
+  return match ? `${match[1]}.${match[2]}.${match[3]}` : semver;
 }
 
 export const APP_VERSION =
