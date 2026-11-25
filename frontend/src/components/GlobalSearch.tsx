@@ -1,7 +1,18 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { searchAll } from "../api";
 import { SearchResult } from "../types";
+import { useAuth } from "../auth/AuthContext";
+import { useTheme } from "../theme/ThemeContext";
+import { openQuickAdd, QuickAddKind } from "./QuickAdd";
+
+interface Command {
+  id: string;
+  label: string;
+  group: "Go to" | "Add" | "Settings";
+  keywords?: string;
+  run: () => void;
+}
 
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
@@ -54,6 +65,10 @@ function resultHref(item: SearchResult): string {
 // the user types. Debounced rather than fired on every keystroke since
 // each query fans out across ~10 tables server-side.
 export default function GlobalSearch() {
+  const navigate = useNavigate();
+  const { user, isViewer, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [active, setActive] = useState(0);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,7 +118,8 @@ export default function GlobalSearch() {
   }, [query]);
 
   const trimmed = query.trim();
-  const showDropdown = open && trimmed.length >= MIN_QUERY_LENGTH;
+  const showDropdown = open;
+  const searching = trimmed.length >= MIN_QUERY_LENGTH;
 
   const grouped: { typeLabel: string; items: SearchResult[] }[] = [];
   for (const result of results) {
@@ -114,6 +130,90 @@ export default function GlobalSearch() {
 
   function close() {
     setOpen(false);
+  }
+
+  // The command menu: pages to jump to and things to do, matched against
+  // what's typed (all shown when the box is empty), above search results.
+  const commands = useMemo<Command[]>(() => {
+    const go = (label: string, to: string, keywords = ""): Command => ({
+      id: `go-${to}`,
+      label,
+      group: "Go to",
+      keywords,
+      run: () => navigate(to),
+    });
+    const add = (label: string, kind: QuickAddKind): Command => ({
+      id: `add-${kind}`,
+      label: `New ${label}`,
+      group: "Add",
+      keywords: "add create new",
+      run: () => openQuickAdd(kind),
+    });
+    return [
+      go("Dashboard", "/?tab=projects", "home projects"),
+      go("Today & Upcoming", "/?tab=today", "due tasks actions"),
+      go("My week", "/?tab=week", "mine due expiring claims"),
+      go("Alerts", "/?tab=alerts"),
+      go("Charts", "/?tab=charts", "spend budget"),
+      go("Activity", "/?tab=activity", "history recent"),
+      go("TRIM & GVW Links", "/?tab=trim", "links"),
+      go("Lessons Learned", "/lessons-learned"),
+      go("Tool Suggestions", "/tool-suggestions", "ideas feedback"),
+      go("Reports", "/reports", "portfolio"),
+      go("Task Templates", "/task-templates"),
+      ...(user?.role === "ADMIN" ? [go("Users", "/admin/users", "admin accounts")] : []),
+      ...(isViewer
+        ? []
+        : [
+            {
+              id: "add-project",
+              label: "New project",
+              group: "Add" as const,
+              keywords: "add create",
+              run: () => navigate("/?tab=projects&new=project"),
+            },
+            add("task", "task"),
+            add("action", "action"),
+            add("risk", "risk"),
+            add("defect", "defect"),
+            add("site visit", "site-visit"),
+          ]),
+      {
+        id: "theme",
+        label: theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+        group: "Settings",
+        keywords: "theme dark light",
+        run: toggleTheme,
+      },
+      {
+        id: "logout",
+        label: "Log out",
+        group: "Settings",
+        keywords: "sign out",
+        run: () => logout().then(() => navigate("/login")),
+      },
+    ];
+  }, [navigate, user?.role, isViewer, theme, toggleTheme, logout]);
+
+  const q = trimmed.toLowerCase();
+  const matchedCommands = commands
+    .filter((c) => !q || `${c.label} ${c.keywords ?? ""}`.toLowerCase().includes(q))
+    .slice(0, q ? 6 : 12);
+  const flat: { key: string; run: () => void }[] = [
+    ...matchedCommands.map((c) => ({ key: c.id, run: c.run })),
+    ...results.map((r) => ({ key: `${r.type}-${r.id}`, run: () => navigate(resultHref(r)) })),
+  ];
+  const activeKey = flat[Math.min(active, flat.length - 1)]?.key;
+
+  useEffect(() => setActive(0), [query, results.length]);
+
+  function runAt(index: number) {
+    const item = flat[index];
+    if (!item) return;
+    close();
+    setQuery("");
+    inputRef.current?.blur();
+    item.run();
   }
 
   return (
@@ -131,9 +231,20 @@ export default function GlobalSearch() {
           if (e.key === "Escape") {
             close();
             inputRef.current?.blur();
+          } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActive((i) => Math.min(i + 1, flat.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActive((i) => Math.max(i - 1, 0));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            runAt(Math.min(active, flat.length - 1));
           }
         }}
-        placeholder={`Search… (${SHORTCUT_LABEL})`}
+        placeholder={`Search or jump to… (${SHORTCUT_LABEL})`}
+        role="combobox"
+        aria-expanded={showDropdown}
         title={`Search (${SHORTCUT_LABEL})`}
         aria-label="Search across projects and registers"
         className="w-40 sm:w-56 rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-1.5 text-sm"
@@ -142,13 +253,39 @@ export default function GlobalSearch() {
       {showDropdown && (
         <>
           <div className="fixed inset-0 z-10" onClick={close} />
-          <div className="absolute left-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 shadow-lg z-20 py-1">
-            {loading ? (
+          <div className="absolute right-0 sm:left-0 sm:right-auto top-full mt-2 w-80 max-h-[28rem] overflow-y-auto bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 shadow-lg z-20 py-1">
+            {(["Go to", "Add", "Settings"] as const).map((group) => {
+              const items = matchedCommands.filter((c) => c.group === group);
+              if (items.length === 0) return null;
+              return (
+                <div key={group}>
+                  <div className="px-4 pt-2 pb-1 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+                    {group}
+                  </div>
+                  {items.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => runAt(flat.findIndex((f) => f.key === c.id))}
+                      className={`block w-full text-left px-4 py-1.5 text-sm text-slate-800 dark:text-slate-200 ${
+                        activeKey === c.id ? "bg-blue-50 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+            {!searching ? null : loading ? (
               <p className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">Searching…</p>
             ) : results.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-                No matches for "{trimmed}"
-              </p>
+              matchedCommands.length === 0 && (
+                <p className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+                  No matches for "{trimmed}"
+                </p>
+              )
             ) : (
               grouped.map((group) => (
                 <div key={group.typeLabel}>
@@ -159,8 +296,13 @@ export default function GlobalSearch() {
                     <Link
                       key={`${item.type}-${item.id}`}
                       to={resultHref(item)}
-                      onClick={close}
-                      className="block px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      onClick={() => {
+                        close();
+                        setQuery("");
+                      }}
+                      className={`block px-4 py-2 ${
+                        activeKey === `${item.type}-${item.id}` ? "bg-blue-50 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-700"
+                      }`}
                     >
                       <div className="text-sm text-slate-900 dark:text-slate-100 truncate">
                         {item.title}

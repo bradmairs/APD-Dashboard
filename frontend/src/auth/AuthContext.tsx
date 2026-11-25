@@ -1,3 +1,4 @@
+import { clearBatchCache } from "../batch";
 import {
   createContext,
   ReactNode,
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     await apiLogout();
+    clearBatchCache();
     setUser(null);
   }
 

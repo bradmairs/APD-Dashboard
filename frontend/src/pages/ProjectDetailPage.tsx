@@ -1,7 +1,8 @@
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import FormattedText from "../components/FormattedText";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTabParam } from "../useTabParam";
+import { batched } from "../batch";
 import {
   ActionItem,
   ActionItemInput,
@@ -224,49 +225,49 @@ import {
   updateCashFlowEntry,
 } from "../api";
 import ProjectFormModal from "../components/ProjectFormModal";
-import TaskList from "../components/TaskList";
+const TaskList = lazy(() => import("../components/TaskList"));
 import ActivityFeed from "../components/ActivityFeed";
-import AttachmentsPanel from "../components/AttachmentsPanel";
-import ArchiveLinksPanel from "../components/ArchiveLinksPanel";
-import MonthlyReportingPanel from "../monthlyReport/MonthlyReportingPanel";
-import MilestonesPanel from "../components/MilestonesPanel";
-import ProjectTimeline from "../components/ProjectTimeline";
+const AttachmentsPanel = lazy(() => import("../components/AttachmentsPanel"));
+const ArchiveLinksPanel = lazy(() => import("../components/ArchiveLinksPanel"));
+const MonthlyReportingPanel = lazy(() => import("../monthlyReport/MonthlyReportingPanel"));
+const MilestonesPanel = lazy(() => import("../components/MilestonesPanel"));
+const ProjectTimeline = lazy(() => import("../components/ProjectTimeline"));
 import ApplyTaskTemplateControl from "../components/ApplyTaskTemplateControl";
-import CashFlowPanel from "../components/CashFlowPanel";
-import SiteVisitsPanel from "../components/SiteVisitsPanel";
-import VariationsPanel from "../components/VariationsPanel";
-import RisksPanel from "../components/RisksPanel";
-import RfisPanel from "../components/RfisPanel";
-import ActionsPanel from "../components/ActionsPanel";
-import StakeholdersPanel from "../components/StakeholdersPanel";
-import SubcontractorsPanel from "../components/SubcontractorsPanel";
-import ContractsPanel from "../components/ContractsPanel";
-import PermitsPanel from "../components/PermitsPanel";
-import InsuranceWarrantiesPanel from "../components/InsuranceWarrantiesPanel";
-import LessonsLearnedPanel from "../components/LessonsLearnedPanel";
-import MeetingMinutesPanel from "../components/MeetingMinutesPanel";
-import SqePanel from "../components/SqePanel";
-import EnvironmentalMonitoringPanel from "../components/EnvironmentalMonitoringPanel";
-import SafetyInspectionsPanel from "../components/SafetyInspectionsPanel";
-import TenderPackagesPanel from "../components/TenderPackagesPanel";
-import DelaysPanel from "../components/DelaysPanel";
-import EotPanel from "../components/EotPanel";
-import ChecklistPanel from "../components/ChecklistPanel";
-import TenderSubmissionsPanel from "../components/TenderSubmissionsPanel";
+const CashFlowPanel = lazy(() => import("../components/CashFlowPanel"));
+const SiteVisitsPanel = lazy(() => import("../components/SiteVisitsPanel"));
+const VariationsPanel = lazy(() => import("../components/VariationsPanel"));
+const RisksPanel = lazy(() => import("../components/RisksPanel"));
+const RfisPanel = lazy(() => import("../components/RfisPanel"));
+const ActionsPanel = lazy(() => import("../components/ActionsPanel"));
+const StakeholdersPanel = lazy(() => import("../components/StakeholdersPanel"));
+const SubcontractorsPanel = lazy(() => import("../components/SubcontractorsPanel"));
+const ContractsPanel = lazy(() => import("../components/ContractsPanel"));
+const PermitsPanel = lazy(() => import("../components/PermitsPanel"));
+const InsuranceWarrantiesPanel = lazy(() => import("../components/InsuranceWarrantiesPanel"));
+const LessonsLearnedPanel = lazy(() => import("../components/LessonsLearnedPanel"));
+const MeetingMinutesPanel = lazy(() => import("../components/MeetingMinutesPanel"));
+const SqePanel = lazy(() => import("../components/SqePanel"));
+const EnvironmentalMonitoringPanel = lazy(() => import("../components/EnvironmentalMonitoringPanel"));
+const SafetyInspectionsPanel = lazy(() => import("../components/SafetyInspectionsPanel"));
+const TenderPackagesPanel = lazy(() => import("../components/TenderPackagesPanel"));
+const DelaysPanel = lazy(() => import("../components/DelaysPanel"));
+const EotPanel = lazy(() => import("../components/EotPanel"));
+const ChecklistPanel = lazy(() => import("../components/ChecklistPanel"));
+const TenderSubmissionsPanel = lazy(() => import("../components/TenderSubmissionsPanel"));
 import CollapsibleSection, {
   COLLAPSE_THRESHOLD,
   useExpandedSections,
 } from "../components/CollapsibleSection";
 import { STANDARD_PROCUREMENT_CHECKLIST } from "../checklistMeta";
-import DefectsPanel from "../components/DefectsPanel";
-import DocumentsPanel from "../components/DocumentsPanel";
-import EnquiriesPanel from "../components/EnquiriesPanel";
-import CorrespondencePanel from "../components/CorrespondencePanel";
-import TrainingRecordsPanel from "../components/TrainingRecordsPanel";
-import PerformanceReviewsPanel from "../components/PerformanceReviewsPanel";
-import ToolboxTalksPanel from "../components/ToolboxTalksPanel";
+const DefectsPanel = lazy(() => import("../components/DefectsPanel"));
+const DocumentsPanel = lazy(() => import("../components/DocumentsPanel"));
+const EnquiriesPanel = lazy(() => import("../components/EnquiriesPanel"));
+const CorrespondencePanel = lazy(() => import("../components/CorrespondencePanel"));
+const TrainingRecordsPanel = lazy(() => import("../components/TrainingRecordsPanel"));
+const PerformanceReviewsPanel = lazy(() => import("../components/PerformanceReviewsPanel"));
+const ToolboxTalksPanel = lazy(() => import("../components/ToolboxTalksPanel"));
 import Tabs from "../components/Tabs";
-import PaymentClaimsPanel from "../components/PaymentClaimsPanel";
+const PaymentClaimsPanel = lazy(() => import("../components/PaymentClaimsPanel"));
 import HealthBadge from "../components/HealthBadge";
 import { computeProjectHealth } from "../health";
 import { revisedCompletionDate } from "../eot";
@@ -275,9 +276,13 @@ import { formatCurrency, formatDate, formatReportMonth } from "../format";
 import { trimHref, useTrimRecordUrl } from "../trim";
 import { canModifyProject } from "../permissions";
 import AppLayout from "../components/AppLayout";
+import { onDataChanged, openQuickAdd } from "../components/QuickAdd";
+import { SkeletonCard, SkeletonSections } from "../components/Skeleton";
 import {
   forgetRecentProject,
+  loadHideEmpty,
   loadLastProjectTab,
+  saveHideEmpty,
   rememberRecentProject,
   saveLastProjectTab,
 } from "../layout/navMemory";
@@ -380,7 +385,7 @@ const WIDE_SECTIONS = new Set([
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isViewer } = useAuth();
   const { notifyUndo } = useUndoToast();
   const [project, setProject] = useState<Project | null>(null);
   const [activity, setActivity] = useState<ActivityLogEntry[]>([]);
@@ -429,6 +434,17 @@ export default function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useTabParam(PROJECT_TABS, "overview");
   const [searchParams] = useSearchParams();
 
+  // "Hide empty sections" on this project (remembered per user, per project).
+  const [hideEmpty, setHideEmpty] = useState(false);
+  useEffect(() => {
+    setHideEmpty(!!id && !!user && loadHideEmpty(user.id, id));
+  }, [id, user]);
+  function toggleHideEmpty() {
+    if (!id || !user) return;
+    saveHideEmpty(user.id, id, !hideEmpty);
+    setHideEmpty(!hideEmpty);
+  }
+
   // Back on a project with no ?tab in the link: reopen the group you were
   // last on for this project (remembered per user, in this browser).
   const restoredTabForRef = useRef<string | null>(null);
@@ -464,6 +480,7 @@ export default function ProjectDetailPage() {
     const initial = loadedIdRef.current !== id;
     if (initial) setLoading(true);
     setError(null);
+    let refreshAfter = false;
     try {
       const [
         data,
@@ -502,7 +519,7 @@ export default function ProjectDetailPage() {
         tenderPackageData,
         delayData,
         tenderSubmissionData,
-      ] = await Promise.all([
+      ] = await batched(() => Promise.all([
         getProject(id),
         getProjectActivity(id),
         getAttachments(id),
@@ -539,7 +556,7 @@ export default function ProjectDetailPage() {
         getTenderPackages(id),
         getDelays(id),
         getTenderSubmissions(id),
-      ]);
+      ]), { preferCache: initial, onCacheHit: () => (refreshAfter = true) });
       // Two quick saves overlap two refreshes — only the newest one's
       // result is applied, so an older response can't overwrite it.
       if (seq !== loadSeqRef.current) return;
@@ -593,10 +610,17 @@ export default function ProjectDetailPage() {
     } finally {
       if (seq === loadSeqRef.current && initial) setLoading(false);
     }
+    // Drawn from the last visit's data: now fetch the latest quietly.
+    if (refreshAfter && seq === loadSeqRef.current) load();
   }
 
   useEffect(() => {
     load();
+    // Added to this project from the top bar's "+ New": refresh quietly.
+    const stop = onDataChanged((projectId) => {
+      if (!projectId || projectId === id) load();
+    });
+    return stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -1457,7 +1481,10 @@ export default function ProjectDetailPage() {
   if (loading) {
     return (
       <AppLayout title="Loading project…">
-        <div className="text-center text-slate-500 dark:text-slate-400 py-12">Loading…</div>
+        <div className="space-y-6">
+          <SkeletonCard lines={4} />
+          <SkeletonSections />
+        </div>
       </AppLayout>
     );
   }
@@ -1523,10 +1550,18 @@ export default function ProjectDetailPage() {
   const collapsibleInTab = TAB_SECTIONS[activeTab]
     .map((sec) => sec.id)
     .filter((sectionId) => (sectionCounts[sectionId] ?? 0) > COLLAPSE_THRESHOLD);
+  const isHidden = (sectionId: string) => hideEmpty && sectionCounts[sectionId] === 0;
+  const visibleSections = Object.fromEntries(
+    Object.entries(TAB_SECTIONS).map(([tab, list]) => [tab, list.filter((sec) => !isHidden(sec.id))])
+  ) as Record<ProjectTabId, JumpSection[]>;
   function section(sectionId: string) {
     return {
       id: sectionId,
-      className: WIDE_SECTIONS.has(sectionId) ? WIDE_SECTION : undefined,
+      className: isHidden(sectionId)
+        ? "hidden"
+        : WIDE_SECTIONS.has(sectionId)
+          ? WIDE_SECTION
+          : undefined,
       expanded: expandedSections.has(sectionId),
       onExpandedChange: (value: boolean) => setSectionsExpanded([sectionId], value),
     };
@@ -1585,8 +1620,10 @@ export default function ProjectDetailPage() {
         <ProjectSectionMenu
           projectId={project.id}
           tabs={PROJECT_TABS}
-          sections={TAB_SECTIONS}
+          sections={visibleSections}
           counts={sectionCounts}
+          hideEmpty={hideEmpty}
+          onToggleHideEmpty={toggleHideEmpty}
           activeTab={activeTab}
           onSelectTab={setActiveTab}
           {...(collapsibleInTab.length > 0 && {
@@ -1596,7 +1633,7 @@ export default function ProjectDetailPage() {
         />
       }
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 pb-16 md:pb-0">
         <Link
           to="/?tab=projects"
           className="self-start lg:hidden text-sm text-blue-600 dark:text-blue-400 hover:underline"
@@ -1694,16 +1731,37 @@ export default function ProjectDetailPage() {
         </div>
         <SectionJumpNav
           className="lg:hidden"
-          sections={TAB_SECTIONS[activeTab]}
+          sections={visibleSections[activeTab]}
           {...(collapsibleInTab.length > 0 && {
             onExpandAll: () => setSectionsExpanded(collapsibleInTab, true),
             onCollapseAll: () => setSectionsExpanded(collapsibleInTab, false),
           })}
         />
-        <h2 className="hidden lg:block text-base font-semibold text-slate-900 dark:text-slate-100 -mb-3">
-          {PROJECT_TABS.find((t) => t.id === activeTab)?.label}
-        </h2>
+        <div className="flex items-center justify-between gap-3 -mb-3">
+          <h2 className="hidden lg:block text-base font-semibold text-slate-900 dark:text-slate-100">
+            {PROJECT_TABS.find((t) => t.id === activeTab)?.label}
+          </h2>
+          <button
+            type="button"
+            onClick={toggleHideEmpty}
+            className="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            title="Only for this project, in this browser. Nothing is deleted."
+          >
+            {hideEmpty ? "Show empty sections" : "Hide empty sections"}
+          </button>
+        </div>
+        {hideEmpty && TAB_SECTIONS[activeTab].length > 0 && visibleSections[activeTab].length === 0 && (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Every section in this group is empty and hidden.{" "}
+            <button type="button" onClick={toggleHideEmpty} className="text-blue-600 dark:text-blue-400 hover:underline">
+              Show them
+            </button>{" "}
+            to add something.
+          </p>
+        )}
 
+        {/* Each group's sections load the first time you open that group. */}
+        <Suspense fallback={<SkeletonSections />}>
         <div className="grid grid-cols-1 min-[1800px]:grid-cols-2 gap-6 items-start [&>*]:min-w-0">
           {activeTab === "overview" && (
             <>
@@ -1746,7 +1804,7 @@ export default function ProjectDetailPage() {
               </CollapsibleSection>
 
               <CollapsibleSection {...section("activity")}
-                className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+                className={`${section("activity").className ?? ""} bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4`}>
                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
                   Activity
                 </h2>
@@ -2092,7 +2150,43 @@ export default function ProjectDetailPage() {
           )}
 
         </div>
+        </Suspense>
       </div>
+
+      {/* Phones: the things most often added on site, one tap away. */}
+      {!isViewer && (
+        <nav
+          aria-label="Quick add"
+          className="md:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-4 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+        >
+          {[
+            { label: "Action", kind: "action" as const },
+            { label: "Defect", kind: "defect" as const },
+            { label: "Site visit", kind: "site-visit" as const },
+          ].map((b) => (
+            <button
+              key={b.kind}
+              type="button"
+              onClick={() => openQuickAdd(b.kind)}
+              className="py-2.5 text-xs text-slate-700 dark:text-slate-200 flex flex-col items-center gap-0.5"
+            >
+              <span className="text-lg leading-none">＋</span>
+              {b.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("site");
+              window.setTimeout(() => document.getElementById("site-visits")?.scrollIntoView({ behavior: "smooth" }), 150);
+            }}
+            className="py-2.5 text-xs text-slate-700 dark:text-slate-200 flex flex-col items-center gap-0.5"
+          >
+            <span className="text-lg leading-none">📷</span>
+            Photos
+          </button>
+        </nav>
+      )}
 
       {showModal && (
         <ProjectFormModal

@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar, { Icon } from "./Sidebar";
 import UserMenu from "./UserMenu";
+import QuickAddMenu from "./QuickAdd";
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "../layout/navMemory";
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 export const SHORTCUTS: { keys: string; label: string; to?: string }[] = [
   { keys: "G D", label: "Dashboard", to: "/?tab=projects" },
   { keys: "G T", label: "Today & Upcoming", to: "/?tab=today" },
+  { keys: "G W", label: "My week", to: "/?tab=week" },
   { keys: "G A", label: "Alerts", to: "/?tab=alerts" },
   { keys: "G C", label: "Charts", to: "/?tab=charts" },
   { keys: "G V", label: "Activity", to: "/?tab=activity" },
@@ -61,6 +63,27 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
       return !c;
     });
   }
+
+  // Publish the top bar's height (it wraps on narrower screens) as
+  // --app-header-h, so table headers can pin just below it.
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const update = () =>
+      document.documentElement.style.setProperty(
+        "--app-header-h",
+        getComputedStyle(header).position === "sticky" ? `${header.getBoundingClientRect().height}px` : "0px"
+      );
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
 
   // Close the phone menu whenever the page changes.
   useEffect(() => setMobileOpen(false), [location.pathname, location.search]);
@@ -119,7 +142,7 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
       )}
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="lg:sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800">
+        <header ref={headerRef} className="lg:sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800">
           <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-x-4 gap-y-3">
             <button
               type="button"
@@ -136,6 +159,7 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
               {subtitle && <div className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</div>}
             </div>
             {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+            <QuickAddMenu />
             <UserMenu />
             <button
               type="button"

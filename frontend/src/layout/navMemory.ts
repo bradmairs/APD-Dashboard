@@ -93,3 +93,21 @@ export function saveLastProjectTab(userId: string, projectId: string, tab: strin
   const entries = Object.entries({ ...map, [projectId]: tab }).slice(-50);
   write(lastTabKey(userId), Object.fromEntries(entries));
 }
+
+// ---- Projects where empty sections are hidden ------------------------------------
+
+function hideEmptyKey(userId: string) {
+  return `apd.hideEmptySections.${userId}`;
+}
+
+export function loadHideEmpty(userId: string, projectId: string): boolean {
+  return read<Record<string, boolean>>(hideEmptyKey(userId), {})[projectId] === true;
+}
+
+export function saveHideEmpty(userId: string, projectId: string, hide: boolean) {
+  const map = read<Record<string, boolean>>(hideEmptyKey(userId), {});
+  if (hide) map[projectId] = true;
+  else delete map[projectId];
+  const entries = Object.entries(map).slice(-200);
+  write(hideEmptyKey(userId), Object.fromEntries(entries));
+}

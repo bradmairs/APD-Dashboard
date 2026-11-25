@@ -1,5 +1,6 @@
 import { ClipboardEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { readFrom, renderInto } from "../richTextDom";
+import { clearDraft, draftKeyFor, loadDraft, markDirty, saveDraft } from "../drafts";
 
 interface Props {
   value: string;
@@ -49,6 +50,32 @@ export default function RichTextArea({
   const lastValueRef = useRef<string | null>(null);
   const [active, setActive] = useState<Partial<Record<Command, boolean>>>({});
 
+  // Autosaved draft (see drafts.ts): what was typed is kept in this browser
+  // until the form is saved, so closing a form or the tab by mistake
+  // doesn't lose it.
+  const initialValueRef = useRef(value);
+  const draftKeyRef = useRef<string | null>(null);
+  const [draft, setDraft] = useState<{ text: string; at: number } | null>(null);
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el || disabled) return;
+    const key = draftKeyFor(el, initialValueRef.current);
+    draftKeyRef.current = key;
+    const saved = loadDraft(key);
+    if (saved && saved.text !== initialValueRef.current) setDraft(saved);
+    const form = el.closest("form");
+    const onSubmit = () => {
+      clearDraft(key);
+      markDirty(key, false);
+    };
+    form?.addEventListener("submit", onSubmit);
+    return () => {
+      form?.removeEventListener("submit", onSubmit);
+      markDirty(key, false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const el = editorRef.current;
     if (!el || value === lastValueRef.current) return;
@@ -63,6 +90,27 @@ export default function RichTextArea({
     if (next === lastValueRef.current) return;
     lastValueRef.current = next;
     onChange?.({ target: { value: next } });
+    const key = draftKeyRef.current;
+    if (key) {
+      const changed = next !== initialValueRef.current;
+      markDirty(key, changed);
+      if (changed) saveDraft(key, next);
+      else clearDraft(key);
+    }
+  }
+
+  function restoreDraft() {
+    const el = editorRef.current;
+    if (!el || !draft) return;
+    renderInto(el, draft.text);
+    lastValueRef.current = null;
+    emit();
+    setDraft(null);
+  }
+
+  function discardDraft() {
+    if (draftKeyRef.current) clearDraft(draftKeyRef.current);
+    setDraft(null);
   }
 
   function refreshActive() {
@@ -132,6 +180,20 @@ export default function RichTextArea({
           </button>
         ))}
       </div>
+      {draft && (
+        <div className="mb-1 flex flex-wrap items-center gap-2 rounded bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-2 py-1 text-xs text-amber-800 dark:text-amber-200">
+          <span>
+            Unsaved text from{" "}
+            {new Date(draft.at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}
+          </span>
+          <button type="button" onClick={restoreDraft} className="font-medium underline">
+            Restore
+          </button>
+          <button type="button" onClick={discardDraft} className="underline">
+            Discard
+          </button>
+        </div>
+      )}
       <div
         ref={editorRef}
         id={id}

@@ -1,3 +1,4 @@
+import { batched } from "../batch";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -40,6 +41,9 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // One request for all five lists (see batch.ts); drawn from the page
+    // cache when it's fresh.
+    batched(async () => {
     getProjects()
       .then((projects) =>
         setMyProjectIds(
@@ -59,6 +63,7 @@ export default function NotificationBell() {
     getAllRfis()
       .then(setRfis)
       .catch(() => setRfis([]));
+    }, { preferCache: true });
   }, [user?.id]);
 
   function isMine(item: { projectId?: string | null; project?: { id: string } | null }) {

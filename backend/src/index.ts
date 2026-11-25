@@ -1,3 +1,4 @@
+import { batchRouter } from "./routes/batch";
 import express, { ErrorRequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -156,6 +157,7 @@ app.use("/api/task-templates", readOnlyGuarded, taskTemplatesRouter);
 app.use("/api/tool-suggestions", requireAuth, toolSuggestionsRouter);
 app.use("/api/sharepoint", requireAuth, sharePointRouter);
 app.use("/api/user-options", requireAuth, userOptionsRouter);
+app.use("/api/batch", requireAuth, batchRouter(port));
 
 // Catches multer's file-size/file-type rejections (thrown before any route
 // handler runs) and reports them as clean JSON instead of Express's default

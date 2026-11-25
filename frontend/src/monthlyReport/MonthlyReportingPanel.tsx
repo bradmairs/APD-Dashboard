@@ -31,7 +31,6 @@ import {
 } from "../types";
 import { canModifyReport } from "../permissions";
 import { useConfirm } from "../confirm/ConfirmContext";
-import { downloadElementAsPdf } from "../pdfExport";
 import { formatDateTime } from "../format";
 import MonthlyReportSheet from "./MonthlyReportSheet";
 import { MonthlyReportContent, monthLabel } from "./model";
@@ -298,7 +297,10 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
   async function pdf() {
     if (!reportingMonth) return;
     await run("Generating PDF…", () =>
-      downloadElementAsPdf("monthly-report-sheet", `Monthly Report - ${project.name} - ${monthLabel(reportingMonth)}`)
+      // Loaded only when needed: the PDF library is large.
+      import("../pdfExport").then(({ downloadElementAsPdf }) =>
+        downloadElementAsPdf("monthly-report-sheet", `Monthly Report - ${project.name} - ${monthLabel(reportingMonth)}`)
+      )
     );
   }
 

@@ -296,6 +296,28 @@ export default function RisksPanel({ risks, onCreate, onUpdate, onDelete }: Prop
                         Edit
                       </button>
                       <button
+                        onClick={() => {
+                          onCreate({
+                            type: risk.type,
+                            title: `${risk.title} (copy)`,
+                            description: risk.description,
+                            category: risk.category,
+                            inherentLikelihood: risk.inherentLikelihood,
+                            inherentConsequence: risk.inherentConsequence,
+                            residualLikelihood: risk.residualLikelihood,
+                            residualConsequence: risk.residualConsequence,
+                            mitigation: risk.mitigation,
+                            ownerName: risk.ownerName,
+                            dueDate: risk.dueDate,
+                            status: "OPEN",
+                          });
+                        }}
+                        className="text-xs text-slate-600 dark:text-slate-300 hover:underline"
+                        title="Add a copy of this risk"
+                      >
+                        Duplicate
+                      </button>
+                      <button
                         onClick={() => handleDelete(risk)}
                         className="text-xs text-red-600 dark:text-red-400 hover:underline"
                       >

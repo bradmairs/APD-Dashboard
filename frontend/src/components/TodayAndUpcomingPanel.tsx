@@ -38,6 +38,12 @@ interface Props {
   onCompleteAction: (actionItem: ActionItem) => void;
   onUpdateTaskDueDate: (task: Task, dueDate: string | null) => void;
   onUpdateActionDueDate: (actionItem: ActionItem, dueDate: string | null) => void;
+  // Select mode: complete or re-date several items at once.
+  onBulkUpdate?: (
+    tasks: Task[],
+    actions: ActionItem[],
+    change: { complete?: boolean; dueDate?: string | null }
+  ) => Promise<void>;
 }
 
 function toDateInputValue(value: string | null): string {
@@ -82,7 +88,12 @@ export default function TodayAndUpcomingPanel({
   onCompleteAction,
   onUpdateTaskDueDate,
   onUpdateActionDueDate,
+  onBulkUpdate,
 }: Props) {
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDate, setBulkDate] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
   const { user, refreshUser } = useAuth();
   // The Project Manager filter is saved on the user's account (not in the
   // browser), so it's the same on every login and device.
@@ -171,6 +182,32 @@ export default function TodayAndUpcomingPanel({
 
   const total = items.length;
 
+  function toggleSelected(key: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  async function applyBulk(change: { complete?: boolean; dueDate?: string | null }) {
+    if (!onBulkUpdate) return;
+    const chosen = items.filter((i) => selected.has(i.key));
+    setBulkBusy(true);
+    try {
+      await onBulkUpdate(
+        chosen.flatMap((i) => (i.task ? [i.task] : [])),
+        chosen.flatMap((i) => (i.action ? [i.action] : [])),
+        change
+      );
+      setSelected(new Set());
+      setBulkDate("");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4">
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
@@ -182,6 +219,18 @@ export default function TodayAndUpcomingPanel({
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {buckets.OVERDUE.length} overdue · {total} open
             </span>
+          )}
+          {onBulkUpdate && total > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelecting((v) => !v);
+                setSelected(new Set());
+              }}
+              className="text-xs px-2.5 py-1 rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              {selecting ? "Done selecting" : "Select…"}
+            </button>
           )}
           <select
             value={managerFilter}
@@ -202,6 +251,43 @@ export default function TodayAndUpcomingPanel({
 
       {filterError && (
         <p className="text-xs text-red-600 dark:text-red-400 mb-2">{filterError}</p>
+      )}
+
+      {selecting && (
+        <div className="sticky top-[var(--app-header-h,0px)] z-10 mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 px-3 py-2 text-sm">
+          <span className="text-blue-900 dark:text-blue-100 font-medium">{selected.size} selected</span>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set(items.map((i) => i.key)))}
+            className="text-xs text-blue-700 dark:text-blue-300 hover:underline"
+          >
+            Select all
+          </button>
+          <span className="flex-1" />
+          <button
+            type="button"
+            disabled={selected.size === 0 || bulkBusy}
+            onClick={() => applyBulk({ complete: true })}
+            className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            Mark complete
+          </button>
+          <input
+            type="date"
+            value={bulkDate}
+            onChange={(e) => setBulkDate(e.target.value)}
+            aria-label="New due date for the selected items"
+            className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+          />
+          <button
+            type="button"
+            disabled={selected.size === 0 || !bulkDate || bulkBusy}
+            onClick={() => applyBulk({ dueDate: new Date(bulkDate).toISOString() })}
+            className="text-xs px-3 py-1.5 rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50"
+          >
+            Move due date
+          </button>
+        </div>
       )}
 
       {total === 0 ? (
@@ -226,13 +312,24 @@ export default function TodayAndUpcomingPanel({
               <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                 {buckets[bucket].map((item) => (
                   <li key={item.key} className="py-2.5 flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={false}
-                      onChange={item.onComplete}
-                      title="Mark complete"
-                      className="h-4 w-4 mt-0.5 shrink-0"
-                    />
+                    {selecting ? (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(item.key)}
+                        onChange={() => toggleSelected(item.key)}
+                        title="Select"
+                        aria-label={`Select "${item.title}"`}
+                        className="h-4 w-4 mt-0.5 shrink-0 accent-blue-600"
+                      />
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        onChange={item.onComplete}
+                        title="Mark complete"
+                        className="h-4 w-4 mt-0.5 shrink-0"
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span

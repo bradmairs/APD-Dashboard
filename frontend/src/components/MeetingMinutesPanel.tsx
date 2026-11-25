@@ -1,5 +1,4 @@
 import { FormEvent, useRef, useState } from "react";
-import { buildMeetingMinutesPdf } from "../meetingMinutesPdf";
 import { previewText } from "../richText";
 import FormattedText from "./FormattedText";
 import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
@@ -480,7 +479,9 @@ export default function MeetingMinutesPanel({
 
   // The minutes as a formatted PDF (bold, lists etc. kept), with the
   // actions raised at this meeting listed at the end.
-  function downloadPdf(meeting: MeetingMinutes) {
+  async function downloadPdf(meeting: MeetingMinutes) {
+    // Loaded only when needed: the PDF library is large.
+    const { buildMeetingMinutesPdf } = await import("../meetingMinutesPdf");
     const blob = buildMeetingMinutesPdf(projectName, {
       title: meeting.title,
       meetingDate: meeting.meetingDate,

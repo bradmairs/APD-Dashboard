@@ -8,7 +8,6 @@ import {
   SuggestedAction,
   TaskInput,
 } from "../types";
-import { buildMeetingMinutesPdf } from "../meetingMinutesPdf";
 import { useAuth } from "../auth/AuthContext";
 import {
   SuggestionDestination,
@@ -194,6 +193,8 @@ export default function MeetingMinutesFormModal({
       // meeting, so there's a shareable document alongside the structured
       // fields without a separate export step.
       if (wasGenerated) {
+        // Loaded only when needed: the PDF library is large.
+        const { buildMeetingMinutesPdf } = await import("../meetingMinutesPdf");
         const pdfBlob = buildMeetingMinutesPdf(projectName, {
           title: title.trim() || null,
           meetingDate: saved.meetingDate,

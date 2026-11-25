@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTabParam } from "../useTabParam";
+import { batched } from "../batch";
 import {
   ActionItem,
   ActivityLogEntry,
@@ -61,6 +62,8 @@ import {
   updateProject,
   updateTask,
   updateDashboardView,
+  getHealthHistory,
+  HealthHistoryPoint,
 } from "../api";
 import StatCards from "../components/StatCards";
 import { isProjectOverdue } from "../statusMeta";
@@ -94,6 +97,9 @@ import { ALL_STATUSES, STATUS_LABELS } from "../statusMeta";
 import { computeProjectHealth, ProjectHealth } from "../health";
 import NeedsAttentionPanel from "../components/NeedsAttentionPanel";
 import AppLayout from "../components/AppLayout";
+import MyWeekPanel from "../components/MyWeekPanel";
+import { onDataChanged } from "../components/QuickAdd";
+import { SkeletonTable } from "../components/Skeleton";
 import DashboardSideColumn from "../components/DashboardSideColumn";
 import { useAuth } from "../auth/AuthContext";
 import ExportCsvButton from "../components/ExportCsvButton";
@@ -108,6 +114,7 @@ const RAG_LABELS: Record<RagStatus, string> = { GREEN: "Green", AMBER: "Amber", 
 type DashboardTabId =
   | "projects"
   | "today"
+  | "week"
   | "alerts"
   | "charts"
   | "activity"
@@ -116,6 +123,7 @@ type DashboardTabId =
 const DASHBOARD_TABS: { id: DashboardTabId; label: string }[] = [
   { id: "projects", label: "Projects" },
   { id: "today", label: "Today & Upcoming" },
+  { id: "week", label: "My week" },
   { id: "alerts", label: "Alerts" },
   { id: "charts", label: "Charts" },
   { id: "activity", label: "Activity" },
@@ -157,7 +165,7 @@ function parseDashboardView(raw: unknown): Partial<DashboardViewState> | null {
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user, isViewer, patchUser } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { theme } = useTheme();
   const { notifyUndo } = useUndoToast();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -185,6 +193,7 @@ export default function DashboardPage() {
   >([]);
   const [safetyInspections, setSafetyInspections] = useState<SafetyInspection[]>([]);
   const [tenderPackages, setTenderPackages] = useState<TenderPackage[]>([]);
+  const [healthHistory, setHealthHistory] = useState<Record<string, HealthHistoryPoint[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "ALL">(
@@ -259,6 +268,7 @@ export default function DashboardPage() {
     const initial = !hasLoadedRef.current;
     if (initial) setLoading(true);
     setError(null);
+    let refreshAfter = false;
     try {
       const [
         projectData,
@@ -284,7 +294,8 @@ export default function DashboardPage() {
         environmentalMonitoringData,
         safetyInspectionData,
         tenderPackageData,
-      ] = await Promise.all([
+        healthHistoryData,
+      ] = await batched(() => Promise.all([
         getProjects(),
         getUpcomingTasks(),
         getPortfolioTasks(),
@@ -308,7 +319,8 @@ export default function DashboardPage() {
         getAllEnvironmentalMonitoring(),
         getAllSafetyInspections(),
         getAllTenderPackages(),
-      ]);
+        getHealthHistory().catch(() => ({})),
+      ]), { preferCache: initial, onCacheHit: () => (refreshAfter = true) });
       setProjects(projectData);
       setUpcomingTasks(taskData);
       setPortfolioTasks(portfolioTaskData);
@@ -332,6 +344,7 @@ export default function DashboardPage() {
       setEnvironmentalMonitoring(environmentalMonitoringData);
       setSafetyInspections(safetyInspectionData);
       setTenderPackages(tenderPackageData);
+      setHealthHistory(healthHistoryData);
       hasLoadedRef.current = true;
     } catch (err) {
       if (initial) setError(err instanceof Error ? err.message : "Failed to load data");
@@ -339,11 +352,30 @@ export default function DashboardPage() {
     } finally {
       if (initial) setLoading(false);
     }
+    // Drawn from the last visit's data: now fetch the latest quietly.
+    if (refreshAfter) loadData();
   }
 
   useEffect(() => {
     loadData();
+    // Something was added from the top bar's "+ New": refresh quietly.
+    return onDataChanged(() => loadData());
   }, []);
+
+  // "+ New → Project" from another page lands here with ?new=project.
+  useEffect(() => {
+    if (searchParams.get("new") !== "project" || isViewer) return;
+    openNewProject();
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("new");
+        return next;
+      },
+      { replace: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const statusData: BarDatum[] = useMemo(
     () =>
@@ -487,6 +519,30 @@ export default function DashboardPage() {
 
   async function handleUpdateTaskDueDate(task: Task, dueDate: string | null) {
     await updateTask(task.id, { dueDate });
+    await loadData();
+  }
+
+  // Several tasks/actions at once (Today & Upcoming's Select mode): one
+  // save each, then a single refresh.
+  async function handleBulkUpdate(
+    tasks: Task[],
+    actions: ActionItem[],
+    change: { complete?: boolean; dueDate?: string | null }
+  ) {
+    await Promise.all([
+      ...tasks.map((t) =>
+        updateTask(t.id, {
+          ...(change.complete ? { status: "DONE" as const } : {}),
+          ...(change.dueDate !== undefined ? { dueDate: change.dueDate } : {}),
+        })
+      ),
+      ...actions.map((a) =>
+        updateActionItem(a.id, {
+          ...(change.complete ? { status: "DONE" as const } : {}),
+          ...(change.dueDate !== undefined ? { dueDate: change.dueDate } : {}),
+        })
+      ),
+    ]);
     await loadData();
   }
 
@@ -738,14 +794,17 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_22rem] gap-6 items-start">
             <div className="min-w-0 space-y-6">
             {loading ? (
-              <div className="text-center text-slate-500 dark:text-slate-400 py-12">
-                Loading…
-              </div>
+              <SkeletonTable rows={6} />
             ) : (
               <ProjectTable
                 projects={filteredProjects}
                 currentUser={user}
                 healthByProjectId={healthByProjectId}
+                healthHistory={healthHistory}
+                onStatusChange={async (project, status) => {
+                  await updateProject(project.id, { status });
+                  await loadData();
+                }}
                 onOpen={(project) => navigate(`/projects/${project.id}`)}
                 onEdit={openEditProject}
                 onDelete={handleDelete}
@@ -783,7 +842,21 @@ export default function DashboardPage() {
             onCompleteTask={handleCompleteTask}
             onCompleteAction={handleCompleteAction}
             onUpdateTaskDueDate={handleUpdateTaskDueDate}
-              onUpdateActionDueDate={handleUpdateActionDueDate}
+            onUpdateActionDueDate={handleUpdateActionDueDate}
+            onBulkUpdate={handleBulkUpdate}
+          />
+        )}
+
+        {activeTab === "week" && !loading && (
+          <MyWeekPanel
+            projects={projects}
+            tasks={upcomingTasks}
+            actionItems={actionItems}
+            permits={permits}
+            insuranceWarranties={insuranceWarranties}
+            paymentClaims={paymentClaims}
+            onCompleteTask={handleCompleteTask}
+            onCompleteAction={handleCompleteAction}
           />
         )}
 
