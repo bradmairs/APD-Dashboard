@@ -19,6 +19,8 @@ import { useSelection } from "../useSelection";
 import { LIKELIHOOD_LABELS, CONSEQUENCE_LABELS } from "../riskScoring";
 import { parseImportDate, parseOptionalEnum, parseRequiredEnum, requireCell } from "../csvImport";
 import { useConfirm } from "../confirm/ConfirmContext";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
 
 const RISK_IMPORT_HEADERS = [
   "Type",
@@ -222,9 +224,7 @@ export default function RisksPanel({ risks, onCreate, onUpdate, onDelete }: Prop
       )}
 
       {risks.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No risks or opportunities logged yet.
-        </p>
+        <EmptyState icon="alert" text="No risks or opportunities logged yet." addLabel="New Risk" onAdd={openCreate} />
       ) : (
         <>
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -291,9 +291,11 @@ export default function RisksPanel({ risks, onCreate, onUpdate, onDelete }: Prop
                       </select>
                       <button
                         onClick={() => openEdit(risk)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => {
@@ -312,16 +314,19 @@ export default function RisksPanel({ risks, onCreate, onUpdate, onDelete }: Prop
                             status: "OPEN",
                           });
                         }}
-                        className="text-xs text-slate-600 dark:text-slate-300 hover:underline"
-                        title="Add a copy of this risk"
+                        className="icon-btn"
+                        title="Duplicate"
+                        aria-label="Duplicate"
                       >
-                        Duplicate
+                        <Icon name="copy" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(risk)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

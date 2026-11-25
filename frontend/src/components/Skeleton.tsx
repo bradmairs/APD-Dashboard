@@ -7,7 +7,7 @@ export function SkeletonCard({ lines = 3 }: { lines?: number }) {
   return (
     <div
       aria-hidden="true"
-      className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4 animate-pulse"
+      className="card p-4 shimmer"
     >
       <div className={`${BAR} h-4 w-40 mb-4`} />
       {Array.from({ length: lines }, (_, i) => (
@@ -21,7 +21,7 @@ export function SkeletonTable({ rows = 5 }: { rows?: number }) {
   return (
     <div
       aria-hidden="true"
-      className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm animate-pulse"
+      className="card shimmer"
     >
       <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex gap-6">
         {[30, 12, 10, 14, 12].map((w, i) => (
@@ -45,7 +45,7 @@ export function SkeletonPage() {
     <div className="space-y-6" role="status" aria-label="Loading">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-24 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 animate-pulse">
+          <div key={i} className="h-24 card p-4 shimmer">
             <div className={`${BAR} h-3 w-24 mb-3`} />
             <div className={`${BAR} h-6 w-16`} />
           </div>

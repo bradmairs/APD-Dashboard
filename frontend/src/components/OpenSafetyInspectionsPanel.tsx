@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { SafetyInspection } from "../types";
 import { SAFETY_INSPECTION_STATUS_COLORS, SAFETY_INSPECTION_STATUS_LABELS } from "../safetyInspectionMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   inspections: SafetyInspection[];
@@ -27,9 +28,7 @@ export default function OpenSafetyInspectionsPanel({ inspections, limit = 8 }: P
       </div>
 
       {topInspections.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No open safety inspections across the portfolio.
-        </p>
+        <EmptyState icon="hardhat" text="No open safety inspections across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topInspections.map((inspection) => (

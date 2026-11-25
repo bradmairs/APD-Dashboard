@@ -3,6 +3,7 @@ import { previewText } from "../richText";
 import { CommunityEnquiry } from "../types";
 import { ENQUIRY_STATUS_COLORS, ENQUIRY_STATUS_LABELS, enquiryStatusRank } from "../enquiryMeta";
 import { formatDate } from "../format";
+import EmptyState from "./EmptyState";
 
 interface Props {
   enquiries: CommunityEnquiry[];
@@ -29,9 +30,7 @@ export default function OpenEnquiriesPanel({ enquiries, limit = 8 }: Props) {
       </div>
 
       {topEnquiries.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No open community enquiries or complaints across the portfolio.
-        </p>
+        <EmptyState icon="message" text="No open community enquiries or complaints across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topEnquiries.map((enquiry) => (

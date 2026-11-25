@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Rfi } from "../types";
 import { formatDate } from "../format";
 import { isRfiOverdue } from "../rfiMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   rfis: Rfi[];
@@ -33,9 +34,7 @@ export default function OpenRfisPanel({ rfis, limit = 8 }: Props) {
       </div>
 
       {topRfis.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No open RFIs across the portfolio.
-        </p>
+        <EmptyState icon="message" text="No open RFIs across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topRfis.map((rfi) => {

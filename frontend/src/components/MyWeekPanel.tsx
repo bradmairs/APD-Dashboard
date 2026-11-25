@@ -106,7 +106,7 @@ export default function MyWeekPanel({
       )}
       {nothing && mine.size > 0 && (
         <div className={`${card} p-6 text-sm text-slate-600 dark:text-slate-300`}>
-          Nothing needs you this week. 🎉
+          Nothing needs you this week.
         </div>
       )}
 

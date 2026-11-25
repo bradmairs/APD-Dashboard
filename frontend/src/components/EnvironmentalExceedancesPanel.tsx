@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { EnvironmentalMonitoringRecord } from "../types";
 import { formatDate } from "../format";
 import { isExceedance } from "../environmentalMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   records: EnvironmentalMonitoringRecord[];
@@ -28,9 +29,7 @@ export default function EnvironmentalExceedancesPanel({ records, limit = 8 }: Pr
       </div>
 
       {topRecords.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No environmental monitoring exceedances across the portfolio.
-        </p>
+        <EmptyState icon="activity" text="No environmental monitoring exceedances across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topRecords.map((record) => (

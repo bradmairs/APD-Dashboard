@@ -16,6 +16,7 @@ import { parseImportDate, parseOptionalEnum, requireCell } from "../csvImport";
 import BulkActionsBar from "./BulkActionsBar";
 import { useSelection } from "../useSelection";
 import { useConfirm } from "../confirm/ConfirmContext";
+import { Icon } from "./icons";
 
 const DOCUMENT_IMPORT_HEADERS = [
   "Document Number",
@@ -234,15 +235,19 @@ export default function DocumentsPanel({ documents, onCreate, onUpdate, onDelete
                       </select>
                       <button
                         onClick={() => openEdit(document)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(document)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

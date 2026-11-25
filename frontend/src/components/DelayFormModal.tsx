@@ -7,6 +7,7 @@ import {
   DELAY_RESPONSIBLE_SUGGESTIONS,
   DELAY_STATUS_LABELS,
 } from "../delayMeta";
+import DateInput from "./DateInput";
 
 interface Props {
   delay: Delay | null;
@@ -72,8 +73,8 @@ export default function DelayFormModal({ delay, onClose, onSave }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex justify-end z-50 animate-fade-in">
+      <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 shadow-xl w-full max-w-xl h-full overflow-y-auto animate-slide-in-right border-l border-slate-200 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {delay ? "Edit Delay" : "Log Delay"}
@@ -142,8 +143,7 @@ export default function DelayFormModal({ delay, onClose, onSave }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="min-w-0">
               <label className={labelClass}>Date Started</label>
-              <input
-                type="date"
+              <DateInput
                 required
                 value={dateStarted}
                 onChange={(e) => setDateStarted(e.target.value)}
@@ -152,8 +152,7 @@ export default function DelayFormModal({ delay, onClose, onSave }: Props) {
             </div>
             <div className="min-w-0">
               <label className={labelClass}>Date Ended</label>
-              <input
-                type="date"
+              <DateInput
                 value={dateEnded}
                 onChange={(e) => setDateEnded(e.target.value)}
                 className={inputClass}

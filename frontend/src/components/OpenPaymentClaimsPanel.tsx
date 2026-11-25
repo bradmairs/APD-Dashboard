@@ -6,6 +6,7 @@ import {
   PAYMENT_CLAIM_STATUS_LABELS,
   paymentClaimStatusRank,
 } from "../paymentClaimMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   claims: PaymentClaim[];
@@ -32,9 +33,7 @@ export default function OpenPaymentClaimsPanel({ claims, limit = 8 }: Props) {
       </div>
 
       {topClaims.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No payment claims awaiting certification or payment across the portfolio.
-        </p>
+        <EmptyState icon="dollar" text="No payment claims awaiting certification or payment across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topClaims.map((claim) => (

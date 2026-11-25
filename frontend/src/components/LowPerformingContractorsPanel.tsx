@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { PerformanceReview } from "../types";
 import { formatDate } from "../format";
 import { isLowPerforming, overallScore } from "../performanceMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   reviews: PerformanceReview[];
@@ -27,9 +28,7 @@ export default function LowPerformingContractorsPanel({ reviews, limit = 8 }: Pr
       </div>
 
       {topItems.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No low-scoring performance reviews across the portfolio.
-        </p>
+        <EmptyState icon="file" text="No low-scoring performance reviews across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topItems.map((review) => {

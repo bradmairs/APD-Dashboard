@@ -14,6 +14,8 @@ import CashFlowChart from "../charts/CashFlowChart";
 import CumulativeSpendChart from "../charts/CumulativeSpendChart";
 import CashFlowEntryFormModal from "./CashFlowEntryFormModal";
 import { useConfirm } from "../confirm/ConfirmContext";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
 
 interface Props {
   project: Project;
@@ -153,9 +155,7 @@ export default function CashFlowPanel({
       </div>
 
       {entries.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No cash flow entries yet.
-        </p>
+        <EmptyState icon="dollar" text="No cash flow entries yet." addLabel="Add Entry" onAdd={openCreate} />
       ) : (
         <>
           <div className="mb-4">
@@ -205,15 +205,19 @@ export default function CashFlowPanel({
                   </button>
                   <button
                     onClick={() => openEdit(entry)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    className="icon-btn"
+                    title="Edit"
+                    aria-label="Edit"
                   >
-                    Edit
+                    <Icon name="edit" className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(entry)}
-                    className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                    className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                    title="Delete"
+                    aria-label="Delete"
                   >
-                    Delete
+                    <Icon name="trash" className="w-4 h-4" />
                   </button>
                 </div>
               </li>

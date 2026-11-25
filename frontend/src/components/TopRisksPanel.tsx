@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Risk } from "../types";
 import { riskBand, riskScore, RISK_BAND_COLORS } from "../riskScoring";
 import { RISK_TYPE_COLORS, RISK_TYPE_LABELS } from "../riskMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   risks: Risk[];
@@ -32,9 +33,7 @@ export default function TopRisksPanel({ risks, limit = 8 }: Props) {
       </div>
 
       {topRisks.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No open risks or opportunities across the portfolio.
-        </p>
+        <EmptyState icon="alert" text="No open risks or opportunities across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topRisks.map((risk) => {

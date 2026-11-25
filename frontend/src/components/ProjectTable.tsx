@@ -7,6 +7,7 @@ import { ProjectHealth } from "../health";
 import { HealthHistoryPoint } from "../api";
 import HealthBadge from "./HealthBadge";
 import HealthTrend from "./HealthTrend";
+import RowMenu from "./RowMenu";
 
 function taskCounts(project: Project): { done: number; total: number } | null {
   if (!project.tasks || project.tasks.length === 0) return null;
@@ -140,16 +141,16 @@ export default function ProjectTable({
 
   function actions(project: Project) {
     return canModifyProject(project, currentUser) ? (
-      <>
-        <button onClick={() => onEdit(project)} className="text-blue-600 dark:text-blue-400 hover:underline mr-3">
-          Edit
-        </button>
-        <button onClick={() => onDelete(project)} className="text-red-600 dark:text-red-400 hover:underline">
-          Delete
-        </button>
-      </>
+      <RowMenu
+        label={`Actions for ${project.name}`}
+        items={[
+          { label: "Open", icon: "external", onClick: () => onOpen(project) },
+          { label: "Edit", icon: "edit", onClick: () => onEdit(project) },
+          { label: "Delete", icon: "trash", danger: true, onClick: () => onDelete(project) },
+        ]}
+      />
     ) : (
-      <span className="text-slate-400 dark:text-slate-500 text-xs">
+      <span className="text-slate-400 dark:text-slate-500 text-xs" title="Only the project's creator or an admin can edit it">
         {project.createdBy ? `${project.createdBy.name} only` : ""}
       </span>
     );
@@ -221,7 +222,7 @@ export default function ProjectTable({
               <tr
                 key={project.id}
                 onClick={() => onOpen(project)}
-                className="hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer [&>td]:border-b [&>td]:border-slate-100 dark:[&>td]:border-slate-700 [&:last-child>td]:border-b-0"
+                className="group hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer [&>td]:border-b [&>td]:border-slate-100 dark:[&>td]:border-slate-700 [&:last-child>td]:border-b-0"
               >
                 <td className="px-4 py-3">
                   <div className="font-medium text-slate-900 dark:text-slate-100">{project.name}</div>
@@ -262,22 +263,30 @@ function StatusSelect({
   onChange: (project: Project, status: ProjectStatus) => Promise<void>;
 }) {
   const [saving, setSaving] = useState(false);
+  // Shows the new status straight away while it saves; back to the old one
+  // if the save fails.
+  const [shown, setShown] = useState<ProjectStatus>(project.status);
+  useEffect(() => setShown(project.status), [project.status]);
   return (
     <select
       aria-label={`Status of ${project.name}`}
-      value={project.status}
+      value={shown}
       disabled={saving}
       onClick={(e) => e.stopPropagation()}
       onChange={async (e) => {
+        const next = e.target.value as ProjectStatus;
+        setShown(next);
         setSaving(true);
         try {
-          await onChange(project, e.target.value as ProjectStatus);
+          await onChange(project, next);
+        } catch {
+          setShown(project.status);
         } finally {
           setSaving(false);
         }
       }}
       title="Change the status"
-      className={`rounded-full pl-2 pr-6 py-0.5 text-xs font-medium border-0 cursor-pointer appearance-none bg-no-repeat bg-[length:10px] bg-[right_6px_center] bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' fill='none' stroke-width='1.5'/%3E%3C/svg%3E")] ${STATUS_COLORS[project.status]} ${saving ? "opacity-60" : ""}`}
+      className={`rounded-full pl-2 pr-6 py-0.5 text-xs font-medium border-0 cursor-pointer appearance-none bg-no-repeat bg-[length:10px] bg-[right_6px_center] bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' fill='none' stroke-width='1.5'/%3E%3C/svg%3E")] ${STATUS_COLORS[shown]} ${saving ? "opacity-80" : ""}`}
     >
       {ALL_STATUSES.map((s) => (
         <option key={s} value={s} className="bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100">

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { TenderPackage } from "../types";
 import { formatDate } from "../format";
 import { TENDER_STATUS_COLORS, TENDER_STATUS_LABELS } from "../tenderMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   tenderPackages: TenderPackage[];
@@ -34,9 +35,7 @@ export default function ActiveTendersPanel({ tenderPackages, limit = 8 }: Props)
       </div>
 
       {topPackages.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No tender packages currently issued or under evaluation.
-        </p>
+        <EmptyState icon="layers" text="No tender packages currently issued or under evaluation." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topPackages.map((tenderPackage) => (

@@ -59,7 +59,7 @@ export default function ActionImportReviewModal({ preview, onConfirm, onClose }:
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="p-6 pb-3 space-y-2">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">

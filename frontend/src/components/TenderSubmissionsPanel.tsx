@@ -5,6 +5,9 @@ import { TenderPackage, TenderSubmission, TenderSubmissionInput } from "../types
 import { formatCurrency, formatDate } from "../format";
 import { TENDER_STATUS_COLORS, TENDER_STATUS_LABELS } from "../tenderMeta";
 import { useConfirm } from "../confirm/ConfirmContext";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
+import DateInput from "./DateInput";
 
 const INPUT_CLASS =
   "w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm";
@@ -79,9 +82,7 @@ export default function TenderSubmissionsPanel({
           Add a tender package above first, then record the submissions it receives here.
         </p>
       ) : packages.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No submissions recorded yet. Packages show here once they're issued or have submissions.
-        </p>
+        <EmptyState icon="layers" text="No submissions recorded yet. Packages show here once they're issued or have submissions." />
       ) : (
         <div className="space-y-5">
           {packages.map((pkg) => {
@@ -162,15 +163,19 @@ export default function TenderSubmissionsPanel({
                             <td className="py-2 text-right whitespace-nowrap">
                               <button
                                 onClick={() => setEditing({ pkg, submission: s })}
-                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline mr-3"
+                                className="icon-btn"
+                                title="Edit"
+                                aria-label="Edit"
                               >
-                                Edit
+                                <Icon name="edit" className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleDelete(s)}
-                                className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                                className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                                title="Delete"
+                                aria-label="Delete"
                               >
-                                Delete
+                                <Icon name="trash" className="w-4 h-4" />
                               </button>
                             </td>
                           </tr>
@@ -251,7 +256,7 @@ function SubmissionFormModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -280,8 +285,7 @@ function SubmissionFormModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="min-w-0">
               <label className={LABEL_CLASS}>Date Received</label>
-              <input
-                type="date"
+              <DateInput
                 value={dateReceived}
                 onChange={(e) => setDateReceived(e.target.value)}
                 className={INPUT_CLASS}

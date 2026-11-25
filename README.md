@@ -7,7 +7,7 @@ per project for tracking tasks/milestones and their due dates.
 
 ## Versioning
 
-**Version 2.6.1** ([release notes](docs/releases/2.6.1.md), [all releases](docs/releases.md))
+**Version 2.7.0** ([release notes](docs/releases/2.7.0.md), [all releases](docs/releases.md))
 
 Versions are **Section.Feature.Fix**, the same as SirisOS: `scripts/bump-version.sh fix` for a fix or minor change,
 `feature` for a new feature or bigger upgrade, `section` for a significant new section. Every pull request bumps it
@@ -95,6 +95,19 @@ Pages fetch everything they need in one request to `GET /api/batch?p=/api/...&p=
 - **My week** (`/?tab=week`) lists what needs the signed-in user on the projects they manage.
 - Drafts typed in formatted text boxes are kept in the browser (`frontend/src/drafts.ts`) until the form is saved.
 - Per-browser preferences (hidden table columns, hidden empty sections, drafts) live in localStorage, never in the database.
+
+### Look and feel (2.7)
+
+The GVW colours, Inter font, card shapes and motion are set once in `frontend/tailwind.config.js` and `frontend/src/index.css`, so every screen follows them. The water blue (#168bc1) and navy (#022342) come from the logo. Shared pieces:
+
+- `components/icons.tsx`: the icon set
+- `DateInput.tsx`: the date picker (a drop-in for `<input type="date">`)
+- `EmptyState.tsx`: what an empty list shows
+- `RowMenu.tsx`: the ⋯ menu on table rows
+- `ProjectBoard.tsx` and `PortfolioTimeline.tsx`: the Board and Timeline views
+- `DashboardWidgets.tsx`, `ProjectProgressStrip.tsx` and `ProjectOpenItems.tsx`: the widgets
+
+Charts follow the data-viz palette in `frontend/src/charts/palette.ts`. Status colours are always paired with words, so colour never carries the meaning alone. Table density and the projects view (Table, Board or Timeline) are remembered in the browser.
 
 ## Data model (v1)
 

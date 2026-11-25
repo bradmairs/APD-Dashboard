@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Project } from "../types";
 import { ProjectHealth } from "../health";
 import { RAG_COLORS, RAG_LABELS } from "../ragMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   projects: Project[];
@@ -44,9 +45,7 @@ export default function NeedsAttentionPanel({ projects, healthByProjectId }: Pro
       </div>
 
       {flagged.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No projects are currently flagged — schedule, budget, and risk all look healthy.
-        </p>
+        <EmptyState icon="inbox" text="No projects are currently flagged — schedule, budget, and risk all look healthy." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {flagged.map(({ project, health }) => (

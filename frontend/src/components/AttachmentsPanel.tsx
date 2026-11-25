@@ -3,6 +3,8 @@ import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Attachment } from "../types";
 import { formatDate, formatFileSize } from "../format";
 import { attachmentDownloadUrl } from "../api";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
 
 interface Props {
   attachments: Attachment[];
@@ -60,9 +62,7 @@ export default function AttachmentsPanel({ attachments, onUpload, onDelete }: Pr
       )}
 
       {attachments.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No files attached yet.
-        </p>
+        <EmptyState icon="file" text="No files attached yet." />
       ) : (
         <>
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -82,9 +82,11 @@ export default function AttachmentsPanel({ attachments, onUpload, onDelete }: Pr
                 </div>
                 <button
                   onClick={() => onDelete(a)}
-                  className="text-xs text-red-600 dark:text-red-400 hover:underline ml-3 shrink-0"
+                  className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                  title="Delete"
+                  aria-label="Delete"
                 >
-                  Delete
+                  <Icon name="trash" className="w-4 h-4" />
                 </button>
               </li>
             ))}

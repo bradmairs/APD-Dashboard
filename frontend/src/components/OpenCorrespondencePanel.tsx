@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Correspondence } from "../types";
 import { formatDate } from "../format";
 import { isCorrespondenceOverdue } from "../correspondenceMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   items: Correspondence[];
@@ -35,9 +36,7 @@ export default function OpenCorrespondencePanel({ items, limit = 8 }: Props) {
       </div>
 
       {top.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No open correspondence across the portfolio.
-        </p>
+        <EmptyState icon="mail" text="No open correspondence across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {top.map((item) => {
