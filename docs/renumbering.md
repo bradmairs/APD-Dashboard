@@ -24,5 +24,6 @@ write-back, and SharePoint sync.
 | 1.5 | 2.5.0 | feature | `2964010` |
 | 1.6 | 2.6.0 | feature | `671aaff` |
 
-The old tags `v1.0` and `v1.3` are left where they are; the new tags (`v1.0.0` to `v2.6.0`) point at the same merge
-commits as the releases above.
+The old tags `v1.0` and `v1.3` are left where they are. To tag and release every version above under its new number,
+on the same merge commit, run the Release workflow once by hand (GitHub → Actions → Release → Run workflow). It skips
+versions already released, so running it again does no harm.
