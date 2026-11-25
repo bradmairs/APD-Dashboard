@@ -43,6 +43,28 @@ export default function ActionsPanel({
     selection.clear();
   }
 
+  async function handleBulkChange(data: Partial<ActionItemInput>) {
+    for (const item of actionItems.filter((a) => selection.isSelected(a.id))) {
+      await onUpdate(item, data);
+    }
+    selection.clear();
+  }
+
+  // A copy of an action (open again, not linked to its meeting), to edit.
+  async function handleDuplicate(actionItem: ActionItem) {
+    await onCreate({
+      title: `${actionItem.title} (copy)`,
+      type: actionItem.type,
+      description: actionItem.description,
+      category: actionItem.category,
+      ownerName: actionItem.ownerName,
+      dueDate: actionItem.dueDate,
+      status: "OPEN",
+      dateRaised: new Date().toISOString(),
+      notes: actionItem.notes,
+    });
+  }
+
   async function handleBulkDelete() {
     for (const item of actionItems.filter((a) => selection.isSelected(a.id))) {
       await onDelete(item);
@@ -149,6 +171,8 @@ export default function ActionsPanel({
           entityLabel="action"
           statusOptions={ALL_ACTION_STATUSES.map((s) => ({ value: s, label: ACTION_STATUS_LABELS[s] }))}
           onApplyStatus={handleBulkStatus}
+          onApplyDueDate={(dueDate) => handleBulkChange({ dueDate })}
+          onApplyOwner={(ownerName) => handleBulkChange({ ownerName })}
           onDelete={handleBulkDelete}
           onClear={selection.clear}
         />
@@ -219,6 +243,13 @@ export default function ActionsPanel({
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         Edit
+                      </button>
+                      <button
+                        onClick={() => handleDuplicate(actionItem)}
+                        className="text-xs text-slate-600 dark:text-slate-300 hover:underline"
+                        title="Add a copy of this action"
+                      >
+                        Duplicate
                       </button>
                       <button
                         onClick={() => handleDelete(actionItem)}

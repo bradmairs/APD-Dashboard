@@ -494,6 +494,22 @@ projectReportsRouter.post(
 
 export const reportsRouter = Router();
 
+// GET /api/reports/health-history — every project's budget and schedule
+// RAG from its last few monthly reports (newest first), for the trend
+// arrows on the dashboard. Read-only and small: just those columns.
+reportsRouter.get("/health-history", async (_req, res) => {
+  const rows = await prisma.monthlyReport.findMany({
+    select: { projectId: true, reportingMonth: true, budgetHealth: true, scheduleHealth: true },
+    orderBy: [{ projectId: "asc" }, { reportingMonth: "desc" }],
+  });
+  const byProject: Record<string, typeof rows> = {};
+  for (const row of rows) {
+    const list = (byProject[row.projectId] ??= []);
+    if (list.length < 6) list.push(row);
+  }
+  res.json(byProject);
+});
+
 reportsRouter.get("/:id", async (req, res) => {
   const report = await prisma.monthlyReport.findUnique({ where: { id: req.params.id } });
   if (!report) return res.status(404).json({ error: "Report not found" });

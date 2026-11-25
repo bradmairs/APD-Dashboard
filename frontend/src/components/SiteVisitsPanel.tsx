@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import FormattedText from "./FormattedText";
 import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { SiteVisit, SiteVisitInput, SiteVisitPhoto } from "../types";
 import { formatDateTime } from "../format";
 import SiteVisitFormModal from "./SiteVisitFormModal";
 import SiteVisitPhotoGrid from "./SiteVisitPhotoGrid";
-import SitePhotosMap from "./SitePhotosMap";
+// The map library is large, so it loads only when a map is shown.
+const SitePhotosMap = lazy(() => import("./SitePhotosMap"));
 import SitePhotosGallery from "./SitePhotosGallery";
 import { useConfirm } from "../confirm/ConfirmContext";
 import AutoExportCsvButton from "./AutoExportCsvButton";
@@ -143,7 +144,9 @@ export default function SiteVisitsPanel({
           {photosView === "gallery" ? (
             <SitePhotosGallery photos={allPhotos} onDelete={onDeletePhoto} />
           ) : (
-            <SitePhotosMap photos={allPhotos} />
+            <Suspense fallback={<div className="h-64 rounded bg-slate-100 dark:bg-slate-700/50 animate-pulse" />}>
+              <SitePhotosMap photos={allPhotos} />
+            </Suspense>
           )}
         </div>
       )}

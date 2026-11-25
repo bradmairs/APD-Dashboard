@@ -78,9 +78,20 @@ Every signed-in page has the same frame (`frontend/src/components/AppLayout.tsx`
 - **Left menu** (`Sidebar.tsx`): the GVW logo (links back to the dashboard), the app name and version, the dashboard views (Dashboard, Today & Upcoming, Alerts, Charts, Activity), Knowledge pages (TRIM & GVW Links, Lessons Learned, Tool Suggestions, Reports), Task Templates, Users (admins only) and your five most recent projects. **Collapse menu** (or `[`) shrinks it to icons. Below 1024px wide it opens from the ☰ button instead.
 - **Top bar**: page title, the page's own buttons, global search, theme switch, notifications and the account menu.
 - **Project pages** add a section menu (`ProjectSectionMenu.tsx`) listing each group and its sections with counts, plus All projects and a switch-project list. Phones keep the tabs and Jump-to row.
-- **Keyboard shortcuts** (`?` lists them): `G` then `D` Dashboard, `T` Today & Upcoming, `A` Alerts, `C` Charts, `V` Activity, `K` TRIM & GVW Links, `L` Lessons Learned, `S` Tool Suggestions, `R` Reports. They are ignored while typing in a field.
+- **Keyboard shortcuts** (`?` lists them): `G` then `D` Dashboard, `T` Today & Upcoming, `W` My week, `A` Alerts, `C` Charts, `V` Activity, `K` TRIM & GVW Links, `L` Lessons Learned, `S` Tool Suggestions, `R` Reports. They are ignored while typing in a field.
 
 The collapsed-menu setting, recent projects and the last group opened on each project are stored per user in the browser (`frontend/src/layout/navMemory.ts`). They are never saved to the database.
+
+### Speed: batched requests and the page cache
+
+Pages fetch everything they need in one request to `GET /api/batch?p=/api/...&p=/api/...` (`backend/src/routes/batch.ts`). The server fetches each path from itself on `127.0.0.1` with the caller's cookie, so each path gets exactly the same login and permission checks as a direct request. Only GET requests to this app's own `/api` paths are allowed (at most 60, never `/api/auth` or another host). On the frontend, `frontend/src/batch.ts` collects a page's normal `api.ts` calls into that one request. It also keeps answers in memory for 10 minutes, so a page you return to draws at once and then refreshes. The cache is cleared on log out. If `/api/batch` fails, the frontend falls back to separate requests.
+
+### Everyday shortcuts
+
+- **+ New** (top bar) and **Ctrl+K** (command menu) add tasks, actions, risks, defects, site visits or projects from anywhere.
+- **My week** (`/?tab=week`) lists what needs the signed-in user on the projects they manage.
+- Drafts typed in formatted text boxes are kept in the browser (`frontend/src/drafts.ts`) until the form is saved.
+- Per-browser preferences (hidden table columns, hidden empty sections, drafts) live in localStorage, never in the database.
 
 ## Data model (v1)
 

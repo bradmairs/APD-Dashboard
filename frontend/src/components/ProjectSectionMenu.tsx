@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getProjects } from "../api";
+import { batched } from "../batch";
 import { Project } from "../types";
 import { JumpSection } from "./SectionJumpNav";
 
@@ -15,14 +16,20 @@ interface Props<T extends string> {
   // Show every long list in the current group in full, or back to a few.
   onExpandAll?: () => void;
   onCollapseAll?: () => void;
+  hideEmpty?: boolean;
+  onToggleHideEmpty?: () => void;
 }
 
 // Breathing room left between the sticky top bar and the section jumped to.
 const SECTION_GAP = 12;
 
-function scrollToSection(id: string) {
+function scrollToSection(id: string, attempt = 0) {
   const target = document.getElementById(id);
-  if (!target) return;
+  if (!target) {
+    // The group's sections may still be loading: try again for ~2 seconds.
+    if (attempt < 20) window.setTimeout(() => scrollToSection(id, attempt + 1), 100);
+    return;
+  }
   const header = document.querySelector("header");
   const covered = header ? header.getBoundingClientRect().height : 0;
   const top = target.getBoundingClientRect().top + window.scrollY - covered - SECTION_GAP;
@@ -43,12 +50,14 @@ export default function ProjectSectionMenu<T extends string>({
   onSelectTab,
   onExpandAll,
   onCollapseAll,
+  hideEmpty,
+  onToggleHideEmpty,
 }: Props<T>) {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
-    getProjects()
+    batched(() => getProjects(), { preferCache: true })
       .then((list) => setProjects([...list].sort((a, b) => a.name.localeCompare(b.name))))
       .catch(() => setProjects([]));
   }, []);
@@ -139,8 +148,14 @@ export default function ProjectSectionMenu<T extends string>({
         })}
       </div>
 
-      {(onExpandAll || onCollapseAll) && (
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex gap-3 text-xs">
+      {(onExpandAll || onCollapseAll || onToggleHideEmpty) && (
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+          {onToggleHideEmpty && (
+            <label className="w-full flex items-center gap-2 text-slate-600 dark:text-slate-300 cursor-pointer" title="Only for this project, in this browser. Nothing is deleted.">
+              <input type="checkbox" checked={!!hideEmpty} onChange={onToggleHideEmpty} />
+              Hide empty sections
+            </label>
+          )}
           {onExpandAll && (
             <button type="button" onClick={onExpandAll} className="text-blue-600 dark:text-blue-400 hover:underline">
               Expand all

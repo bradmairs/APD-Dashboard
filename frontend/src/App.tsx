@@ -1,3 +1,4 @@
+import { SkeletonPage } from "./components/Skeleton";
 import { lazy, ReactNode, Suspense, useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
@@ -31,8 +32,8 @@ function ScrollToTop() {
 
 function PageFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-      Loading…
+    <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-6 lg:pl-72">
+      <SkeletonPage />
     </div>
   );
 }

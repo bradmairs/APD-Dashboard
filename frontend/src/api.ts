@@ -58,6 +58,7 @@ import {
   Permit,
   PermitInput,
   Project,
+  RagStatus,
   ProjectInput,
   Rfi,
   RfiInput,
@@ -1785,4 +1786,17 @@ export function deleteTenderSubmission(id: string): Promise<void> {
 
 export function searchAll(query: string): Promise<{ query: string; results: SearchResult[] }> {
   return fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`).then((res) => handle(res));
+}
+
+// Each project's budget/schedule RAG from its last few monthly reports,
+// newest first (for the dashboard's health trend).
+export interface HealthHistoryPoint {
+  projectId: string;
+  reportingMonth: string;
+  budgetHealth: RagStatus;
+  scheduleHealth: RagStatus;
+}
+
+export function getHealthHistory(): Promise<Record<string, HealthHistoryPoint[]>> {
+  return fetch(`${API_BASE}/reports/health-history`).then((res) => handle(res));
 }

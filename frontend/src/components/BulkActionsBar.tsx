@@ -8,6 +8,9 @@ interface Props<S extends string> {
   onApplyStatus?: (status: S) => Promise<void>;
   onDelete: () => Promise<void>;
   onClear: () => void;
+  // Optional extras: move every selected row's due date / owner.
+  onApplyDueDate?: (dueDate: string) => Promise<void>;
+  onApplyOwner?: (ownerName: string) => Promise<void>;
 }
 
 // A toolbar shown above a register's list once one or more rows are
@@ -24,9 +27,22 @@ export default function BulkActionsBar<S extends string>({
   onApplyStatus,
   onDelete,
   onClear,
+  onApplyDueDate,
+  onApplyOwner,
 }: Props<S>) {
   const [pendingStatus, setPendingStatus] = useState<S | "">("");
+  const [pendingDate, setPendingDate] = useState("");
+  const [pendingOwner, setPendingOwner] = useState("");
   const [busy, setBusy] = useState(false);
+
+  async function run(fn: () => Promise<void>) {
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleApplyStatus() {
     if (!pendingStatus || !onApplyStatus) return;
@@ -78,6 +94,52 @@ export default function BulkActionsBar<S extends string>({
             className="px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
           >
             Apply
+          </button>
+        </>
+      )}
+      {onApplyDueDate && (
+        <>
+          <input
+            type="date"
+            value={pendingDate}
+            onChange={(e) => setPendingDate(e.target.value)}
+            aria-label="New due date"
+            className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+          />
+          <button
+            onClick={() =>
+              run(async () => {
+                await onApplyDueDate(new Date(pendingDate).toISOString());
+                setPendingDate("");
+              })
+            }
+            disabled={!pendingDate || busy}
+            className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 disabled:opacity-50"
+          >
+            Set due date
+          </button>
+        </>
+      )}
+      {onApplyOwner && (
+        <>
+          <input
+            value={pendingOwner}
+            onChange={(e) => setPendingOwner(e.target.value)}
+            placeholder="Owner…"
+            aria-label="New owner"
+            className="w-28 text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
+          />
+          <button
+            onClick={() =>
+              run(async () => {
+                await onApplyOwner(pendingOwner.trim());
+                setPendingOwner("");
+              })
+            }
+            disabled={!pendingOwner.trim() || busy}
+            className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 disabled:opacity-50"
+          >
+            Reassign
           </button>
         </>
       )}

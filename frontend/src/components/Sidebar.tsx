@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getProjects, getUpcomingTasks } from "../api";
+import { batched } from "../batch";
 import { useAuth } from "../auth/AuthContext";
 import { APP_VERSION } from "../version";
 import { isTaskDueSoon, isTaskOverdue } from "../taskMeta";
@@ -21,6 +22,8 @@ export const ICONS: Record<string, string> = {
   users: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8",
   template: "M4 4h16v6H4zM4 14h7v6H4zM15 14h5v6h-5z",
   folder: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+  calendar: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z",
+  plus: "M12 5v14M5 12h14",
   chevronLeft: "M15 6l-6 6 6 6",
   chevronRight: "M9 6l6 6-6 6",
 };
@@ -50,7 +53,7 @@ function loadCounts() {
   if (!countsCache || Date.now() - countsCache.at > 60_000) {
     countsCache = {
       at: Date.now(),
-      promise: Promise.all([getProjects(), getUpcomingTasks()])
+      promise: batched(() => Promise.all([getProjects(), getUpcomingTasks()]), { preferCache: true })
         .then(([projects, tasks]) => ({
           projects: projects.length,
           due: tasks.filter((t) => isTaskOverdue(t) || isTaskDueSoon(t)).length,
@@ -118,6 +121,7 @@ export default function Sidebar({ collapsed: collapsedPref, onToggleCollapsed, o
       items: [
         { label: "Dashboard", icon: "home", to: "/?tab=projects", tab: "projects", badge: counts?.projects, shortcut: "G D" },
         { label: "Today & Upcoming", icon: "clock", to: "/?tab=today", tab: "today", badge: counts?.due, shortcut: "G T" },
+        { label: "My week", icon: "calendar", to: "/?tab=week", tab: "week", shortcut: "G W" },
         { label: "Alerts", icon: "alert", to: "/?tab=alerts", tab: "alerts", shortcut: "G A" },
         { label: "Charts", icon: "chart", to: "/?tab=charts", tab: "charts", shortcut: "G C" },
         { label: "Activity", icon: "activity", to: "/?tab=activity", tab: "activity", shortcut: "G V" },
