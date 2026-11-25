@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar, { Icon } from "./Sidebar";
-import UserMenu from "./UserMenu";
+import UserMenu, { SHOW_SHORTCUTS_EVENT } from "./UserMenu";
 import QuickAddMenu from "./QuickAdd";
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "../layout/navMemory";
 
@@ -89,6 +89,12 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
   useEffect(() => setMobileOpen(false), [location.pathname, location.search]);
 
   useEffect(() => {
+    const show = () => setShowShortcuts(true);
+    window.addEventListener(SHOW_SHORTCUTS_EVENT, show);
+    return () => window.removeEventListener(SHOW_SHORTCUTS_EVENT, show);
+  }, []);
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
       const key = e.key.toLowerCase();
@@ -155,21 +161,12 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
               </svg>
             </button>
             <div className="flex-1 min-w-[12rem]">
-              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100 leading-tight">{title}</h1>
+              <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">{title}</h1>
               {subtitle && <div className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</div>}
             </div>
             {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
             <QuickAddMenu />
             <UserMenu />
-            <button
-              type="button"
-              onClick={() => setShowShortcuts(true)}
-              className="hidden sm:inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-              aria-label="Keyboard shortcuts"
-              title="Keyboard shortcuts (?)"
-            >
-              ?
-            </button>
           </div>
         </header>
 
@@ -177,11 +174,11 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
       </div>
 
       {showShortcuts && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={() => setShowShortcuts(false)}>
+        <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-50 animate-fade-in" onClick={() => setShowShortcuts(false)}>
           <div
             role="dialog"
             aria-label="Keyboard shortcuts"
-            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md p-6"
+            className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md p-6 animate-pop-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

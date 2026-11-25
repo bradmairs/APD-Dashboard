@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { formatCurrency } from "../format";
 import { useTheme } from "../theme/ThemeContext";
 import {
@@ -50,6 +51,7 @@ export default function CumulativeSpendChartView({
   footerNote,
 }: Props) {
   const { theme } = useTheme();
+  const [hover, setHover] = useState<number | null>(null);
 
   const maxValue =
     Math.max(
@@ -113,7 +115,25 @@ export default function CumulativeSpendChartView({
         ))}
       </div>
 
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full h-auto">
+      <div className="relative">
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        className="w-full h-auto"
+        onMouseLeave={() => setHover(null)}
+        onMouseMove={(e) => {
+          if (months.length === 0) return;
+          const box = e.currentTarget.getBoundingClientRect();
+          const px = ((e.clientX - box.left) / box.width) * WIDTH;
+          const i = Math.round(((px - PAD_LEFT) / PLOT_WIDTH) * (months.length - 1));
+          setHover(Math.min(months.length - 1, Math.max(0, i)));
+        }}
+      >
+        <defs>
+          <linearGradient id="spend-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={chartColor(CASH_FLOW_ACTUAL, theme)} stopOpacity={0.22} />
+            <stop offset="100%" stopColor={chartColor(CASH_FLOW_ACTUAL, theme)} stopOpacity={0} />
+          </linearGradient>
+        </defs>
         {yTicks.map((tick) => (
           <g key={tick}>
             <line
@@ -206,6 +226,19 @@ export default function CumulativeSpendChartView({
             strokeDasharray="6 4"
           />
         )}
+        {actualPath && lastActualIndex > 0 && (
+          <path d={`${actualPath} L ${x(lastActualIndex)} ${y(0)} L ${x(0)} ${y(0)} Z`} fill="url(#spend-area)" stroke="none" />
+        )}
+        {hover !== null && (
+          <line
+            x1={x(hover)}
+            x2={x(hover)}
+            y1={PAD_TOP}
+            y2={PAD_TOP + PLOT_HEIGHT}
+            stroke={chartColor(CHART_TEXT_MUTED, theme)}
+            strokeWidth={1}
+          />
+        )}
         {actualPath && (
           <path
             d={actualPath}
@@ -220,7 +253,7 @@ export default function CumulativeSpendChartView({
             key={months[i]}
             cx={x(i)}
             cy={y(v)}
-            r={2.5}
+            r={hover === i ? 5 : 2.5}
             fill={chartColor(
               i <= lastActualIndex ? CASH_FLOW_ACTUAL : CASH_FLOW_FORECAST,
               theme
@@ -233,6 +266,26 @@ export default function CumulativeSpendChartView({
           </circle>
         ))}
       </svg>
+      {hover !== null && (
+        <div
+          className="absolute top-2 pointer-events-none rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-xs px-2.5 py-1.5 shadow-lg whitespace-nowrap"
+          style={{
+            left: `${(x(hover) / WIDTH) * 100}%`,
+            transform: hover > months.length / 2 ? "translateX(calc(-100% - 8px))" : "translateX(8px)",
+          }}
+        >
+          <div className="font-medium">{monthLabel(months[hover])}</div>
+          <div>
+            {formatCurrency(cumulative[hover])} {hover <= lastActualIndex ? "actual" : "forecast"} (cumulative)
+          </div>
+          {budgetLines.map((b) => (
+            <div key={b.label} className="opacity-80">
+              {b.label}: {formatCurrency(b.value)}
+            </div>
+          ))}
+        </div>
+      )}
+      </div>
 
       <p className="text-xs pt-1" style={{ color: chartColor(CHART_TEXT_MUTED, theme) }}>
         {footerNote}

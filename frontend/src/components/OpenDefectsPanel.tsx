@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { DefectItem } from "../types";
 import { DEFECT_STATUS_COLORS, DEFECT_STATUS_LABELS, defectStatusRank } from "../defectMeta";
 import { formatDate } from "../format";
+import EmptyState from "./EmptyState";
 
 interface Props {
   defects: DefectItem[];
@@ -28,9 +29,7 @@ export default function OpenDefectsPanel({ defects, limit = 8 }: Props) {
       </div>
 
       {topDefects.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No open defects across the portfolio.
-        </p>
+        <EmptyState icon="wrench" text="No open defects across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topDefects.map((defect) => (

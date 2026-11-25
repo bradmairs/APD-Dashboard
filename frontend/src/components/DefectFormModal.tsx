@@ -6,6 +6,7 @@ import {
   DEFECT_CATEGORY_SUGGESTIONS,
   DEFECT_STATUS_LABELS,
 } from "../defectMeta";
+import DateInput from "./DateInput";
 
 interface Props {
   defect: DefectItem | null;
@@ -61,8 +62,8 @@ export default function DefectFormModal({ defect, onClose, onSave }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex justify-end z-50 animate-fade-in">
+      <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 shadow-xl w-full max-w-xl h-full overflow-y-auto animate-slide-in-right border-l border-slate-200 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {defect ? "Edit Defect" : "New Defect"}
@@ -163,8 +164,7 @@ export default function DefectFormModal({ defect, onClose, onSave }: Props) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Date Raised
               </label>
-              <input
-                type="date"
+              <DateInput
                 required
                 value={dateRaised}
                 onChange={(e) => setDateRaised(e.target.value)}
@@ -175,8 +175,7 @@ export default function DefectFormModal({ defect, onClose, onSave }: Props) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Due Date
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"

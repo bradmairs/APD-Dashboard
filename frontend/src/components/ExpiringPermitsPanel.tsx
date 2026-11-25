@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Permit } from "../types";
 import { formatDate } from "../format";
 import { isPermitExpired, isPermitExpiringSoon } from "../permitMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   permits: Permit[];
@@ -31,9 +32,7 @@ export default function ExpiringPermitsPanel({ permits, limit = 8 }: Props) {
       </div>
 
       {topItems.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No permits expiring soon across the portfolio.
-        </p>
+        <EmptyState icon="shield" text="No permits expiring soon across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topItems.map((permit) => {

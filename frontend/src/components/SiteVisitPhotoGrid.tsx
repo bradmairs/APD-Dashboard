@@ -61,7 +61,7 @@ export default function SiteVisitPhotoGrid({ photos, onUpload, onDelete, onSyncT
             disabled={uploading}
             className="text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
           >
-            📷 Take Photo
+            Take Photo
           </button>
           <button
             type="button"

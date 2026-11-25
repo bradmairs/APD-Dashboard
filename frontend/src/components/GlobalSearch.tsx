@@ -5,6 +5,7 @@ import { SearchResult } from "../types";
 import { useAuth } from "../auth/AuthContext";
 import { useTheme } from "../theme/ThemeContext";
 import { openQuickAdd, QuickAddKind } from "./QuickAdd";
+import { Icon } from "./icons";
 
 interface Command {
   id: string;
@@ -75,6 +76,16 @@ export default function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const requestId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Close when clicking anywhere else on the page.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -217,7 +228,7 @@ export default function GlobalSearch() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <input
         ref={inputRef}
         type="search"
@@ -242,18 +253,21 @@ export default function GlobalSearch() {
             runAt(Math.min(active, flat.length - 1));
           }
         }}
-        placeholder={`Search or jump to… (${SHORTCUT_LABEL})`}
+        placeholder="Search or jump to…"
         role="combobox"
         aria-expanded={showDropdown}
         title={`Search (${SHORTCUT_LABEL})`}
         aria-label="Search across projects and registers"
-        className="w-40 sm:w-56 rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-1.5 text-sm"
+        className="w-40 sm:w-64 rounded-full border border-slate-200 bg-slate-100/80 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 pl-9 pr-12 py-1.5 text-sm placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900"
       />
+      <Icon name="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      <kbd className="hidden sm:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-1 pointer-events-none">
+        {SHORTCUT_LABEL}
+      </kbd>
 
       {showDropdown && (
         <>
-          <div className="fixed inset-0 z-10" onClick={close} />
-          <div className="absolute right-0 sm:left-0 sm:right-auto top-full mt-2 w-80 max-h-[28rem] overflow-y-auto bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 shadow-lg z-20 py-1">
+          <div className="menu-panel absolute right-0 sm:left-0 sm:right-auto top-full mt-2 w-80 max-h-[28rem] overflow-y-auto z-20">
             {(["Go to", "Add", "Settings"] as const).map((group) => {
               const items = matchedCommands.filter((c) => c.group === group);
               if (items.length === 0) return null;

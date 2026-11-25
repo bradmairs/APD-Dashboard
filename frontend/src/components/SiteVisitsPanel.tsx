@@ -10,6 +10,8 @@ const SitePhotosMap = lazy(() => import("./SitePhotosMap"));
 import SitePhotosGallery from "./SitePhotosGallery";
 import { useConfirm } from "../confirm/ConfirmContext";
 import AutoExportCsvButton from "./AutoExportCsvButton";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
 
 interface Props {
   siteVisits: SiteVisit[];
@@ -152,9 +154,7 @@ export default function SiteVisitsPanel({
       )}
 
       {siteVisits.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No site visits logged yet.
-        </p>
+        <EmptyState icon="camera" text="No site visits logged yet." addLabel="Log Visit" onAdd={openCreate} />
       ) : (
         <>
           <div className="space-y-3">
@@ -186,15 +186,19 @@ export default function SiteVisitsPanel({
                     <div className="flex items-center gap-3 shrink-0 pt-0.5">
                       <button
                         onClick={() => openEdit(siteVisit)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(siteVisit)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

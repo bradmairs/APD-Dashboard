@@ -5,6 +5,7 @@ import { Project, TrimLink, TrimLinkInput, TrimLinkKind } from "../types";
 import { trimHref, useTrimRecordUrl } from "../trim";
 import { useAuth } from "../auth/AuthContext";
 import { useConfirm } from "../confirm/ConfirmContext";
+import { Icon } from "./icons";
 
 const INPUT_CLASS =
   "w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm";
@@ -160,15 +161,19 @@ export default function TrimLinksPanel({ projects }: Props) {
                         <div className="flex items-center gap-3 shrink-0">
                           <button
                             onClick={() => setEditing({ kind, link })}
-                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="icon-btn"
+                            title="Edit"
+                            aria-label="Edit"
                           >
-                            Edit
+                            <Icon name="edit" className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(link)}
-                            className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                            className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                            title="Delete"
+                            aria-label="Delete"
                           >
-                            Delete
+                            <Icon name="trash" className="w-4 h-4" />
                           </button>
                         </div>
                       )}

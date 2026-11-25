@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   createActionItem,
@@ -13,6 +14,7 @@ import { useAuth } from "../auth/AuthContext";
 import { Project, RiskConsequence, RiskLikelihood } from "../types";
 import { ALL_CONSEQUENCES, ALL_LIKELIHOODS, CONSEQUENCE_LABELS, LIKELIHOOD_LABELS } from "../riskScoring";
 import { loadRecentProjects } from "../layout/navMemory";
+import DateInput from "./DateInput";
 
 export type QuickAddKind = "task" | "action" | "risk" | "defect" | "site-visit";
 
@@ -80,13 +82,13 @@ export default function QuickAddMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+        className="hidden sm:inline-flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
         title="Add something new"
       >
         + New ▾
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 mt-1 w-48 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg py-1 z-40">
+        <div role="menu" className="menu-panel absolute right-0 mt-1 w-48 z-40">
           <button
             type="button"
             role="menuitem"
@@ -115,7 +117,7 @@ export default function QuickAddMenu() {
           ))}
         </div>
       )}
-      {kind && <QuickAddModal kind={kind} onClose={() => setKind(null)} />}
+      {kind && createPortal(<QuickAddModal kind={kind} onClose={() => setKind(null)} />, document.body)}
     </div>
   );
 }
@@ -202,7 +204,7 @@ function QuickAddModal({ kind, onClose }: { kind: QuickAddKind; onClose: () => v
   const titleLabel = kind === "site-visit" ? "Location" : "Title";
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onMouseDown={onClose}>
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-50 animate-fade-in" onMouseDown={onClose}>
       <form
         role="dialog"
         aria-label={`New ${meta.label.toLowerCase()}`}
@@ -229,7 +231,7 @@ function QuickAddModal({ kind, onClose }: { kind: QuickAddKind; onClose: () => v
         {(kind === "task" || kind === "action") && (
           <label className="block text-sm">
             <span className="text-slate-700 dark:text-slate-300">Due date</span>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={`${INPUT} mt-1`} />
+            <DateInput value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={`${INPUT} mt-1`} />
           </label>
         )}
         {kind === "action" && (
@@ -265,7 +267,7 @@ function QuickAddModal({ kind, onClose }: { kind: QuickAddKind; onClose: () => v
         {kind === "site-visit" && (
           <label className="block text-sm">
             <span className="text-slate-700 dark:text-slate-300">Visit date</span>
-            <input type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} className={`${INPUT} mt-1`} required />
+            <DateInput value={visitDate} onChange={(e) => setVisitDate(e.target.value)} className={`${INPUT} mt-1`} required />
           </label>
         )}
         <p className="text-xs text-slate-500 dark:text-slate-400">Add the rest of the details on the project afterwards.</p>

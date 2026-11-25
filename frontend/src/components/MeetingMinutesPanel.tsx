@@ -29,6 +29,8 @@ import { ActionCandidate, ActionImportPreview } from "../types";
 import ActionImportReviewModal from "./ActionImportReviewModal";
 import SuggestedActionList from "./SuggestedActionList";
 import { useConfirm } from "../confirm/ConfirmContext";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
 
 interface Props {
   projectName: string;
@@ -138,9 +140,11 @@ function MeetingAttachments({
                 </span>
                 <button
                   onClick={() => onDelete(a)}
-                  className="text-red-600 dark:text-red-400 hover:underline"
+                  className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                  title="Delete"
+                  aria-label="Delete"
                 >
-                  Delete
+                  <Icon name="trash" className="w-4 h-4" />
                 </button>
               </span>
             </li>
@@ -550,9 +554,7 @@ export default function MeetingMinutesPanel({
       )}
 
       {meetings.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No meeting minutes recorded yet.
-        </p>
+        <EmptyState icon="message" text="No meeting minutes recorded yet." addLabel="New Meeting" onAdd={openCreate} />
       ) : (
         <>
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -607,15 +609,19 @@ export default function MeetingMinutesPanel({
                       </button>
                       <button
                         onClick={() => openEdit(meeting)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(meeting)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

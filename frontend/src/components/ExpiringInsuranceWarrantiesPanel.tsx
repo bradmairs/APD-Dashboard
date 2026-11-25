@@ -6,6 +6,7 @@ import {
   isInsuranceWarrantyExpired,
   isInsuranceWarrantyExpiringSoon,
 } from "../insuranceWarrantyMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   items: InsuranceWarranty[];
@@ -35,9 +36,7 @@ export default function ExpiringInsuranceWarrantiesPanel({ items, limit = 8 }: P
       </div>
 
       {topItems.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No insurance or warranties expiring soon across the portfolio.
-        </p>
+        <EmptyState icon="shield" text="No insurance or warranties expiring soon across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topItems.map((item) => {

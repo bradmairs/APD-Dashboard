@@ -7,43 +7,9 @@ import { APP_VERSION } from "../version";
 import { isTaskDueSoon, isTaskOverdue } from "../taskMeta";
 import { loadRecentProjects, onRecentProjectsChange, RecentProject } from "../layout/navMemory";
 import GvwLogo from "./GvwLogo";
+import { Icon } from "./icons";
 
-// Stroke icons (24px viewBox) for the menu.
-export const ICONS: Record<string, string> = {
-  home: "M3 11l9-7 9 7M5 10v10h14V10",
-  clock: "M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-  alert: "M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z",
-  chart: "M4 20V10M10 20V4M16 20v-7M22 20H2",
-  activity: "M22 12h-4l-3 9L9 3l-3 9H2",
-  link: "M10 14a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 10a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1",
-  book: "M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5zM4 19.5V21h16",
-  idea: "M9 18h6M10 22h4M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z",
-  report: "M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9zM14 3v6h6M8 13h8M8 17h5",
-  users: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8",
-  template: "M4 4h16v6H4zM4 14h7v6H4zM15 14h5v6h-5z",
-  folder: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z",
-  calendar: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z",
-  plus: "M12 5v14M5 12h14",
-  chevronLeft: "M15 6l-6 6 6 6",
-  chevronRight: "M9 6l6 6-6 6",
-};
-
-export function Icon({ name, className = "w-[18px] h-[18px]" }: { name: string; className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={`${className} shrink-0`}
-    >
-      <path d={ICONS[name]} />
-    </svg>
-  );
-}
+export { Icon, ICONS } from "./icons";
 
 // Counts shown beside menu items, fetched at most once a minute however
 // many pages are opened.

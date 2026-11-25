@@ -7,6 +7,7 @@ import {
   SQE_SEVERITY_LABELS,
   sqeSeverityRank,
 } from "../sqeMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   records: SqeRecord[];
@@ -33,9 +34,7 @@ export default function OpenSqePanel({ records, limit = 8 }: Props) {
       </div>
 
       {topRecords.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No open safety, quality, or environmental issues across the portfolio.
-        </p>
+        <EmptyState icon="hardhat" text="No open safety, quality, or environmental issues across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topRecords.map((record) => (

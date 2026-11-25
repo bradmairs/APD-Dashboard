@@ -2,6 +2,8 @@ import { FormEvent, useState } from "react";
 import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { Task, TaskInput, TaskRecurrence, TaskStatus } from "../types";
 import { ALL_TASK_RECURRENCES, TASK_RECURRENCE_LABELS, isTaskOverdue } from "../taskMeta";
+import { Icon } from "./icons";
+import DateInput from "./DateInput";
 
 const STATUS_ORDER: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -257,8 +259,7 @@ export default function TaskList({
                           </option>
                         ))}
                       </select>
-                      <input
-                        type="date"
+                      <DateInput
                         value={formatDate(task.dueDate)}
                         onChange={(e) =>
                           onUpdate(task, {
@@ -275,15 +276,19 @@ export default function TaskList({
                       />
                       <button
                         onClick={() => startEdit(task)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => onDelete(task)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   )}
@@ -302,8 +307,7 @@ export default function TaskList({
           placeholder="Add a task…"
           className="flex-1 min-w-[10rem] text-sm rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-1.5"
         />
-        <input
-          type="date"
+        <DateInput
           value={newDueDate}
           onChange={(e) => setNewDueDate(e.target.value)}
           className="text-sm rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-2 py-1.5"

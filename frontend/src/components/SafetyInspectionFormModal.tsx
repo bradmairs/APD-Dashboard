@@ -6,6 +6,7 @@ import {
   INSPECTION_TYPE_SUGGESTIONS,
   SAFETY_INSPECTION_STATUS_LABELS,
 } from "../safetyInspectionMeta";
+import DateInput from "./DateInput";
 
 interface Props {
   inspection: SafetyInspection | null;
@@ -59,8 +60,8 @@ export default function SafetyInspectionFormModal({ inspection, onClose, onSave 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex justify-end z-50 animate-fade-in">
+      <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 shadow-xl w-full max-w-xl h-full overflow-y-auto animate-slide-in-right border-l border-slate-200 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {inspection ? "Edit Safety Inspection" : "New Safety Inspection"}
@@ -95,8 +96,7 @@ export default function SafetyInspectionFormModal({ inspection, onClose, onSave 
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Inspection Date
               </label>
-              <input
-                type="date"
+              <DateInput
                 required
                 value={inspectionDate}
                 onChange={(e) => setInspectionDate(e.target.value)}

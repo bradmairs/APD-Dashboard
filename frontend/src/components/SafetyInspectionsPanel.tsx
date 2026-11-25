@@ -12,6 +12,8 @@ import {
 import SafetyInspectionFormModal from "./SafetyInspectionFormModal";
 import { useConfirm } from "../confirm/ConfirmContext";
 import AutoExportCsvButton from "./AutoExportCsvButton";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
 
 interface Props {
   inspections: SafetyInspection[];
@@ -101,9 +103,7 @@ export default function SafetyInspectionsPanel({
       </div>
 
       {inspections.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No safety inspections logged yet.
-        </p>
+        <EmptyState icon="hardhat" text="No safety inspections logged yet." addLabel="New Inspection" onAdd={openCreate} />
       ) : (
         <>
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -153,15 +153,19 @@ export default function SafetyInspectionsPanel({
                       </select>
                       <button
                         onClick={() => openEdit(inspection)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(inspection)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

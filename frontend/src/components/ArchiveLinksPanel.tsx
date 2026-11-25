@@ -3,6 +3,7 @@ import { ShowMoreButton, useShowMore } from "./CollapsibleSection";
 import { ArchiveItemType, ArchiveLink, ArchiveSearchResult } from "../types";
 import { searchArchive } from "../api";
 import { formatDate } from "../format";
+import EmptyState from "./EmptyState";
 
 interface Props {
   links: ArchiveLink[];
@@ -121,9 +122,7 @@ export default function ArchiveLinksPanel({ links, onCreate, onDelete }: Props) 
       )}
 
       {links.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No Engineering Archive items linked yet.
-        </p>
+        <EmptyState icon="folder" text="No Engineering Archive items linked yet." />
       ) : (
         <>
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { TrainingRecord } from "../types";
 import { formatDate } from "../format";
 import { isTrainingExpired, isTrainingExpiringSoon } from "../trainingMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   records: TrainingRecord[];
@@ -31,9 +32,7 @@ export default function ExpiringTrainingPanel({ records, limit = 8 }: Props) {
       </div>
 
       {topItems.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No training or induction records expiring soon across the portfolio.
-        </p>
+        <EmptyState icon="book" text="No training or induction records expiring soon across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topItems.map((record) => {

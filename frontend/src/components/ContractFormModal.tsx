@@ -8,6 +8,7 @@ import {
   CONTRACT_PARTY_TYPE_LABELS,
   CONTRACT_STATUS_LABELS,
 } from "../contractMeta";
+import DateInput from "./DateInput";
 
 interface Props {
   contract: ContractRecord | null;
@@ -81,8 +82,8 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex justify-end z-50 animate-fade-in">
+      <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 shadow-xl w-full max-w-xl h-full overflow-y-auto animate-slide-in-right border-l border-slate-200 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {contract ? "Edit Contract" : "New Contract"}
@@ -260,8 +261,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Execution Date
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={executionDate}
                 onChange={(e) => setExecutionDate(e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
@@ -271,8 +271,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Start Date
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
@@ -282,8 +281,7 @@ export default function ContractFormModal({ contract, onClose, onSave }: Props) 
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Completion Date
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={completionDate}
                 onChange={(e) => setCompletionDate(e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"

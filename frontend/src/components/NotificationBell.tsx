@@ -1,5 +1,5 @@
 import { batched } from "../batch";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   getAllInsuranceWarranties,
@@ -39,6 +39,16 @@ export default function NotificationBell() {
   const [allInsuranceWarranties, setInsuranceWarranties] = useState<InsuranceWarranty[]>([]);
   const [allRfis, setRfis] = useState<Rfi[]>([]);
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Close when clicking anywhere else on the page.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
 
   useEffect(() => {
     // One request for all five lists (see batch.ts); drawn from the page
@@ -134,10 +144,10 @@ export default function NotificationBell() {
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
+        className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-300"
         aria-label="Notifications"
       >
         <svg
@@ -159,8 +169,7 @@ export default function NotificationBell() {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 shadow-lg z-20">
+          <div className="menu-panel !py-0 absolute right-0 top-full mt-2 w-80 z-20">
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Notifications

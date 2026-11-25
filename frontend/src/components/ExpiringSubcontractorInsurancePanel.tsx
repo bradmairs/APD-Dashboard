@@ -5,6 +5,7 @@ import {
   isSubcontractorInsuranceExpired,
   isSubcontractorInsuranceExpiringSoon,
 } from "../subcontractorMeta";
+import EmptyState from "./EmptyState";
 
 interface Props {
   subcontractors: Subcontractor[];
@@ -37,9 +38,7 @@ export default function ExpiringSubcontractorInsurancePanel({
       </div>
 
       {topItems.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No subcontractor insurance expiring soon across the portfolio.
-        </p>
+        <EmptyState icon="shield" text="No subcontractor insurance expiring soon across the portfolio." />
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {topItems.map((subcontractor) => {

@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import RichTextArea from "./RichTextArea";
 import { EotClaim, EotClaimInput, EotStatus } from "../types";
 import { ALL_EOT_STATUSES, EOT_CAUSE_SUGGESTIONS, EOT_STATUS_LABELS } from "../eotMeta";
+import DateInput from "./DateInput";
 
 interface Props {
   claim: EotClaim | null;
@@ -59,8 +60,8 @@ export default function EotClaimFormModal({ claim, onClose, onSave }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex justify-end z-50 animate-fade-in">
+      <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 shadow-xl w-full max-w-xl h-full overflow-y-auto animate-slide-in-right border-l border-slate-200 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {claim ? "Edit EOT Claim" : "New EOT Claim"}
@@ -159,8 +160,7 @@ export default function EotClaimFormModal({ claim, onClose, onSave }: Props) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Date Submitted
               </label>
-              <input
-                type="date"
+              <DateInput
                 required
                 value={dateSubmitted}
                 onChange={(e) => setDateSubmitted(e.target.value)}

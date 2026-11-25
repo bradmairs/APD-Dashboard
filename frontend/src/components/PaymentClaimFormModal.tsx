@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import RichTextArea from "./RichTextArea";
 import { ContractRecord, PaymentClaim, PaymentClaimInput, PaymentClaimStatus } from "../types";
 import { ALL_PAYMENT_CLAIM_STATUSES, PAYMENT_CLAIM_STATUS_LABELS } from "../paymentClaimMeta";
+import DateInput from "./DateInput";
 
 interface Props {
   claim: PaymentClaim | null;
@@ -60,8 +61,8 @@ export default function PaymentClaimFormModal({ claim, contracts, onClose, onSav
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex justify-end z-50 animate-fade-in">
+      <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 shadow-xl w-full max-w-xl h-full overflow-y-auto animate-slide-in-right border-l border-slate-200 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {claim ? "Edit Payment Claim" : "New Payment Claim"}
@@ -90,8 +91,7 @@ export default function PaymentClaimFormModal({ claim, contracts, onClose, onSav
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Period Ending
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={periodEnding}
                 onChange={(e) => setPeriodEnding(e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
@@ -153,8 +153,7 @@ export default function PaymentClaimFormModal({ claim, contracts, onClose, onSav
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Date Submitted
               </label>
-              <input
-                type="date"
+              <DateInput
                 required
                 value={dateSubmitted}
                 onChange={(e) => setDateSubmitted(e.target.value)}

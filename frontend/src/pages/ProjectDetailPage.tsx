@@ -276,6 +276,9 @@ import { formatCurrency, formatDate, formatReportMonth } from "../format";
 import { trimHref, useTrimRecordUrl } from "../trim";
 import { canModifyProject } from "../permissions";
 import AppLayout from "../components/AppLayout";
+import { Icon } from "../components/icons";
+import ProjectProgressStrip from "../components/ProjectProgressStrip";
+import ProjectOpenItems from "../components/ProjectOpenItems";
 import { onDataChanged, openQuickAdd } from "../components/QuickAdd";
 import { SkeletonCard, SkeletonSections } from "../components/Skeleton";
 import {
@@ -1644,7 +1647,7 @@ export default function ProjectDetailPage() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
           <section
             aria-labelledby="project-details-heading"
-            className="xl:col-span-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4"
+            className="xl:col-span-2 card p-4"
           >
             <h2 id="project-details-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
               Project details
@@ -1688,12 +1691,17 @@ export default function ProjectDetailPage() {
 
           <section
             aria-labelledby="at-a-glance-heading"
-            className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4"
+            className="card p-4"
           >
             <h2 id="at-a-glance-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
               At a glance
             </h2>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <ProjectProgressStrip
+              project={project}
+              cashFlowEntries={cashFlowEntries}
+              revisedTargetCompletion={revisedTargetCompletion}
+            />
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
               <Field label="Original Budget" value={formatCurrency(project.budget)} />
               {project.latestApprovedBudget !== null && (
                 <Field
@@ -1725,6 +1733,26 @@ export default function ProjectDetailPage() {
             </dl>
           </section>
         </div>
+
+        <ProjectOpenItems
+          items={[
+            { label: "Open risks", icon: "alert", count: risks.filter((r) => r.status !== "CLOSED").length, tab: "quality", section: "risks" },
+            { label: "Open actions", icon: "checkCircle", count: actionItems.filter((a) => a.status !== "DONE").length, tab: "overview", section: "actions" },
+            { label: "Open defects", icon: "wrench", count: defects.filter((d) => d.status === "OPEN" || d.status === "DISPUTED").length, tab: "quality", section: "defects" },
+            { label: "Open RFIs", icon: "message", count: rfis.filter((r) => r.status === "OPEN").length, tab: "quality", section: "rfis" },
+          ]}
+          milestones={milestones}
+          onGo={(tab, section) => {
+            setActiveTab(tab as ProjectTabId);
+            window.setTimeout(() => {
+              const el = document.getElementById(section);
+              if (!el) return;
+              const header = document.querySelector("header");
+              const top = el.getBoundingClientRect().top + window.scrollY - (header?.getBoundingClientRect().height ?? 0) - 12;
+              window.scrollTo({ top, behavior: "smooth" });
+            }, 200);
+          }}
+        />
 
         <div className="lg:hidden">
           <Tabs tabs={PROJECT_TABS} active={activeTab} onChange={setActiveTab} />
@@ -2170,7 +2198,7 @@ export default function ProjectDetailPage() {
               onClick={() => openQuickAdd(b.kind)}
               className="py-2.5 text-xs text-slate-700 dark:text-slate-200 flex flex-col items-center gap-0.5"
             >
-              <span className="text-lg leading-none">＋</span>
+              <Icon name="plus" className="w-5 h-5" />
               {b.label}
             </button>
           ))}
@@ -2182,7 +2210,7 @@ export default function ProjectDetailPage() {
             }}
             className="py-2.5 text-xs text-slate-700 dark:text-slate-200 flex flex-col items-center gap-0.5"
           >
-            <span className="text-lg leading-none">📷</span>
+            <Icon name="camera" className="w-5 h-5" />
             Photos
           </button>
         </nav>

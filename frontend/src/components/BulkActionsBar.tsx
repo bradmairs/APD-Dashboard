@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useConfirm } from "../confirm/ConfirmContext";
+import DateInput from "./DateInput";
 
 interface Props<S extends string> {
   count: number;
@@ -99,8 +100,7 @@ export default function BulkActionsBar<S extends string>({
       )}
       {onApplyDueDate && (
         <>
-          <input
-            type="date"
+          <DateInput
             value={pendingDate}
             onChange={(e) => setPendingDate(e.target.value)}
             aria-label="New due date"

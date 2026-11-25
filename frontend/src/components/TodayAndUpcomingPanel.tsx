@@ -4,6 +4,7 @@ import { ActionItem, Project, Task } from "../types";
 import { updateUpcomingManagerFilter } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import { ACTION_TYPE_COLORS, ACTION_TYPE_LABELS } from "../actionItemMeta";
+import DateInput from "./DateInput";
 
 type Bucket = "OVERDUE" | "TODAY" | "WEEK" | "LATER" | "NONE";
 
@@ -272,8 +273,7 @@ export default function TodayAndUpcomingPanel({
           >
             Mark complete
           </button>
-          <input
-            type="date"
+          <DateInput
             value={bulkDate}
             onChange={(e) => setBulkDate(e.target.value)}
             aria-label="New due date for the selected items"
@@ -355,8 +355,7 @@ export default function TodayAndUpcomingPanel({
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <input
-                        type="date"
+                      <DateInput
                         value={toDateInputValue(item.dueDate)}
                         onChange={(e) => {
                           const dueDate = e.target.value ? new Date(e.target.value).toISOString() : null;

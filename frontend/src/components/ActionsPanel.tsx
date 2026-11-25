@@ -15,6 +15,8 @@ import ExportCsvButton from "./ExportCsvButton";
 import BulkActionsBar from "./BulkActionsBar";
 import { useSelection } from "../useSelection";
 import { useConfirm } from "../confirm/ConfirmContext";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
 
 interface Props {
   actionItems: ActionItem[];
@@ -179,9 +181,7 @@ export default function ActionsPanel({
       )}
 
       {actionItems.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No actions or decisions logged yet.
-        </p>
+        <EmptyState icon="checkCircle" text="No actions or decisions logged yet." addLabel="New Action" onAdd={openCreate} />
       ) : (
         <>
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -240,22 +240,27 @@ export default function ActionsPanel({
                       </select>
                       <button
                         onClick={() => openEdit(actionItem)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDuplicate(actionItem)}
-                        className="text-xs text-slate-600 dark:text-slate-300 hover:underline"
-                        title="Add a copy of this action"
+                        className="icon-btn"
+                        title="Duplicate"
+                        aria-label="Duplicate"
                       >
-                        Duplicate
+                        <Icon name="copy" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(actionItem)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

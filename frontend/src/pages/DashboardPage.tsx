@@ -98,6 +98,9 @@ import { computeProjectHealth, ProjectHealth } from "../health";
 import NeedsAttentionPanel from "../components/NeedsAttentionPanel";
 import AppLayout from "../components/AppLayout";
 import MyWeekPanel from "../components/MyWeekPanel";
+import ProjectBoard from "../components/ProjectBoard";
+import PortfolioTimeline from "../components/PortfolioTimeline";
+import { Icon } from "../components/icons";
 import { onDataChanged } from "../components/QuickAdd";
 import { SkeletonTable } from "../components/Skeleton";
 import DashboardSideColumn from "../components/DashboardSideColumn";
@@ -108,6 +111,13 @@ import { DashboardView, addSavedView, loadSavedViews, removeSavedView } from "..
 import { RagStatus } from "../types";
 import { useUndoToast } from "../undo/UndoToastContext";
 import { useConfirm } from "../confirm/ConfirmContext";
+
+type ProjectViewId = "table" | "board" | "timeline";
+const PROJECT_VIEWS: { id: ProjectViewId; label: string; icon: string }[] = [
+  { id: "table", label: "Table", icon: "table" },
+  { id: "board", label: "Board", icon: "board" },
+  { id: "timeline", label: "Timeline", icon: "timeline" },
+];
 
 const RAG_LABELS: Record<RagStatus, string> = { GREEN: "Green", AMBER: "Amber", RED: "Red" };
 
@@ -377,6 +387,34 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  // Table, Board or Timeline, remembered in this browser.
+  const [projectView, setProjectView] = useState<ProjectViewId>(() => {
+    try {
+      const v = localStorage.getItem("apd.projectView");
+      return v === "board" || v === "timeline" ? v : "table";
+    } catch {
+      return "table";
+    }
+  });
+  function changeProjectView(v: ProjectViewId) {
+    setProjectView(v);
+    try {
+      localStorage.setItem("apd.projectView", v);
+    } catch {
+      // not remembered
+    }
+  }
+  async function changeStatus(project: Project, status: ProjectStatus) {
+    await updateProject(project.id, { status });
+    await loadData();
+  }
+
+  const statusCounts = useMemo(() => {
+    const counts: Partial<Record<ProjectStatus, number>> = {};
+    for (const p of projects) counts[p.status] = (counts[p.status] ?? 0) + 1;
+    return counts;
+  }, [projects]);
+
   const statusData: BarDatum[] = useMemo(
     () =>
       ALL_STATUSES.map((status) => ({
@@ -627,6 +665,7 @@ export default function DashboardPage() {
         <StatCards
           projects={projects}
           variations={variations}
+          cashFlowEntries={cashFlowEntries}
           onSelect={{
             total: () => {
               setStatusFilter("ALL");
@@ -653,25 +692,27 @@ export default function DashboardPage() {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setStatusFilter("ALL")}
-                  className={`px-3 py-1.5 text-sm rounded-full border ${
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     statusFilter === "ALL"
-                      ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100"
-                      : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"
+                      ? "bg-navy-700 text-white border-navy-700 dark:bg-blue-500 dark:text-white dark:border-blue-500"
+                      : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500"
                   }`}
                 >
                   All
+                  <span className="ml-1.5 text-xs opacity-70 tabular-nums">{projects.length}</span>
                 </button>
                 {ALL_STATUSES.map((s) => (
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`px-3 py-1.5 text-sm rounded-full border ${
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                       statusFilter === s
-                        ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100"
-                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600"
+                        ? "bg-navy-700 text-white border-navy-700 dark:bg-blue-500 dark:text-white dark:border-blue-500"
+                        : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500"
                     }`}
                   >
                     {STATUS_LABELS[s]}
+                    <span className="ml-1.5 text-xs opacity-70 tabular-nums">{statusCounts[s] ?? 0}</span>
                   </button>
                 ))}
               </div>
@@ -793,18 +834,48 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_22rem] gap-6 items-start">
             <div className="min-w-0 space-y-6">
+            <div className="flex items-center justify-between gap-3 -mb-3">
+              <div role="group" aria-label="Show projects as" className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 text-sm">
+                {PROJECT_VIEWS.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    aria-pressed={projectView === v.id}
+                    onClick={() => changeProjectView(v.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md ${
+                      projectView === v.id
+                        ? "bg-white dark:bg-slate-950 shadow-sm text-slate-900 dark:text-slate-100 font-medium"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                    }`}
+                  >
+                    <Icon name={v.icon} className="w-4 h-4" />
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                {filteredProjects.length} of {projects.length} projects
+              </span>
+            </div>
             {loading ? (
               <SkeletonTable rows={6} />
+            ) : projectView === "board" ? (
+              <ProjectBoard
+                projects={filteredProjects}
+                currentUser={user}
+                healthByProjectId={healthByProjectId}
+                onStatusChange={changeStatus}
+                onOpen={(project) => navigate(`/projects/${project.id}`)}
+              />
+            ) : projectView === "timeline" ? (
+              <PortfolioTimeline projects={filteredProjects} onOpen={(project) => navigate(`/projects/${project.id}`)} />
             ) : (
               <ProjectTable
                 projects={filteredProjects}
                 currentUser={user}
                 healthByProjectId={healthByProjectId}
                 healthHistory={healthHistory}
-                onStatusChange={async (project, status) => {
-                  await updateProject(project.id, { status });
-                  await loadData();
-                }}
+                onStatusChange={changeStatus}
                 onOpen={(project) => navigate(`/projects/${project.id}`)}
                 onEdit={openEditProject}
                 onDelete={handleDelete}
@@ -828,6 +899,7 @@ export default function DashboardPage() {
                 tasks={upcomingTasks}
                 actionItems={actionItems}
                 projectManager={pmFilter}
+                healthByProjectId={healthByProjectId}
               />
             )}
             </div>

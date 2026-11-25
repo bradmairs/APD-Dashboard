@@ -5,6 +5,8 @@ import { ActionItem, Project, Task, TrimLink } from "../types";
 import { isTaskDueSoon, isTaskOverdue } from "../taskMeta";
 import { formatDate } from "../format";
 import { trimHref, useTrimRecordUrl } from "../trim";
+import { ProjectHealth } from "../health";
+import { DueCalendarWidget, PortfolioHealthWidget, UpcomingCompletionsWidget } from "./DashboardWidgets";
 
 interface Props {
   projects: Project[];
@@ -12,6 +14,7 @@ interface Props {
   actionItems: ActionItem[];
   // When set, only this project manager's items are listed ("My projects").
   projectManager: string;
+  healthByProjectId?: Record<string, ProjectHealth>;
 }
 
 interface DueRow {
@@ -34,7 +37,7 @@ function isActionOpen(a: ActionItem) {
 // week (tasks and meeting actions), and the shared GVW / TRIM links. Both
 // are read-only shortcuts; the full lists stay on Today & Upcoming and
 // TRIM & GVW Links.
-export default function DashboardSideColumn({ projects, tasks, actionItems, projectManager }: Props) {
+export default function DashboardSideColumn({ projects, tasks, actionItems, projectManager, healthByProjectId }: Props) {
   const [links, setLinks] = useState<TrimLink[]>([]);
   const recordUrl = useTrimRecordUrl();
 
@@ -87,10 +90,13 @@ export default function DashboardSideColumn({ projects, tasks, actionItems, proj
   const general = links.filter((l) => l.kind === "GENERAL");
   const quickLinks = (general.length > 0 ? general : links).slice(0, MAX_LINKS);
 
-  const card = "bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm";
+  const card = "card";
+
+  const scoped = projectManager ? projects.filter((p) => p.projectManager === projectManager) : projects;
 
   return (
     <div className="space-y-6">
+      {healthByProjectId && <PortfolioHealthWidget projects={scoped} healthByProjectId={healthByProjectId} />}
       <section className={card} aria-labelledby="due-soon-heading">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <h2 id="due-soon-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -143,6 +149,8 @@ export default function DashboardSideColumn({ projects, tasks, actionItems, proj
         )}
       </section>
 
+      <DueCalendarWidget tasks={tasks} actionItems={actionItems} />
+      <UpcomingCompletionsWidget projects={scoped} />
       <section className={card} aria-labelledby="quick-links-heading">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <h2 id="quick-links-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100">

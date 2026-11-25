@@ -6,6 +6,8 @@ import { formatDate } from "../format";
 import MilestoneFormModal from "./MilestoneFormModal";
 import { useConfirm } from "../confirm/ConfirmContext";
 import AutoExportCsvButton from "./AutoExportCsvButton";
+import EmptyState from "./EmptyState";
+import { Icon } from "./icons";
 
 interface Props {
   milestones: Milestone[];
@@ -91,9 +93,7 @@ export default function MilestonesPanel({
       </div>
 
       {milestones.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No milestones yet.
-        </p>
+        <EmptyState icon="flag" text="No milestones yet." addLabel="New Milestone" onAdd={openCreate} />
       ) : (
         <div className="overflow-x-auto">
           <>
@@ -173,15 +173,19 @@ export default function MilestonesPanel({
                     <div className="flex items-center gap-3 shrink-0 pt-0.5">
                       <button
                         onClick={() => openEdit(milestone)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(milestone)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

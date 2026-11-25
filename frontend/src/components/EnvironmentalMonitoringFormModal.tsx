@@ -6,6 +6,7 @@ import {
   LimitType,
 } from "../types";
 import { LIMIT_TYPE_LABELS, PARAMETER_SUGGESTIONS } from "../environmentalMeta";
+import DateInput from "./DateInput";
 
 interface Props {
   record: EnvironmentalMonitoringRecord | null;
@@ -65,8 +66,8 @@ export default function EnvironmentalMonitoringFormModal({ record, onClose, onSa
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex justify-end z-50 animate-fade-in">
+      <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 shadow-xl w-full max-w-xl h-full overflow-y-auto animate-slide-in-right border-l border-slate-200 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {record ? "Edit Monitoring Reading" : "New Monitoring Reading"}
@@ -115,8 +116,7 @@ export default function EnvironmentalMonitoringFormModal({ record, onClose, onSa
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Monitoring Date
               </label>
-              <input
-                type="date"
+              <DateInput
                 required
                 value={monitoringDate}
                 onChange={(e) => setMonitoringDate(e.target.value)}

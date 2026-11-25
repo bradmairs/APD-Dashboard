@@ -14,6 +14,7 @@ import ExportCsvButton from "./ExportCsvButton";
 import BulkActionsBar from "./BulkActionsBar";
 import { useSelection } from "../useSelection";
 import { useConfirm } from "../confirm/ConfirmContext";
+import { Icon } from "./icons";
 
 interface Props {
   defects: DefectItem[];
@@ -210,15 +211,19 @@ export default function DefectsPanel({ defects, onCreate, onUpdate, onDelete }: 
                       </select>
                       <button
                         onClick={() => openEdit(defect)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label="Edit"
                       >
-                        Edit
+                        <Icon name="edit" className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(defect)}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="icon-btn hover:!text-red-600 dark:hover:!text-red-400"
+                        title="Delete"
+                        aria-label="Delete"
                       >
-                        Delete
+                        <Icon name="trash" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

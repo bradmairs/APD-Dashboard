@@ -4,6 +4,7 @@ import { Project, ProjectInput, ProjectStatus, UserOption } from "../types";
 import { ALL_STATUSES, STATUS_LABELS } from "../statusMeta";
 import { getUserOptions } from "../api";
 import { useAuth } from "../auth/AuthContext";
+import DateInput from "./DateInput";
 
 // Select value for a project whose manager was typed in before managers were
 // picked from the user list and doesn't match a user — leaving it selected
@@ -115,8 +116,8 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-navy-800/40 backdrop-blur-[2px] flex justify-end z-50 animate-fade-in">
+      <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 shadow-xl w-full max-w-2xl h-full overflow-y-auto animate-slide-in-right border-l border-slate-200 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {project ? "Edit Project" : "New Project"}
@@ -341,8 +342,7 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Start Date
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
@@ -352,8 +352,7 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Target Completion
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={targetCompletionDate}
                 onChange={(e) => setTargetCompletionDate(e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
