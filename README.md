@@ -7,9 +7,12 @@ per project for tracking tasks/milestones and their due dates.
 
 ## Versioning
 
-Releases are numbered `X.YY` (current: see `VERSION`, history in `CHANGELOG.md`).
-A small update or fix bumps the last digit (1.0 -> 1.01); a larger or more
-significant update bumps the tenth (1.01 -> 1.1). Each release is tagged `vX.YY`.
+**Version 2.6.1** ([release notes](docs/releases/2.6.1.md), [all releases](docs/releases.md))
+
+Versions are **Section.Feature.Fix**, the same as SirisOS: `scripts/bump-version.sh fix` for a fix or minor change,
+`feature` for a new feature or bigger upgrade, `section` for a significant new section. Every pull request bumps it
+and fills in `docs/releases/<version>.md`. Merging to main tags `v<version>` and publishes a GitHub release
+automatically. Older X.YY numbers are listed in [`docs/renumbering.md`](docs/renumbering.md).
 
 ## Stack
 
@@ -1605,7 +1608,7 @@ user to edit.
 
 The AI Assistant tab — a chat box on each project and the Dashboard that
 answered questions using a locally hosted Ollama model — was retired in
-1.43. Its code is kept in `archive/ai-assistant/`, with instructions for
+1.43 (now 2.4.0). Its code is kept in `archive/ai-assistant/`, with instructions for
 restoring it. The meeting-minutes AI features (generate minutes from a
 transcript, suggest actions from notes) are unchanged and still use the
 Ollama settings below.
