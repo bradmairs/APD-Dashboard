@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   createUser,
   deleteUser,
@@ -13,8 +12,7 @@ import { formatDate } from "../format";
 import { useAuth } from "../auth/AuthContext";
 import { useConfirm } from "../confirm/ConfirmContext";
 import CreateUserModal from "../components/CreateUserModal";
-import UserMenu from "../components/UserMenu";
-import GvwLogo from "../components/GvwLogo";
+import AppLayout from "../components/AppLayout";
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth();
@@ -92,43 +90,21 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
-          <Link
-            to="/"
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+    <AppLayout
+      title="Users"
+      subtitle="Manage team accounts and roles"
+      actions={
+        <>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
           >
-            ← Back to dashboard
-          </Link>
-          <div className="flex flex-wrap items-center justify-between gap-y-3 mt-2">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="hover:opacity-90">
-                <GvwLogo className="h-14" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                  Users
-                </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Manage team accounts and roles
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-              >
-                + New User
-              </button>
-              <UserMenu />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+            + New User
+          </button>
+        </>
+      }
+    >
+      <div>
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3 mb-4">
             {error}
@@ -282,7 +258,7 @@ export default function AdminUsersPage() {
             </table>
           </div>
         )}
-      </main>
+      </div>
 
       {showCreateModal && (
         <CreateUserModal
@@ -294,6 +270,6 @@ export default function AdminUsersPage() {
           }}
         />
       )}
-    </div>
+    </AppLayout>
   );
 }

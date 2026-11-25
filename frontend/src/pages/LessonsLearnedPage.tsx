@@ -4,8 +4,7 @@ import { Link } from "react-router-dom";
 import { getAllLessonsLearned } from "../api";
 import { LessonLearned, LessonType } from "../types";
 import { ALL_LESSON_TYPES, LESSON_TYPE_COLORS, LESSON_TYPE_LABELS } from "../lessonMeta";
-import UserMenu from "../components/UserMenu";
-import GvwLogo from "../components/GvwLogo";
+import AppLayout from "../components/AppLayout";
 
 export default function LessonsLearnedPage() {
   const [lessons, setLessons] = useState<LessonLearned[]>([]);
@@ -48,35 +47,11 @@ export default function LessonsLearnedPage() {
   }, [lessons, typeFilter, categoryFilter, search]);
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
-          <Link
-            to="/"
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            ← Back to dashboard
-          </Link>
-          <div className="flex flex-wrap items-center justify-between gap-y-3 mt-2">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="hover:opacity-90">
-                <GvwLogo className="h-14" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                  Lessons Learned
-                </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Searchable across every project in the portfolio
-                </p>
-              </div>
-            </div>
-            <UserMenu />
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <AppLayout
+      title="Lessons Learned"
+      subtitle="Searchable across every project in the portfolio"
+    >
+      <div className="space-y-6">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3">
             {error}
@@ -187,7 +162,7 @@ export default function LessonsLearnedPage() {
             ))}
           </ul>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

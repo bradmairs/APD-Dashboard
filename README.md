@@ -71,6 +71,17 @@ escaping/formula-neutralising, and search ranking. They need no database.
 `.github/workflows/ci.yml` runs the tests plus a typecheck/build of both
 packages on every pull request and on pushes to `main`.
 
+## Layout and navigation
+
+Every signed-in page has the same frame (`frontend/src/components/AppLayout.tsx`):
+
+- **Left menu** (`Sidebar.tsx`): the GVW logo (links back to the dashboard), the app name and version, the dashboard views (Dashboard, Today & Upcoming, Alerts, Charts, Activity), Knowledge pages (TRIM & GVW Links, Lessons Learned, Tool Suggestions, Reports), Task Templates, Users (admins only) and your five most recent projects. **Collapse menu** (or `[`) shrinks it to icons. Below 1024px wide it opens from the ☰ button instead.
+- **Top bar**: page title, the page's own buttons, global search, theme switch, notifications and the account menu.
+- **Project pages** add a section menu (`ProjectSectionMenu.tsx`) listing each group and its sections with counts, plus All projects and a switch-project list. Phones keep the tabs and Jump-to row.
+- **Keyboard shortcuts** (`?` lists them): `G` then `D` Dashboard, `T` Today & Upcoming, `A` Alerts, `C` Charts, `V` Activity, `K` TRIM & GVW Links, `L` Lessons Learned, `S` Tool Suggestions, `R` Reports. They are ignored while typing in a field.
+
+The collapsed-menu setting, recent projects and the last group opened on each project are stored per user in the browser (`frontend/src/layout/navMemory.ts`). They are never saved to the database.
+
 ## Data model (v1)
 
 Each **Project** tracks:

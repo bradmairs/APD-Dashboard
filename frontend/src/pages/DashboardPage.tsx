@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTabParam } from "../useTabParam";
 import {
   ActionItem,
@@ -93,11 +93,9 @@ import { useTheme } from "../theme/ThemeContext";
 import { ALL_STATUSES, STATUS_LABELS } from "../statusMeta";
 import { computeProjectHealth, ProjectHealth } from "../health";
 import NeedsAttentionPanel from "../components/NeedsAttentionPanel";
-import UserMenu from "../components/UserMenu";
-import Tabs from "../components/Tabs";
+import AppLayout from "../components/AppLayout";
+import DashboardSideColumn from "../components/DashboardSideColumn";
 import { useAuth } from "../auth/AuthContext";
-import GvwLogo from "../components/GvwLogo";
-import { APP_VERSION } from "../version";
 import ExportCsvButton from "../components/ExportCsvButton";
 import { formatCurrency, formatDate } from "../format";
 import { DashboardView, addSavedView, loadSavedViews, removeSavedView } from "../savedViews";
@@ -502,61 +500,68 @@ export default function DashboardPage() {
     await loadData();
   }
 
-  return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-wrap items-center justify-between gap-y-3">
-          <Link to="/" className="flex items-center gap-4 hover:opacity-90">
-            <GvwLogo className="h-16" />
-            <div>
-              <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                Project Management Dashboard
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Asset &amp; Project Delivery
-                <span
-                  className="ml-2 text-xs text-slate-400 dark:text-slate-500"
-                  title={`Project Management Dashboard version ${APP_VERSION}`}
-                >
-                  v{APP_VERSION}
-                </span>
-              </p>
-            </div>
-          </Link>
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              to="/lessons-learned"
-              className="px-4 py-2 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-            >
-              Lessons Learned
-            </Link>
-            <Link
-              to="/tool-suggestions"
-              className="px-4 py-2 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-              title="Suggest new features or improvements to this tool"
-            >
-              Tool Suggestions
-            </Link>
-            <Link
-              to="/reports"
-              className="px-4 py-2 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-            >
-              Reports
-            </Link>
-            {!isViewer && (
-              <button
-                onClick={openNewProject}
-                className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-              >
-                + New Project
-              </button>
-            )}
-            <UserMenu />
-          </div>
-        </div>
-      </header>
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = user?.name?.split(" ")[0] ?? "";
+  const myProjectsActive = !!user && pmFilter === user.name;
+  const activeTabLabel = DASHBOARD_TABS.find((t) => t.id === activeTab)?.label ?? "Projects";
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+  return (
+    <AppLayout
+      title={activeTab === "projects" ? `${greeting}${firstName ? `, ${firstName}` : ""}` : activeTabLabel}
+      subtitle={new Date().toLocaleDateString("en-AU", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}
+      actions={
+        <>
+          {user && (
+            <div
+              role="group"
+              aria-label="Which projects to show"
+              className="inline-flex rounded-lg border border-slate-300 dark:border-slate-600 p-0.5 text-sm"
+            >
+              <button
+                type="button"
+                onClick={() => setPmFilter(user.name)}
+                aria-pressed={myProjectsActive}
+                className={`px-3 py-1 rounded-md ${
+                  myProjectsActive
+                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+                title="Only projects you manage"
+              >
+                My projects
+              </button>
+              <button
+                type="button"
+                onClick={() => setPmFilter("")}
+                aria-pressed={!pmFilter}
+                className={`px-3 py-1 rounded-md ${
+                  !pmFilter
+                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                All projects
+              </button>
+            </div>
+          )}
+          {!isViewer && (
+            <button
+              onClick={openNewProject}
+              className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+            >
+              + New Project
+            </button>
+          )}
+        </>
+      }
+    >
+      <div className="space-y-6">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3">
             {error}
@@ -585,8 +590,6 @@ export default function DashboardPage() {
             budget: () => setActiveTab("charts"),
           }}
         />
-
-        <Tabs tabs={DASHBOARD_TABS} active={activeTab} onChange={setActiveTab} />
 
         {activeTab === "projects" && (
           <div className="space-y-6">
@@ -732,6 +735,8 @@ export default function DashboardPage() {
               />
             </div>
 
+            <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_22rem] gap-6 items-start">
+            <div className="min-w-0 space-y-6">
             {loading ? (
               <div className="text-center text-slate-500 dark:text-slate-400 py-12">
                 Loading…
@@ -757,6 +762,16 @@ export default function DashboardPage() {
                 onDelete={handleDeletePortfolioTask}
               />
             )}
+            </div>
+            {!loading && (
+              <DashboardSideColumn
+                projects={projects}
+                tasks={upcomingTasks}
+                actionItems={actionItems}
+                projectManager={pmFilter}
+              />
+            )}
+            </div>
           </div>
         )}
 
@@ -827,8 +842,7 @@ export default function DashboardPage() {
         )}
 
         {activeTab === "trim" && <TrimLinksPanel projects={projects} />}
-
-      </main>
+      </div>
 
       {showModal && (
         <ProjectFormModal
@@ -837,6 +851,6 @@ export default function DashboardPage() {
           onSave={handleSave}
         />
       )}
-    </div>
+    </AppLayout>
   );
 }

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   createTaskTemplate,
   deleteTaskTemplate,
@@ -8,8 +7,7 @@ import {
 } from "../api";
 import { TaskTemplate, TaskTemplateInput } from "../types";
 import TaskTemplateFormModal from "../components/TaskTemplateFormModal";
-import UserMenu from "../components/UserMenu";
-import GvwLogo from "../components/GvwLogo";
+import AppLayout from "../components/AppLayout";
 import { useConfirm } from "../confirm/ConfirmContext";
 
 export default function TaskTemplatesPage() {
@@ -65,40 +63,21 @@ export default function TaskTemplatesPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
-          <Link to="/" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            ← Back to dashboard
-          </Link>
-          <div className="flex flex-wrap items-center justify-between gap-y-3 mt-2">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="hover:opacity-90">
-                <GvwLogo className="h-14" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                  Task Templates
-                </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Reusable task sets you can apply to any project's Schedule tab
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={openCreate}
-                className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-              >
-                + New Template
-              </button>
-              <UserMenu />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+    <AppLayout
+      title="Task Templates"
+      subtitle="Reusable task sets you can apply to any project's Schedule tab"
+      actions={
+        <>
+          <button
+            onClick={openCreate}
+            className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+          >
+            + New Template
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3">
             {error}
@@ -152,7 +131,7 @@ export default function TaskTemplatesPage() {
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       {showModal && (
         <TaskTemplateFormModal
@@ -164,6 +143,6 @@ export default function TaskTemplatesPage() {
           onSave={handleSave}
         />
       )}
-    </div>
+    </AppLayout>
   );
 }
