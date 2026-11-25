@@ -5,6 +5,16 @@ digit (1.0 -> 1.01); a larger or more significant update bumps the tenth
 (1.01 -> 1.1). `package.json` uses the matching semver (1.01 = 1.0.1,
 1.1 = 1.1.0). The current version is in `VERSION`.
 
+## 1.5 - 2026-11-25
+
+New layout that uses the whole screen. Only the screens changed: no project data, settings or database tables are touched.
+
+- **Left-hand menu on every page**: the GVW logo (click it to go back to the dashboard, as before), the version, Dashboard, Today & Upcoming (with a due count), Alerts, Charts, Activity, TRIM & GVW Links, Lessons Learned, Tool Suggestions, Reports, Task Templates and Users (admins). It also lists your **recent projects**. **Collapse menu** shrinks it to icons (remembered); on a phone it opens from the ☰ button
+- **Top bar** on every page with the page title, its buttons, search (Ctrl+K), light/dark switch, notifications and your account menu
+- **Dashboard**: full width, a greeting with today's date, a **My projects / All projects** switch, and a right-hand column with **Due soon** (tasks and actions due within a week) and **Quick links** (shared GVW links). All filters, saved views, export and your saved dashboard view are unchanged
+- **Project page**: a section menu beside the main menu lists every group and its sections with item counts. Click one to jump straight there. It also has **← All projects** and a **switch project** list. **Project details** and **At a glance** (budget change vs original, key dates) cards. **Delete** moved into the ⋯ menu beside Edit. On very wide screens, sections sit two across. Each project reopens on the group you were last on. On phones the tabs and Jump-to row stay
+- **Keyboard shortcuts**: G then D/T/A/C/V/K/L/S/R jumps to a page, [ collapses the menu, ? lists them all
+
 ## 1.43 - 2026-11-06
 
 - Actions from Word meeting minutes are now confirmed before they're added: a summary plus a tick box per project manager action (Don't add any adds nothing)

@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import FormattedText from "../components/FormattedText";
 import RichTextArea from "../components/RichTextArea";
-import { Link } from "react-router-dom";
 import {
   createToolSuggestion,
   deleteToolSuggestion,
@@ -24,8 +23,7 @@ import {
 import { formatDate } from "../format";
 import { useAuth } from "../auth/AuthContext";
 import { useConfirm } from "../confirm/ConfirmContext";
-import UserMenu from "../components/UserMenu";
-import GvwLogo from "../components/GvwLogo";
+import AppLayout from "../components/AppLayout";
 
 const INPUT_CLASS =
   "w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm";
@@ -118,32 +116,11 @@ export default function ToolSuggestionsPage() {
   ];
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
-          <Link to="/" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            ← Back to dashboard
-          </Link>
-          <div className="flex flex-wrap items-center justify-between gap-y-3 mt-2">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="hover:opacity-90">
-                <GvwLogo className="h-14" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                  Tool Suggestions
-                </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Ideas for new features and improvements to this dashboard
-                </p>
-              </div>
-            </div>
-            <UserMenu />
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <AppLayout
+      title="Tool Suggestions"
+      subtitle="Ideas for new features and improvements to this dashboard"
+    >
+      <div className="space-y-6">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3">
             {error}
@@ -286,8 +263,8 @@ export default function ToolSuggestionsPage() {
             })}
           </ul>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
 

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { getProjects } from "../api";
 import { Project } from "../types";
 import { ALL_STATUSES, STATUS_LABELS } from "../statusMeta";
@@ -9,8 +8,7 @@ import StackedProgressChart, { ProgressDatum } from "../charts/StackedProgressCh
 import { SEQUENTIAL_BLUE, chartColor } from "../charts/palette";
 import { useTheme } from "../theme/ThemeContext";
 import ChartCard from "../components/ChartCard";
-import UserMenu from "../components/UserMenu";
-import GvwLogo from "../components/GvwLogo";
+import AppLayout from "../components/AppLayout";
 
 export default function ReportsPage() {
   const { theme } = useTheme();
@@ -68,35 +66,11 @@ export default function ReportsPage() {
   }, [projects]);
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
-          <Link
-            to="/"
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            ← Back to dashboard
-          </Link>
-          <div className="flex flex-wrap items-center justify-between gap-y-3 mt-2">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="hover:opacity-90">
-                <GvwLogo className="h-14" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                  Reports
-                </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Portfolio overview across all projects
-                </p>
-              </div>
-            </div>
-            <UserMenu />
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <AppLayout
+      title="Reports"
+      subtitle="Portfolio overview across all projects"
+    >
+      <div className="space-y-6">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3">
             {error}
@@ -131,7 +105,7 @@ export default function ReportsPage() {
             </ChartCard>
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

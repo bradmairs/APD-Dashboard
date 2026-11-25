@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import FormattedText from "../components/FormattedText";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTabParam } from "../useTabParam";
 import {
   ActionItem,
@@ -274,9 +274,15 @@ import { STATUS_COLORS, STATUS_LABELS } from "../statusMeta";
 import { formatCurrency, formatDate, formatReportMonth } from "../format";
 import { trimHref, useTrimRecordUrl } from "../trim";
 import { canModifyProject } from "../permissions";
-import UserMenu from "../components/UserMenu";
+import AppLayout from "../components/AppLayout";
+import {
+  forgetRecentProject,
+  loadLastProjectTab,
+  rememberRecentProject,
+  saveLastProjectTab,
+} from "../layout/navMemory";
+import ProjectSectionMenu from "../components/ProjectSectionMenu";
 import { useAuth } from "../auth/AuthContext";
-import GvwLogo from "../components/GvwLogo";
 import SectionJumpNav, { JumpSection } from "../components/SectionJumpNav";
 import { useUndoToast } from "../undo/UndoToastContext";
 import { useConfirm } from "../confirm/ConfirmContext";
@@ -356,6 +362,21 @@ const TAB_SECTIONS: Record<ProjectTabId, JumpSection[]> = {
   "monthly-reporting": [],
 };
 
+// On very wide screens sections sit two across; these wide ones (timelines,
+// big tables) keep the full width.
+const WIDE_SECTION = "min-[1800px]:col-span-2";
+const WIDE_SECTIONS = new Set([
+  "timeline",
+  "tasks",
+  "meeting-minutes",
+  "contracts",
+  "cash-flow",
+  "payment-claims",
+  "tender-submissions",
+  "site-visits",
+  "risks",
+]);
+
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -406,6 +427,25 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useTabParam(PROJECT_TABS, "overview");
+  const [searchParams] = useSearchParams();
+
+  // Back on a project with no ?tab in the link: reopen the group you were
+  // last on for this project (remembered per user, in this browser).
+  const restoredTabForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!id || !user || restoredTabForRef.current === id) return;
+    restoredTabForRef.current = id;
+    if (searchParams.get("tab")) return;
+    const last = loadLastProjectTab(user.id, id);
+    if (last && last !== "overview" && PROJECT_TABS.some((t) => t.id === last)) {
+      setActiveTab(last as ProjectTabId);
+    }
+    // Only when arriving on a project.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user]);
+  useEffect(() => {
+    if (id && user && restoredTabForRef.current === id) saveLastProjectTab(user.id, id, activeTab);
+  }, [id, user, activeTab]);
 
   // Which project's data is currently on screen, and which load is the
   // latest — see load() below.
@@ -573,6 +613,7 @@ export default function ProjectDetailPage() {
     if (!project) return;
     if (!await confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
     await deleteProject(project.id);
+    if (user) forgetRecentProject(user.id, project.id);
     navigate("/");
   }
 
@@ -1400,6 +1441,11 @@ export default function ProjectDetailPage() {
     [project, eotClaims]
   );
 
+  // List this project under Recent projects in the left menu.
+  useEffect(() => {
+    if (user && project) rememberRecentProject(user.id, { id: project.id, name: project.name });
+  }, [user, project?.id, project?.name]);
+
   const health = useMemo(
     () =>
       project
@@ -1410,25 +1456,27 @@ export default function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="text-center text-slate-500 dark:text-slate-400 py-12">
-        Loading…
-      </div>
+      <AppLayout title="Loading project…">
+        <div className="text-center text-slate-500 dark:text-slate-400 py-12">Loading…</div>
+      </AppLayout>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3">
-          {error || "Project not found"}
+      <AppLayout title="Project not found">
+        <div className="max-w-3xl">
+          <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3">
+            {error || "Project not found"}
+          </div>
+          <Link
+            to="/"
+            className="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-4 inline-block"
+          >
+            ← Back to dashboard
+          </Link>
         </div>
-        <Link
-          to="/"
-          className="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-4 inline-block"
-        >
-          ← Back to dashboard
-        </Link>
-      </div>
+      </AppLayout>
     );
   }
 
@@ -1478,148 +1526,185 @@ export default function ProjectDetailPage() {
   function section(sectionId: string) {
     return {
       id: sectionId,
+      className: WIDE_SECTIONS.has(sectionId) ? WIDE_SECTION : undefined,
       expanded: expandedSections.has(sectionId),
       onExpandedChange: (value: boolean) => setSectionsExpanded([sectionId], value),
     };
   }
 
+  const canModify = canModifyProject(project, user);
+  const budgetChange =
+    project.latestApprovedBudget !== null && project.budget !== null
+      ? Number(project.latestApprovedBudget) - Number(project.budget)
+      : null;
+
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-          <Link
-            to="/"
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+    <AppLayout
+      title={project.name}
+      subtitle={
+        <span className="flex items-center gap-2 flex-wrap">
+          {project.projectNumber && <span>{project.projectNumber}</span>}
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+              STATUS_COLORS[project.status]
+            }`}
           >
-            ← Back to dashboard
+            {STATUS_LABELS[project.status]}
+          </span>
+          {health && <HealthBadge health={health} detailed />}
+        </span>
+      }
+      actions={
+        <>
+          <Link
+            to={`/projects/${project.id}/closeout-report`}
+            className="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+          >
+            Closeout Report
           </Link>
-          <div className="flex flex-wrap items-center justify-between gap-y-3 mt-2">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="hover:opacity-90">
-                <GvwLogo className="h-14" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                  {project.name}
-                </h1>
-                <div className="flex items-center gap-2 flex-wrap mt-1">
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                      STATUS_COLORS[project.status]
-                    }`}
-                  >
-                    {STATUS_LABELS[project.status]}
-                  </span>
-                  {health && <HealthBadge health={health} detailed />}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                to={`/projects/${project.id}/closeout-report`}
-                className="px-4 py-2 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+          {canModify ? (
+            <>
+              <button
+                onClick={() => setShowModal(true)}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
               >
-                Closeout Report
-              </Link>
-              {canModifyProject(project, user) ? (
-                <>
-                  <button
-                    onClick={() => setShowModal(true)}
-                    className="px-4 py-2 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={handleDeleteProject}
-                    className="px-4 py-2 text-sm rounded border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
-                  >
-                    Delete
-                  </button>
-                </>
-              ) : (
-                project.createdBy && (
-                  <span className="text-sm text-slate-500 dark:text-slate-400">
-                    Only {project.createdBy.name} or an admin can edit this project
-                  </span>
-                )
-              )}
-              <UserMenu />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {project.description && (
-          <FormattedText
-            className="text-slate-700 dark:text-slate-300 text-sm"
-            text={project.description}
-          />
-        )}
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Field label="Project Number" value={project.projectNumber || "—"} />
-          <Field label="BP Ref. No." value={project.bpRefNo || "—"} />
-          <Field label="Asset Type" value={project.assetType || "—"} />
-          <Field label="Project Manager" value={project.projectManager || "—"} />
-          <Field label="Project Director" value={project.projectDirector || "—"} />
-          <Field label="Project Sponsor" value={project.projectSponsor || "—"} />
-          <Field label="Location" value={project.location || "—"} />
-          <Field label="Contractor" value={project.contractor || "—"} />
-          <Field label="Consultant" value={project.consultant || "—"} />
-          <Field
-            label="TRIM Folder"
-            value={
-              trimHref(project.trimFolder, trimRecordUrl) ? (
-                <a
-                  href={trimHref(project.trimFolder, trimRecordUrl)!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline break-all"
-                >
-                  Open in TRIM
-                </a>
-              ) : (
-                <span className="break-all">{project.trimFolder || "—"}</span>
-              )
-            }
-          />
-          <Field label="Original Budget" value={formatCurrency(project.budget)} />
-          {project.latestApprovedBudget !== null && (
-            <Field
-              label="Latest Approved Budget"
-              value={formatCurrency(project.latestApprovedBudget)}
-            />
+                Edit
+              </button>
+              <MoreMenu onDelete={handleDeleteProject} />
+            </>
+          ) : (
+            project.createdBy && (
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                Only {project.createdBy.name} or an admin can edit this project
+              </span>
+            )
           )}
-          <Field label="Start Date" value={formatDate(project.startDate)} />
-          <Field
-            label="Target Completion"
-            value={formatDate(project.targetCompletionDate)}
-          />
-          {revisedTargetCompletion &&
-            revisedTargetCompletion !== project.targetCompletionDate && (
-              <Field
-                label="Revised Completion"
-                value={formatDate(revisedTargetCompletion)}
+        </>
+      }
+      secondaryNav={
+        <ProjectSectionMenu
+          projectId={project.id}
+          tabs={PROJECT_TABS}
+          sections={TAB_SECTIONS}
+          counts={sectionCounts}
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          {...(collapsibleInTab.length > 0 && {
+            onExpandAll: () => setSectionsExpanded(collapsibleInTab, true),
+            onCollapseAll: () => setSectionsExpanded(collapsibleInTab, false),
+          })}
+        />
+      }
+    >
+      <div className="flex flex-col gap-6">
+        <Link
+          to="/?tab=projects"
+          className="self-start lg:hidden text-sm text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          ← All projects
+        </Link>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+          <section
+            aria-labelledby="project-details-heading"
+            className="xl:col-span-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4"
+          >
+            <h2 id="project-details-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+              Project details
+            </h2>
+            {project.description && (
+              <FormattedText
+                className="text-slate-700 dark:text-slate-300 text-sm mb-4"
+                text={project.description}
               />
             )}
-          <Field
-            label="Actual Completion"
-            value={formatDate(project.actualCompletionDate)}
-          />
-          <Field label="Created By" value={project.createdBy?.name || "—"} />
+            <dl className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
+              <Field label="Project Number" value={project.projectNumber || "—"} />
+              <Field label="BP Ref. No." value={project.bpRefNo || "—"} />
+              <Field label="Asset Type" value={project.assetType || "—"} />
+              <Field label="Project Manager" value={project.projectManager || "—"} />
+              <Field label="Project Director" value={project.projectDirector || "—"} />
+              <Field label="Project Sponsor" value={project.projectSponsor || "—"} />
+              <Field label="Location" value={project.location || "—"} />
+              <Field label="Contractor" value={project.contractor || "—"} />
+              <Field label="Consultant" value={project.consultant || "—"} />
+              <Field
+                label="TRIM Folder"
+                value={
+                  trimHref(project.trimFolder, trimRecordUrl) ? (
+                    <a
+                      href={trimHref(project.trimFolder, trimRecordUrl)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                    >
+                      Open in TRIM
+                    </a>
+                  ) : (
+                    <span className="break-all">{project.trimFolder || "—"}</span>
+                  )
+                }
+              />
+              <Field label="Created By" value={project.createdBy?.name || "—"} />
+            </dl>
+          </section>
+
+          <section
+            aria-labelledby="at-a-glance-heading"
+            className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4"
+          >
+            <h2 id="at-a-glance-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+              At a glance
+            </h2>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <Field label="Original Budget" value={formatCurrency(project.budget)} />
+              {project.latestApprovedBudget !== null && (
+                <Field
+                  label="Latest Approved Budget"
+                  value={
+                    <>
+                      {formatCurrency(project.latestApprovedBudget)}
+                      {budgetChange !== null && budgetChange !== 0 && (
+                        <span
+                          className={`block text-xs font-normal ${
+                            budgetChange > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
+                          }`}
+                        >
+                          {budgetChange > 0 ? "+" : "−"}
+                          {formatCurrency(Math.abs(budgetChange))} vs original
+                        </span>
+                      )}
+                    </>
+                  }
+                />
+              )}
+              <Field label="Start Date" value={formatDate(project.startDate)} />
+              <Field label="Target Completion" value={formatDate(project.targetCompletionDate)} />
+              {revisedTargetCompletion &&
+                revisedTargetCompletion !== project.targetCompletionDate && (
+                  <Field label="Revised Completion" value={formatDate(revisedTargetCompletion)} />
+                )}
+              <Field label="Actual Completion" value={formatDate(project.actualCompletionDate)} />
+            </dl>
+          </section>
         </div>
 
-        <Tabs tabs={PROJECT_TABS} active={activeTab} onChange={setActiveTab} />
+        <div className="lg:hidden">
+          <Tabs tabs={PROJECT_TABS} active={activeTab} onChange={setActiveTab} />
+        </div>
         <SectionJumpNav
+          className="lg:hidden"
           sections={TAB_SECTIONS[activeTab]}
           {...(collapsibleInTab.length > 0 && {
             onExpandAll: () => setSectionsExpanded(collapsibleInTab, true),
             onCollapseAll: () => setSectionsExpanded(collapsibleInTab, false),
           })}
         />
+        <h2 className="hidden lg:block text-base font-semibold text-slate-900 dark:text-slate-100 -mb-3">
+          {PROJECT_TABS.find((t) => t.id === activeTab)?.label}
+        </h2>
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 min-[1800px]:grid-cols-2 gap-6 items-start [&>*]:min-w-0">
           {activeTab === "overview" && (
             <>
               <CollapsibleSection {...section("stakeholders")}>
@@ -1672,7 +1757,7 @@ export default function ProjectDetailPage() {
 
           {activeTab === "schedule" && (
             <>
-              <div id="timeline">
+              <div id="timeline" className={WIDE_SECTION}>
                 <ProjectTimeline
                   project={project}
                   milestones={milestones}
@@ -1996,16 +2081,18 @@ export default function ProjectDetailPage() {
           )}
 
           {activeTab === "monthly-reporting" && project && (
+            <div className="min-[1800px]:col-span-2">
             <MonthlyReportingPanel
               project={project}
               reports={reports}
               currentUser={user}
               onReportsChange={setReports}
             />
+            </div>
           )}
 
         </div>
-      </main>
+      </div>
 
       {showModal && (
         <ProjectFormModal
@@ -2014,7 +2101,7 @@ export default function ProjectDetailPage() {
           onSave={handleSave}
         />
       )}
-    </div>
+    </AppLayout>
   );
 }
 
@@ -2030,11 +2117,63 @@ function groupPhotosByVisit(
 
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
-      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
-      <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-0.5">
-        {value}
-      </div>
+    <div className="min-w-0">
+      <dt className="text-xs text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-0.5">{value}</dd>
+    </div>
+  );
+}
+
+// The project's ⋯ menu: Delete, kept out of the way of Edit.
+function MoreMenu({ onDelete }: { onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="More project actions"
+        title="More"
+        className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+      >
+        ⋯
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 mt-1 w-48 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg py-1 z-40"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onDelete();
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+          >
+            Delete project…
+          </button>
+        </div>
+      )}
     </div>
   );
 }

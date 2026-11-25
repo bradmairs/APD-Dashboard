@@ -13,6 +13,8 @@ interface Props {
   onCollapseAll?: () => void;
   // Called before scrolling, e.g. to expand a collapsed target section.
   onJump?: (id: string) => void;
+  // Extra classes, e.g. to show it only on small screens.
+  className?: string;
 }
 
 // Breathing room left between the sticky bars and the section jumped to.
@@ -31,7 +33,7 @@ function stickyHeaderHeight(): number {
 // scrolls that section's wrapper (given the same id below, in
 // ProjectDetailPage.tsx) into view instead. Hidden entirely for a tab with
 // only one section (AI Assistant), where jumping anywhere is meaningless.
-export default function SectionJumpNav({ sections, onExpandAll, onCollapseAll, onJump }: Props) {
+export default function SectionJumpNav({ sections, onExpandAll, onCollapseAll, onJump, className = "" }: Props) {
   const barRef = useRef<HTMLDivElement>(null);
   // The row sticks just under the page header, whose height changes with the
   // window width (its buttons wrap), so track it rather than hard-coding it.
@@ -70,7 +72,7 @@ export default function SectionJumpNav({ sections, onExpandAll, onCollapseAll, o
     <div
       ref={barRef}
       style={{ top: headerHeight }}
-      className="sticky z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 flex-wrap text-xs"
+      className={`${className} sticky z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 flex-wrap text-xs`}
     >
       <span className="text-slate-400 dark:text-slate-500 shrink-0">Jump to:</span>
       {sections.map((section) => (
