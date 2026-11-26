@@ -139,7 +139,7 @@ export default function MyWeekPanel({
                       </Link>
                     )}
                   </div>
-                  <span className={`text-xs whitespace-nowrap ${overdue ? "text-red-600 dark:text-red-400 font-medium" : "text-slate-500 dark:text-slate-400"}`}>
+                  <span className={`text-xs whitespace-nowrap ${overdue ? "text-red-600 dark:text-red-400 font-medium" : "text-slate-600 dark:text-slate-300"}`}>
                     {overdue ? "Overdue · " : ""}
                     {formatDate(item.dueDate)}
                   </span>

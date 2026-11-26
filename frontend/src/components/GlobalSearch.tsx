@@ -171,6 +171,8 @@ export default function GlobalSearch() {
       go("Lessons Learned", "/lessons-learned"),
       go("Tool Suggestions", "/tool-suggestions", "ideas feedback"),
       go("Reports", "/reports", "portfolio"),
+      go("Approvals", "/approvals", "approve reject sign off"),
+      go("Capital works by financial year", "/capital-works", "fy budget program phasing"),
       go("Task Templates", "/task-templates"),
       ...(user?.role === "ADMIN" ? [go("Users", "/admin/users", "admin accounts")] : []),
       ...(isViewer
@@ -260,8 +262,8 @@ export default function GlobalSearch() {
         aria-label="Search across projects and registers"
         className="w-40 sm:w-64 rounded-full border border-slate-200 bg-slate-100/80 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 pl-9 pr-12 py-1.5 text-sm placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900"
       />
-      <Icon name="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-      <kbd className="hidden sm:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-1 pointer-events-none">
+      <Icon name="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+      <kbd className="hidden sm:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 rounded px-1 pointer-events-none">
         {SHORTCUT_LABEL}
       </kbd>
 
@@ -273,7 +275,7 @@ export default function GlobalSearch() {
               if (items.length === 0) return null;
               return (
                 <div key={group}>
-                  <div className="px-4 pt-2 pb-1 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+                  <div className="px-4 pt-2 pb-1 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     {group}
                   </div>
                   {items.map((c) => (
@@ -303,7 +305,7 @@ export default function GlobalSearch() {
             ) : (
               grouped.map((group) => (
                 <div key={group.typeLabel}>
-                  <div className="px-4 pt-2 pb-1 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+                  <div className="px-4 pt-2 pb-1 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     {group.typeLabel}
                   </div>
                   {group.items.map((item) => (

@@ -53,7 +53,7 @@ export default function ActivityFeed({
                   </span>
                 ))}
             </div>
-            <div className="text-xs text-slate-400 dark:text-slate-500">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
               {formatRelativeTime(entry.createdAt)}
             </div>
           </li>

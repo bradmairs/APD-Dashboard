@@ -176,7 +176,7 @@ export default function PerformanceReviewsPanel({ items, onCreate, onUpdate, onD
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={item.comments} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Reviewed by {item.reviewedByName}
                       </div>
                     </div>

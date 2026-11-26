@@ -53,7 +53,7 @@ export default function LowPerformingContractorsPanel({ reviews, limit = 8 }: Pr
                     <div className="text-red-600 dark:text-red-400 font-medium">
                       {score.toFixed(1)} / 5
                     </div>
-                    <div className="text-slate-400 dark:text-slate-500">
+                    <div className="text-slate-500 dark:text-slate-400">
                       {formatDate(review.reviewDate)}
                     </div>
                   </div>

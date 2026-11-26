@@ -175,13 +175,13 @@ function Lightbox({ photos, index, onClose, onNavigate, onDelete }: LightboxProp
                 Uploaded by {photo.uploadedByName}
               </div>
               {photo.latitude !== null && photo.longitude !== null && (
-                <div className="text-slate-400 text-xs mt-0.5">
+                <div className="text-slate-500 text-xs mt-0.5">
                   📍 {photo.latitude.toFixed(5)}, {photo.longitude.toFixed(5)}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <span className="text-slate-400 text-xs">
+              <span className="text-slate-500 text-xs">
                 {index + 1} of {photos.length}
               </span>
               <button

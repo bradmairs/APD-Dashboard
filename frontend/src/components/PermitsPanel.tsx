@@ -189,6 +189,7 @@ export default function PermitsPanel({ permits, onCreate, onUpdate, onDelete }: 
                   <div className="flex items-start justify-between gap-3">
                     <input
                       type="checkbox"
+                      aria-label="Select this row"
                       checked={selection.isSelected(permit.id)}
                       onChange={() => selection.toggle(permit.id)}
                       className="mt-1.5 h-4 w-4 shrink-0"
@@ -238,6 +239,7 @@ export default function PermitsPanel({ permits, onCreate, onUpdate, onDelete }: 
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={permit.status}
                         onChange={(e) =>
                           handleStatusChange(permit, e.target.value as PermitStatus)

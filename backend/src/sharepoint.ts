@@ -331,3 +331,37 @@ export function matchScore(fileName: string, p: { name: string; projectNumber: s
   score += words.filter((w) => name.includes(w)).length;
   return score;
 }
+
+// Saves a PDF into a "_PDFs" folder beside the project's workbook (the same
+// place the workbook's own Log Monthly Report macro saves its PDFs),
+// creating the folder if needed and replacing a PDF of the same name.
+export async function uploadPdfBesideWorkbook(
+  userId: string,
+  driveId: string,
+  workbookItemId: string,
+  fileName: string,
+  buffer: Buffer
+): Promise<{ name: string; webUrl: string }> {
+  const meta = (await (await graph(userId, `/drives/${driveId}/items/${workbookItemId}?$select=id,parentReference`)).json()) as {
+    parentReference?: { id?: string };
+  };
+  const parentId = meta.parentReference?.id;
+  if (!parentId) throw new SharePointError("Couldn't find the workbook's folder in SharePoint", 404);
+  try {
+    await graph(userId, `/drives/${driveId}/items/${parentId}/children`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "_PDFs", folder: {}, "@microsoft.graph.conflictBehavior": "fail" }),
+    });
+  } catch {
+    // Already there.
+  }
+  const safe = fileName.replace(/[\\/:*?"<>|#%]/g, "-").slice(0, 180);
+  const res = await graph(
+    userId,
+    `/drives/${driveId}/items/${parentId}:/_PDFs/${encodeURIComponent(safe)}:/content?@microsoft.graph.conflictBehavior=replace`,
+    { method: "PUT", headers: { "Content-Type": "application/pdf" }, body: buffer }
+  );
+  const item = (await res.json()) as { name: string; webUrl: string };
+  return { name: item.name, webUrl: item.webUrl };
+}

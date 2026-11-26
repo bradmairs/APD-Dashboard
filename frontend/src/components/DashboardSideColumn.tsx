@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getTrimLinks } from "../api";
 import { ActionItem, Project, Task, TrimLink } from "../types";
@@ -6,7 +6,10 @@ import { isTaskDueSoon, isTaskOverdue } from "../taskMeta";
 import { formatDate } from "../format";
 import { trimHref, useTrimRecordUrl } from "../trim";
 import { ProjectHealth } from "../health";
-import { DueCalendarWidget, PortfolioHealthWidget, UpcomingCompletionsWidget } from "./DashboardWidgets";
+import { Icon } from "./icons";
+import { currentMonthKey, DueCalendarWidget, MissingDetailsWidget, PortfolioHealthWidget, UpcomingCompletionsWidget } from "./DashboardWidgets";
+import { getReportStatus } from "../api";
+import { ReportStatus } from "../types";
 
 interface Props {
   projects: Project[];
@@ -37,9 +40,66 @@ function isActionOpen(a: ActionItem) {
 // week (tasks and meeting actions), and the shared GVW / TRIM links. Both
 // are read-only shortcuts; the full lists stay on Today & Upcoming and
 // TRIM & GVW Links.
+type WidgetId = "health" | "missing" | "due" | "calendar" | "completions" | "links";
+interface WidgetPref {
+  id: WidgetId;
+  hidden?: boolean;
+}
+const WIDGET_LABELS: Record<WidgetId, string> = {
+  health: "Portfolio health",
+  missing: "Missing details",
+  due: "Due soon",
+  calendar: "Calendar",
+  completions: "Next completions",
+  links: "Quick links",
+};
+const DEFAULT_LAYOUT: WidgetPref[] = (["health", "missing", "due", "calendar", "completions", "links"] as WidgetId[]).map((id) => ({ id }));
+const LAYOUT_KEY = "apd.dashboardWidgets";
+
+function loadLayout(): WidgetPref[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "null") as WidgetPref[] | null;
+    if (!Array.isArray(saved)) return DEFAULT_LAYOUT;
+    const known = saved.filter((w) => w && w.id in WIDGET_LABELS);
+    // Widgets added in a later version appear at the end.
+    for (const d of DEFAULT_LAYOUT) if (!known.some((w) => w.id === d.id)) known.push(d);
+    return known;
+  } catch {
+    return DEFAULT_LAYOUT;
+  }
+}
+
 export default function DashboardSideColumn({ projects, tasks, actionItems, projectManager, healthByProjectId }: Props) {
   const [links, setLinks] = useState<TrimLink[]>([]);
   const recordUrl = useTrimRecordUrl();
+  const [customising, setCustomising] = useState(false);
+  const [layout, setLayout] = useState<WidgetPref[]>(loadLayout);
+  const [reportStatus, setReportStatus] = useState<ReportStatus[] | null>(null);
+  useEffect(() => {
+    getReportStatus(currentMonthKey())
+      .then(setReportStatus)
+      .catch(() => setReportStatus(null));
+  }, []);
+  function saveLayout(next: WidgetPref[]) {
+    setLayout(next);
+    try {
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify(next));
+    } catch {
+      // not remembered
+    }
+  }
+  function toggleWidget(id: WidgetId) {
+    saveLayout(layout.map((w) => (w.id === id ? { ...w, hidden: !w.hidden } : w)));
+  }
+  function moveWidget(i: number, step: number) {
+    const next = [...layout];
+    const [item] = next.splice(i, 1);
+    next.splice(i + step, 0, item);
+    saveLayout(next);
+  }
+  function resetLayout() {
+    saveLayout(DEFAULT_LAYOUT);
+  }
 
   useEffect(() => {
     getTrimLinks()
@@ -94,9 +154,10 @@ export default function DashboardSideColumn({ projects, tasks, actionItems, proj
 
   const scoped = projectManager ? projects.filter((p) => p.projectManager === projectManager) : projects;
 
-  return (
-    <div className="space-y-6">
-      {healthByProjectId && <PortfolioHealthWidget projects={scoped} healthByProjectId={healthByProjectId} />}
+  const widgets: Record<WidgetId, ReactNode> = {
+    health: healthByProjectId ? <PortfolioHealthWidget projects={scoped} healthByProjectId={healthByProjectId} /> : null,
+    missing: <MissingDetailsWidget projects={scoped} reportStatus={reportStatus} />,
+    due: (
       <section className={card} aria-labelledby="due-soon-heading">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <h2 id="due-soon-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -132,7 +193,7 @@ export default function DashboardSideColumn({ projects, tasks, actionItems, proj
                 </div>
                 <span
                   className={`text-xs whitespace-nowrap ${
-                    row.overdue ? "text-red-600 dark:text-red-400 font-medium" : "text-slate-500 dark:text-slate-400"
+                    row.overdue ? "text-red-600 dark:text-red-400 font-medium" : "text-slate-600 dark:text-slate-300"
                   }`}
                 >
                   {row.overdue ? "Overdue · " : ""}
@@ -148,9 +209,10 @@ export default function DashboardSideColumn({ projects, tasks, actionItems, proj
           </div>
         )}
       </section>
-
-      <DueCalendarWidget tasks={tasks} actionItems={actionItems} />
-      <UpcomingCompletionsWidget projects={scoped} />
+    ),
+    calendar: <DueCalendarWidget tasks={tasks} actionItems={actionItems} />,
+    completions: <UpcomingCompletionsWidget projects={scoped} />,
+    links: (
       <section className={card} aria-labelledby="quick-links-heading">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <h2 id="quick-links-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -191,6 +253,49 @@ export default function DashboardSideColumn({ projects, tasks, actionItems, proj
           </ul>
         )}
       </section>
+    ),
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-end -mb-3">
+        <button
+          type="button"
+          onClick={() => setCustomising((c) => !c)}
+          aria-expanded={customising}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+        >
+          <Icon name="sliders" className="w-3.5 h-3.5" />
+          {customising ? "Done" : "Customise"}
+        </button>
+      </div>
+      {customising && (
+        <div className="card p-3">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Show, hide and reorder the widgets (saved in this browser).</p>
+          <ul className="space-y-1">
+            {layout.map((w, i) => (
+              <li key={w.id} className="flex items-center gap-2 text-sm">
+                <label className="flex-1 flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200">
+                  <input type="checkbox" checked={!w.hidden} onChange={() => toggleWidget(w.id)} />
+                  {WIDGET_LABELS[w.id]}
+                </label>
+                <button type="button" className="icon-btn !w-7 !h-7" aria-label={`Move ${WIDGET_LABELS[w.id]} up`} disabled={i === 0} onClick={() => moveWidget(i, -1)}>
+                  <Icon name="chevronLeft" className="w-4 h-4 rotate-90" />
+                </button>
+                <button type="button" className="icon-btn !w-7 !h-7" aria-label={`Move ${WIDGET_LABELS[w.id]} down`} disabled={i === layout.length - 1} onClick={() => moveWidget(i, 1)}>
+                  <Icon name="chevronRight" className="w-4 h-4 rotate-90" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={resetLayout} className="mt-2 text-xs text-blue-700 dark:text-blue-300 hover:underline">
+            Reset to default
+          </button>
+        </div>
+      )}
+      {layout.filter((w) => !w.hidden).map((w) => (
+        <Fragment key={w.id}>{widgets[w.id]}</Fragment>
+      ))}
     </div>
   );
 }

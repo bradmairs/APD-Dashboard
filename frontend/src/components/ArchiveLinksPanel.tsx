@@ -189,7 +189,7 @@ function ResultSection({
               )}
             </div>
             {alreadyLinked.has(item.id) ? (
-              <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">Linked</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">Linked</span>
             ) : (
               <button
                 onClick={() => onLink(type, item.id, item.label)}

@@ -7,7 +7,7 @@ per project for tracking tasks/milestones and their due dates.
 
 ## Versioning
 
-**Version 2.7.0** ([release notes](docs/releases/2.7.0.md), [all releases](docs/releases.md))
+**Version 3.0.0** ([release notes](docs/releases/3.0.0.md), [all releases](docs/releases.md))
 
 Versions are **Section.Feature.Fix**, the same as SirisOS: `scripts/bump-version.sh fix` for a fix or minor change,
 `feature` for a new feature or bigger upgrade, `section` for a significant new section. Every pull request bumps it
@@ -81,7 +81,7 @@ Every signed-in page has the same frame (`frontend/src/components/AppLayout.tsx`
 - **Left menu** (`Sidebar.tsx`): the GVW logo (links back to the dashboard), the app name and version, the dashboard views (Dashboard, Today & Upcoming, Alerts, Charts, Activity), Knowledge pages (TRIM & GVW Links, Lessons Learned, Tool Suggestions, Reports), Task Templates, Users (admins only) and your five most recent projects. **Collapse menu** (or `[`) shrinks it to icons. Below 1024px wide it opens from the ☰ button instead.
 - **Top bar**: page title, the page's own buttons, global search, theme switch, notifications and the account menu.
 - **Project pages** add a section menu (`ProjectSectionMenu.tsx`) listing each group and its sections with counts, plus All projects and a switch-project list. Phones keep the tabs and Jump-to row.
-- **Keyboard shortcuts** (`?` lists them): `G` then `D` Dashboard, `T` Today & Upcoming, `W` My week, `A` Alerts, `C` Charts, `V` Activity, `K` TRIM & GVW Links, `L` Lessons Learned, `S` Tool Suggestions, `R` Reports. They are ignored while typing in a field.
+- **Keyboard shortcuts** (`?` lists them): `G` then `D` Dashboard, `T` Today & Upcoming, `W` My week, `A` Alerts, `C` Charts, `V` Activity, `K` TRIM & GVW Links, `L` Lessons Learned, `S` Tool Suggestions, `R` Reports, `P` Approvals, `F` Capital works. They are ignored while typing in a field.
 
 The collapsed-menu setting, recent projects and the last group opened on each project are stored per user in the browser (`frontend/src/layout/navMemory.ts`). They are never saved to the database.
 
@@ -108,6 +108,16 @@ The GVW colours, Inter font, card shapes and motion are set once in `frontend/ta
 - `DashboardWidgets.tsx`, `ProjectProgressStrip.tsx` and `ProjectOpenItems.tsx`: the widgets
 
 Charts follow the data-viz palette in `frontend/src/charts/palette.ts`. Status colours are always paired with words, so colour never carries the meaning alone. Table density and the projects view (Table, Board or Timeline) are remembered in the browser.
+
+### Approvals, history, comments and capital works (3.0)
+
+- **Approvals** (`backend/src/routes/approvals.ts`, page `/approvals`): requests on variations and payment claims, decided by the named approver (or an admin). Decisions are logged. Approving a variation sets its status.
+- **Change history** (`backend/src/fieldHistory.ts`, `GET /api/history`): field-level old and new values, recorded on edits to projects, variations, payment claims and risks.
+- **Comments** (`backend/src/routes/comments.ts`): on records, with @mentions stored as user ids. `GET /api/comments/mentions` feeds notifications.
+- **Notifications:** read and snoozed state is saved on the user (`notificationState`). "Since your last visit" uses `lastSeenAt` and `previousSeenAt` (`POST /api/auth/seen`).
+- **Monthly reports:** `GET /api/reports/status?month=YYYY-MM` and `POST /api/reports/draft-all` (admins). `POST /api/projects/:id/reports/:reportId/pdf` saves a PDF to `_PDFs` beside the SharePoint workbook. The email digest adds report reminders (from the 22nd) and pending approvals.
+- **Capital works** (`/capital-works`): cash flow grouped by Australian financial year, with forecast entries as planned and actual entries as actual.
+- Responses are gzip-compressed by the backend (`compression`).
 
 ## Data model (v1)
 

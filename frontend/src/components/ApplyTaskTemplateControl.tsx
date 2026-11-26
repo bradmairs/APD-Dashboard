@@ -25,7 +25,7 @@ export default function ApplyTaskTemplateControl({ onApply }: Props) {
 
   if (templates.length === 0) {
     return (
-      <div className="text-xs text-slate-400 dark:text-slate-500">
+      <div className="text-xs text-slate-500 dark:text-slate-400">
         No task templates yet —{" "}
         <Link to="/task-templates" className="text-blue-600 dark:text-blue-400 hover:underline">
           create one

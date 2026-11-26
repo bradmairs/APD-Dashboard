@@ -151,12 +151,12 @@ export default function AdminUsersPage() {
                       className={`px-4 py-3 font-medium ${
                         user.active
                           ? "text-slate-900 dark:text-slate-100"
-                          : "text-slate-400 dark:text-slate-500"
+                          : "text-slate-600 dark:text-slate-300"
                       }`}
                     >
                       {user.name}
                       {user.id === currentUser?.id && (
-                        <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">
+                        <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
                           (you)
                         </span>
                       )}
@@ -165,7 +165,7 @@ export default function AdminUsersPage() {
                       className={`px-4 py-3 ${
                         user.active
                           ? "text-slate-700 dark:text-slate-300"
-                          : "text-slate-400 dark:text-slate-500"
+                          : "text-slate-600 dark:text-slate-300"
                       }`}
                     >
                       {user.email}
@@ -210,14 +210,14 @@ export default function AdminUsersPage() {
                           </button>
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-400 dark:text-slate-500">Off</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Off</span>
                       )}
                     </td>
                     <td
                       className={`px-4 py-3 ${
                         user.active
                           ? "text-slate-700 dark:text-slate-300"
-                          : "text-slate-400 dark:text-slate-500"
+                          : "text-slate-600 dark:text-slate-300"
                       }`}
                     >
                       {formatDate(user.createdAt)}

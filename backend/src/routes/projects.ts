@@ -1,3 +1,4 @@
+import { recordChanges } from "../fieldHistory";
 import fs from "fs";
 import path from "path";
 import { ActionImportPreview, previewMinutesActions } from "../minutesActionImport";
@@ -256,6 +257,16 @@ router.put("/:id", async (req, res) => {
       userId: req.user!.sub,
       userName: req.user!.name,
       action: describeProjectChanges(before, data),
+    });
+    await recordChanges({
+      projectId: before.id,
+      entityType: "project",
+      entityId: req.params.id,
+      entityLabel: before.name,
+      before: before as unknown as Record<string, unknown>,
+      after: data as Record<string, unknown>,
+      fields: ["name","status","projectNumber","bpRefNo","assetType","projectManager","projectDirector","projectSponsor","location","contractor","consultant","trimFolder","budget","latestApprovedBudget","contingency","contractValue","startDate","targetCompletionDate","actualCompletionDate"],
+      user: req.user!,
     });
     res.json(project);
   } catch (err) {

@@ -1,4 +1,8 @@
+import compression from "compression";
 import { batchRouter } from "./routes/batch";
+import approvalsRouter from "./routes/approvals";
+import commentsRouter from "./routes/comments";
+import historyRouter from "./routes/history";
 import express, { ErrorRequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -85,6 +89,9 @@ app.use(helmet());
 // from another origin.
 const corsOrigin = process.env.FRONTEND_URL || false;
 app.use(cors({ origin: corsOrigin, credentials: true }));
+// Compress responses (JSON lists can be large); the GVW deployment has no
+// nginx in front to do it.
+app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
 
@@ -158,6 +165,9 @@ app.use("/api/tool-suggestions", requireAuth, toolSuggestionsRouter);
 app.use("/api/sharepoint", requireAuth, sharePointRouter);
 app.use("/api/user-options", requireAuth, userOptionsRouter);
 app.use("/api/batch", requireAuth, batchRouter(port));
+app.use("/api/approvals", readOnlyGuarded, approvalsRouter);
+app.use("/api/comments", readOnlyGuarded, commentsRouter);
+app.use("/api/history", requireAuth, historyRouter);
 
 // Catches multer's file-size/file-type rejections (thrown before any route
 // handler runs) and reports them as clean JSON instead of Express's default

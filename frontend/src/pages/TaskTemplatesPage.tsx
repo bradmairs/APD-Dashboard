@@ -107,7 +107,7 @@ export default function TaskTemplatesPage() {
                         {template.description}
                       </p>
                     )}
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
                       {template.items.length} task{template.items.length === 1 ? "" : "s"}:{" "}
                       {template.items.map((i) => i.title).join(", ")}
                     </p>

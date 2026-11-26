@@ -9,6 +9,7 @@ import { SEQUENTIAL_BLUE, chartColor } from "../charts/palette";
 import { useTheme } from "../theme/ThemeContext";
 import ChartCard from "../components/ChartCard";
 import AppLayout from "../components/AppLayout";
+import MonthlyReportStatusCard from "../components/MonthlyReportStatusCard";
 
 export default function ReportsPage() {
   const { theme } = useTheme();
@@ -71,6 +72,7 @@ export default function ReportsPage() {
       subtitle="Portfolio overview across all projects"
     >
       <div className="space-y-6">
+        <MonthlyReportStatusCard />
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded p-3">
             {error}

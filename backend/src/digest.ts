@@ -11,7 +11,7 @@ function daysFromNow(days: number): Date {
 }
 
 interface DigestItem {
-  kind: "Task" | "Permit" | "Insurance" | "Warranty" | "RFI";
+  kind: "Task" | "Permit" | "Insurance" | "Warranty" | "RFI" | "Monthly report" | "Approval";
   title: string;
   date: Date;
   overdue: boolean;
@@ -106,8 +106,54 @@ export async function buildDigestItems(): Promise<DigestItem[]> {
     });
   }
 
+  // 3.0: this month's report not started yet (from the 22nd), sent to the
+  // project's manager; and approvals waiting on someone, sent to the
+  // approver (projectManagerId here is "who it's for").
+  if (now.getDate() >= REPORT_REMINDER_FROM_DAY) {
+    const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const missing = await prisma.project.findMany({
+      where: {
+        status: { notIn: ["COMPLETE", "CANCELLED"] },
+        projectManagerId: { not: null },
+        monthlyReports: { none: { reportingMonth: monthStart } },
+      },
+      select: { id: true, name: true, projectManagerId: true },
+    });
+    const label = monthEnd.toLocaleDateString("en-AU", { month: "long", year: "numeric" });
+    for (const p of missing) {
+      items.push({
+        kind: "Monthly report",
+        title: `${label} report not started`,
+        date: monthEnd,
+        overdue: false,
+        projectName: p.name,
+        projectId: p.id,
+        projectManagerId: p.projectManagerId,
+      });
+    }
+  }
+  const approvals = await prisma.approvalRequest.findMany({
+    where: { status: "PENDING" },
+    include: { project: { select: { id: true, name: true } } },
+  });
+  for (const a of approvals) {
+    items.push({
+      kind: "Approval",
+      title: `Approve ${a.entityLabel} (asked by ${a.requestedByName})`,
+      date: a.createdAt,
+      overdue: false,
+      projectName: a.project.name,
+      projectId: a.project.id,
+      projectManagerId: a.approverId,
+    });
+  }
+
   return items.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
+
+// Reminders to start the month's report begin on this day of the month.
+const REPORT_REMINDER_FROM_DAY = 22;
 
 function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));

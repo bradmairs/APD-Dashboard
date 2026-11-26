@@ -30,6 +30,8 @@ export const SHORTCUTS: { keys: string; label: string; to?: string }[] = [
   { keys: "G L", label: "Lessons Learned", to: "/lessons-learned" },
   { keys: "G S", label: "Tool Suggestions", to: "/tool-suggestions" },
   { keys: "G R", label: "Reports", to: "/reports" },
+  { keys: "G P", label: "Approvals", to: "/approvals" },
+  { keys: "G F", label: "Capital works by financial year", to: "/capital-works" },
   { keys: "Ctrl K", label: "Search everything" },
   { keys: "[", label: "Collapse or expand the menu" },
   { keys: "?", label: "Show these shortcuts" },
@@ -125,6 +127,12 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
 
   return (
     <div className="min-h-screen lg:flex">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:text-sm"
+      >
+        Skip to content
+      </a>
       <div className="hidden lg:block shrink-0 sticky top-0 h-screen z-40">
         <Sidebar collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
       </div>
@@ -170,7 +178,7 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
           </div>
         </header>
 
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 px-4 sm:px-6 lg:px-8 py-6 focus:outline-none">{children}</main>
       </div>
 
       {showShortcuts && (

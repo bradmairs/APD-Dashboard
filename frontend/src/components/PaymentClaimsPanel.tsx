@@ -15,6 +15,8 @@ import { useConfirm } from "../confirm/ConfirmContext";
 import AutoExportCsvButton from "./AutoExportCsvButton";
 import EmptyState from "./EmptyState";
 import { Icon } from "./icons";
+import CommentsButton from "../comments/CommentsButton";
+import ApprovalControl from "../approvals/ApprovalControl";
 
 interface Props {
   claims: PaymentClaim[];
@@ -165,6 +167,7 @@ export default function PaymentClaimsPanel({
                           </span>
                         ))}
                       <select
+                        aria-label={`Status of claim ${claim.claimNumber}`}
                         value={claim.status}
                         onChange={(e) =>
                           handleStatusChange(claim, e.target.value as PaymentClaimStatus)
@@ -177,6 +180,8 @@ export default function PaymentClaimsPanel({
                           </option>
                         ))}
                       </select>
+                      <ApprovalControl projectId={claim.projectId} entityType="paymentClaim" entityId={claim.id} />
+                      <CommentsButton projectId={claim.projectId} entityType="paymentClaim" entityId={claim.id} label={`Payment claim ${claim.claimNumber}`} />
                       <button
                         onClick={() => openEdit(claim)}
                         className="icon-btn"
@@ -204,7 +209,7 @@ export default function PaymentClaimsPanel({
                         </div>
                         <FormattedText className="text-slate-700 dark:text-slate-300" text={claim.notes} />
                       </div>
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Raised by {claim.raisedByName} on {formatDate(claim.dateSubmitted)}
                         {claim.dateCertified && ` · Certified ${formatDate(claim.dateCertified)}`}
                         {claim.datePaid && ` · Paid ${formatDate(claim.datePaid)}`}

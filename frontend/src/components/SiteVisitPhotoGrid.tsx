@@ -98,7 +98,7 @@ export default function SiteVisitPhotoGrid({ photos, onUpload, onDelete, onSyncT
       )}
 
       {photos.length === 0 ? (
-        <p className="text-xs text-slate-400 dark:text-slate-500">No photos yet.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">No photos yet.</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {photos.map((photo) => (

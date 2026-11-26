@@ -259,7 +259,7 @@ export default function SiteVisitFormModal({
               onChange={handlePhotoFiles}
             />
             {photos.length === 0 ? (
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Photos added here upload when you save the visit.
               </p>
             ) : (

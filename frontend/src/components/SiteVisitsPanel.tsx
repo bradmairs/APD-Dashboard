@@ -177,7 +177,7 @@ export default function SiteVisitsPanel({
                       <div className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">
                         {siteVisit.location}
                       </div>
-                      <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Visited by {siteVisit.visitedByName}
                         {photos.length > 0 &&
                           ` · ${photos.length} photo${photos.length === 1 ? "" : "s"}`}

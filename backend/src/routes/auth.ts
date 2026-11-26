@@ -223,6 +223,8 @@ router.get("/me", requireAuth, async (req, res) => {
       twoFactorEnabled: true,
       upcomingManagerFilter: true,
       dashboardView: true,
+      notificationState: true,
+      previousSeenAt: true,
     },
   });
   res.json({
@@ -235,22 +237,58 @@ router.get("/me", requireAuth, async (req, res) => {
     twoFactorEnabled: user?.twoFactorEnabled ?? false,
     upcomingManagerFilter: user?.upcomingManagerFilter ?? null,
     dashboardView: user?.dashboardView ?? null,
+    notificationState: user?.notificationState ?? null,
+    previousSeenAt: user?.previousSeenAt ?? null,
   });
+});
+
+// Records a visit, for "what changed since your last visit". A visit more
+// than 30 minutes after the last one moves that one to previousSeenAt, so
+// reloading or moving between pages doesn't reset what counts as new.
+router.post("/seen", requireAuth, async (req, res) => {
+  const now = new Date();
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.sub },
+    select: { lastSeenAt: true, previousSeenAt: true },
+  });
+  const newVisit = !user?.lastSeenAt || now.getTime() - user.lastSeenAt.getTime() > 30 * 60 * 1000;
+  const updated = await prisma.user.update({
+    where: { id: req.user!.sub },
+    data: newVisit ? { previousSeenAt: user?.lastSeenAt ?? null, lastSeenAt: now } : { lastSeenAt: now },
+    select: { previousSeenAt: true },
+  });
+  res.json({ previousSeenAt: updated.previousSeenAt });
 });
 
 // Per-user settings that should follow someone across logins and devices.
 // Each field is optional, so a client can save one without touching others.
 router.put("/preferences", requireAuth, async (req, res) => {
-  const { emailDigestOptIn, upcomingManagerFilter, dashboardView } = req.body as {
+  const { emailDigestOptIn, upcomingManagerFilter, dashboardView, notificationState } = req.body as {
     emailDigestOptIn?: unknown;
     upcomingManagerFilter?: unknown;
     dashboardView?: unknown;
+    notificationState?: unknown;
   };
   const data: {
     emailDigestOptIn?: boolean;
     upcomingManagerFilter?: string | null;
     dashboardView?: Prisma.InputJsonValue | typeof Prisma.DbNull;
+    notificationState?: Prisma.InputJsonValue | typeof Prisma.DbNull;
   } = {};
+  // Read/snoozed notifications: { [key]: "read" | ISO date snoozed until }.
+  if (notificationState !== undefined) {
+    if (notificationState === null) {
+      data.notificationState = Prisma.DbNull;
+    } else if (
+      typeof notificationState !== "object" ||
+      Array.isArray(notificationState) ||
+      JSON.stringify(notificationState).length > 50_000
+    ) {
+      return res.status(400).json({ error: "notificationState must be a small object" });
+    } else {
+      data.notificationState = notificationState as Prisma.InputJsonValue;
+    }
+  }
   if (dashboardView !== undefined) {
     if (dashboardView === null) {
       data.dashboardView = Prisma.DbNull;
@@ -282,7 +320,7 @@ router.put("/preferences", requireAuth, async (req, res) => {
   const user = await prisma.user.update({
     where: { id: req.user!.sub },
     data,
-    select: { emailDigestOptIn: true, upcomingManagerFilter: true, dashboardView: true },
+    select: { emailDigestOptIn: true, upcomingManagerFilter: true, dashboardView: true, notificationState: true },
   });
   res.json(user);
 });

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./icons";
+import { useMenuKeys } from "../useMenuKeys";
 
 export interface RowMenuItem {
   label: string;
@@ -16,6 +17,7 @@ export default function RowMenu({ label, items }: { label: string; items: RowMen
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  useMenuKeys(menuRef, open);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -30,7 +32,12 @@ export default function RowMenu({ label, items }: { label: string; items: RowMen
       if (!menuRef.current?.contains(t) && !buttonRef.current?.contains(t)) setOpen(false);
     };
     const close = () => setOpen(false);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close();
+        buttonRef.current?.focus();
+      }
+    };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     window.addEventListener("scroll", close, true);

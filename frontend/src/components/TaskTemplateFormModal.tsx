@@ -18,6 +18,8 @@ function newDraftItem(): DraftItem {
 export default function TaskTemplateFormModal({ template, onClose, onSave }: Props) {
   const [name, setName] = useState(template?.name ?? "");
   const [description, setDescription] = useState(template?.description ?? "");
+  const [assetType, setAssetType] = useState(template?.assetType ?? "");
+  const [milestonesText, setMilestonesText] = useState((template?.milestones ?? []).join("\n"));
   const [items, setItems] = useState<DraftItem[]>(
     template && template.items.length > 0
       ? template.items.map((item) => ({
@@ -62,7 +64,13 @@ export default function TaskTemplateFormModal({ template, onClose, onSave }: Pro
     }
     setSaving(true);
     try {
-      await onSave({ name: name.trim(), description: description || null, items: cleanItems });
+      await onSave({
+        name: name.trim(),
+        description: description || null,
+        items: cleanItems,
+        assetType: assetType.trim() || null,
+        milestones: milestonesText.split("\n").map((m) => m.trim()).filter(Boolean),
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save template");
     } finally {
@@ -108,6 +116,35 @@ export default function TaskTemplateFormModal({ template, onClose, onSave }: Pro
             />
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                Asset type (optional)
+              </label>
+              <input
+                value={assetType}
+                onChange={(e) => setAssetType(e.target.value)}
+                placeholder="e.g. Pump Station"
+                className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
+              />
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Offered first when a new project of this asset type is created.
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                Milestones (one per line)
+              </label>
+              <textarea
+                value={milestonesText}
+                onChange={(e) => setMilestonesText(e.target.value)}
+                rows={3}
+                placeholder={"Design complete\nTender awarded\nPractical completion"}
+                className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -121,7 +158,7 @@ export default function TaskTemplateFormModal({ template, onClose, onSave }: Pro
                 + Add item
               </button>
             </div>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
               "Due (days after start)" is optional — left blank, the resulting task gets no due date.
             </p>
             <div className="space-y-2">

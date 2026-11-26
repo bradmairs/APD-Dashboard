@@ -120,7 +120,7 @@ export default function ProjectSectionMenu<T extends string>({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">{total}</span>
                 )}
                 {list.length > 0 && (
-                  <span aria-hidden="true" className="text-slate-400 text-xs">
+                  <span aria-hidden="true" className="text-slate-500 text-xs">
                     {open ? "▾" : "▸"}
                   </span>
                 )}
@@ -136,7 +136,7 @@ export default function ProjectSectionMenu<T extends string>({
                       >
                         <span className="flex-1 min-w-0 truncate">{s.label}</span>
                         {(counts[s.id] ?? 0) > 0 && (
-                          <span className="text-[11px] text-slate-400 dark:text-slate-500">{counts[s.id]}</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">{counts[s.id]}</span>
                         )}
                       </button>
                     </li>

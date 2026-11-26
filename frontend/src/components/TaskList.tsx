@@ -4,6 +4,9 @@ import { Task, TaskInput, TaskRecurrence, TaskStatus } from "../types";
 import { ALL_TASK_RECURRENCES, TASK_RECURRENCE_LABELS, isTaskOverdue } from "../taskMeta";
 import { Icon } from "./icons";
 import DateInput from "./DateInput";
+import StatusBoard from "./StatusBoard";
+import { formatDate as formatDisplayDate } from "../format";
+import ViewToggle, { BoardView, loadView, saveView } from "./ViewToggle";
 
 const STATUS_ORDER: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -57,6 +60,11 @@ export default function TaskList({
   onUpdate,
   onDelete,
 }: Props) {
+  const [view, setView] = useState<BoardView>(() => loadView("tasks"));
+  function changeView(v: BoardView) {
+    setView(v);
+    saveView("tasks", v);
+  }
   const [newTitle, setNewTitle] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
   const [newRecurrence, setNewRecurrence] = useState<TaskRecurrence>("NONE");
@@ -153,10 +161,30 @@ export default function TaskList({
         )}
       </div>
 
+      {tasks.length > 0 && <ViewToggle view={view} onChange={changeView} />}
       {tasks.length === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
           No tasks yet.
         </p>
+      ) : view === "board" ? (
+        <div className="mb-3">
+          <StatusBoard
+            items={tasks}
+            columns={[
+              { status: "TODO", label: "To do" },
+              { status: "IN_PROGRESS", label: "In progress" },
+              { status: "DONE", label: "Done" },
+            ]}
+            statusOf={(t) => t.status}
+            onMove={(t, st) => onUpdate(t, { status: st })}
+            renderCard={(t) => (
+              <div>
+                <div className="font-medium text-slate-900 dark:text-slate-100">{t.title}</div>
+                {t.dueDate && <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Due {formatDisplayDate(t.dueDate)}</div>}
+              </div>
+            )}
+          />
+        </div>
       ) : visibleTasks.length === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
           All tasks complete.
@@ -228,7 +256,7 @@ export default function TaskList({
                           <span
                             className={`text-sm ${
                               task.status === "DONE"
-                                ? "line-through text-slate-400 dark:text-slate-500"
+                                ? "line-through text-slate-500 dark:text-slate-400"
                                 : "text-slate-900 dark:text-slate-100"
                             }`}
                           >
@@ -247,6 +275,7 @@ export default function TaskList({
                         )}
                       </div>
                       <select
+                        aria-label="Status"
                         value={task.status}
                         onChange={(e) =>
                           onUpdate(task, { status: e.target.value as TaskStatus })
@@ -313,6 +342,7 @@ export default function TaskList({
           className="text-sm rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-2 py-1.5"
         />
         <select
+          aria-label="Repeat"
           value={newRecurrence}
           onChange={(e) => setNewRecurrence(e.target.value as TaskRecurrence)}
           className="text-sm rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-2 py-1.5"

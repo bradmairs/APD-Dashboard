@@ -59,6 +59,11 @@ import {
   PermitInput,
   Project,
   RagStatus,
+  ApprovalEntityType,
+  ApprovalRequest,
+  FieldChange,
+  RecordComment,
+  ReportStatus,
   ProjectInput,
   Rfi,
   RfiInput,
@@ -1799,4 +1804,93 @@ export interface HealthHistoryPoint {
 
 export function getHealthHistory(): Promise<Record<string, HealthHistoryPoint[]>> {
   return fetch(`${API_BASE}/reports/health-history`).then((res) => handle(res));
+}
+
+// ---- 3.0: visits, notifications, approvals, history, comments, reports -------
+
+export function recordVisit(): Promise<{ previousSeenAt: string | null }> {
+  return fetch(`${API_BASE}/auth/seen`, { method: "POST" }).then((res) => handle(res));
+}
+
+export function updateNotificationState(notificationState: Record<string, string>): Promise<unknown> {
+  return fetch(`${API_BASE}/auth/preferences`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ notificationState }),
+  }).then((res) => handle(res));
+}
+
+export function getApprovals(query: { mine?: "pending" | "requested"; projectId?: string; entityType?: string; entityId?: string }): Promise<ApprovalRequest[]> {
+  const q = new URLSearchParams(Object.entries(query).filter(([, v]) => !!v) as [string, string][]);
+  return fetch(`${API_BASE}/approvals?${q.toString()}`).then((res) => handle(res));
+}
+
+export function requestApproval(data: { entityType: ApprovalEntityType; entityId: string; approverId: string; note?: string }): Promise<ApprovalRequest> {
+  return fetch(`${API_BASE}/approvals`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function decideApproval(id: string, decision: "APPROVED" | "REJECTED", comment: string): Promise<ApprovalRequest> {
+  return fetch(`${API_BASE}/approvals/${id}/decide`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decision, comment }),
+  }).then((res) => handle(res));
+}
+
+export function cancelApproval(id: string): Promise<ApprovalRequest> {
+  return fetch(`${API_BASE}/approvals/${id}/cancel`, { method: "POST" }).then((res) => handle(res));
+}
+
+export function getHistory(projectId: string, entityType?: string, entityId?: string): Promise<FieldChange[]> {
+  const q = new URLSearchParams({ projectId, ...(entityType ? { entityType } : {}), ...(entityId ? { entityId } : {}) });
+  return fetch(`${API_BASE}/history?${q.toString()}`).then((res) => handle(res));
+}
+
+export function getComments(entityType: string, entityId: string): Promise<RecordComment[]> {
+  return fetch(`${API_BASE}/comments?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}`).then((res) => handle(res));
+}
+
+export function getCommentCounts(entityType: string, ids: string[]): Promise<Record<string, number>> {
+  if (ids.length === 0) return Promise.resolve({});
+  return fetch(`${API_BASE}/comments/counts?entityType=${encodeURIComponent(entityType)}&ids=${ids.join(",")}`).then((res) => handle(res));
+}
+
+export function getMentions(): Promise<RecordComment[]> {
+  return fetch(`${API_BASE}/comments/mentions`).then((res) => handle(res));
+}
+
+export function addComment(data: { projectId: string; entityType: string; entityId: string; entityLabel: string; body: string; mentionIds: string[] }): Promise<RecordComment> {
+  return fetch(`${API_BASE}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function deleteComment(id: string): Promise<void> {
+  return fetch(`${API_BASE}/comments/${id}`, { method: "DELETE" }).then((res) => handle(res));
+}
+
+export function getReportStatus(month: string): Promise<ReportStatus[]> {
+  return fetch(`${API_BASE}/reports/status?month=${encodeURIComponent(month)}`).then((res) => handle(res));
+}
+
+export function draftAllReports(month: string): Promise<{ month: string; created: { projectId: string; projectName: string }[]; skipped: { projectId: string; projectName: string; reason: string }[] }> {
+  return fetch(`${API_BASE}/reports/draft-all`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ month }),
+  }).then((res) => handle(res));
+}
+
+export function saveReportPdfToSharePoint(projectId: string, reportId: string, pdf: Blob): Promise<{ name: string; webUrl: string }> {
+  return fetch(`${API_BASE}/projects/${projectId}/reports/${reportId}/pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/pdf" },
+    body: pdf,
+  }).then((res) => handle(res));
 }

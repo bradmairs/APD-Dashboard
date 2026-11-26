@@ -1,3 +1,4 @@
+import { recordChanges } from "../fieldHistory";
 import { Request, Response, Router } from "express";
 import { prisma } from "../prisma";
 import { describeVariationUpdate, logActivity } from "../activityLog";
@@ -172,6 +173,16 @@ variationsRouter.put("/:id", async (req, res) => {
       userId: req.user!.sub,
       userName: req.user!.name,
       action: describeVariationUpdate(before, data),
+    });
+    await recordChanges({
+      projectId: before.project.id,
+      entityType: "variation",
+      entityId: req.params.id,
+      entityLabel: `Variation ${before.reference ?? ""} ${before.title}`.trim(),
+      before: before as unknown as Record<string, unknown>,
+      after: data as Record<string, unknown>,
+      fields: ["reference","title","category","costImpact","timeImpactDays","status","dateRaised","dateDecided"],
+      user: req.user!,
     });
     res.json(variation);
   } catch (err) {

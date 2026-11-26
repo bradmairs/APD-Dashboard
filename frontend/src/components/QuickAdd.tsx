@@ -14,6 +14,7 @@ import { useAuth } from "../auth/AuthContext";
 import { Project, RiskConsequence, RiskLikelihood } from "../types";
 import { ALL_CONSEQUENCES, ALL_LIKELIHOODS, CONSEQUENCE_LABELS, LIKELIHOOD_LABELS } from "../riskScoring";
 import { loadRecentProjects } from "../layout/navMemory";
+import { useMenuKeys } from "../useMenuKeys";
 import DateInput from "./DateInput";
 
 export type QuickAddKind = "task" | "action" | "risk" | "defect" | "site-visit";
@@ -57,6 +58,8 @@ export default function QuickAddMenu() {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<QuickAddKind | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useMenuKeys(menuRef, open);
 
   useEffect(() => {
     if (!open) return;
@@ -88,7 +91,7 @@ export default function QuickAddMenu() {
         + New ▾
       </button>
       {open && (
-        <div role="menu" className="menu-panel absolute right-0 mt-1 w-48 z-40">
+        <div role="menu" ref={menuRef} className="menu-panel absolute right-0 mt-1 w-48 z-40">
           <button
             type="button"
             role="menuitem"

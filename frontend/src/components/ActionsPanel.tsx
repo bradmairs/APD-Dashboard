@@ -17,6 +17,9 @@ import { useSelection } from "../useSelection";
 import { useConfirm } from "../confirm/ConfirmContext";
 import EmptyState from "./EmptyState";
 import { Icon } from "./icons";
+import CommentsButton from "../comments/CommentsButton";
+import StatusBoard from "./StatusBoard";
+import ViewToggle, { BoardView, loadView, saveView } from "./ViewToggle";
 
 interface Props {
   actionItems: ActionItem[];
@@ -35,6 +38,11 @@ export default function ActionsPanel({
   const [editing, setEditing] = useState<ActionItem | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const selection = useSelection();
+  const [view, setView] = useState<BoardView>(() => loadView("actions"));
+  function changeView(v: BoardView) {
+    setView(v);
+    saveView("actions", v);
+  }
 
   const openCount = actionItems.filter((a) => a.status !== "DONE").length;
 
@@ -180,8 +188,25 @@ export default function ActionsPanel({
         />
       )}
 
+      {actionItems.length > 0 && <ViewToggle view={view} onChange={changeView} />}
       {actionItems.length === 0 ? (
         <EmptyState icon="checkCircle" text="No actions or decisions logged yet." addLabel="New Action" onAdd={openCreate} />
+      ) : view === "board" ? (
+        <StatusBoard
+          items={actionItems}
+          columns={ALL_ACTION_STATUSES.map((st) => ({ status: st, label: ACTION_STATUS_LABELS[st] }))}
+          statusOf={(a) => a.status}
+          onMove={(a, st) => onUpdate(a, { status: st })}
+          renderCard={(a) => (
+            <div>
+              <div className="font-medium text-slate-900 dark:text-slate-100">{a.title}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex justify-between gap-2">
+                <span className="truncate">{a.ownerName || "No owner"}</span>
+                {a.dueDate && <span className="whitespace-nowrap">{formatDate(a.dueDate)}</span>}
+              </div>
+            </div>
+          )}
+        />
       ) : (
         <>
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -192,6 +217,7 @@ export default function ActionsPanel({
                   <div className="flex items-start justify-between gap-3">
                     <input
                       type="checkbox"
+                      aria-label="Select this row"
                       checked={selection.isSelected(actionItem.id)}
                       onChange={() => selection.toggle(actionItem.id)}
                       className="mt-1.5 h-4 w-4 shrink-0"
@@ -226,6 +252,7 @@ export default function ActionsPanel({
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={actionItem.status}
                         onChange={(e) =>
                           handleStatusChange(actionItem, e.target.value as ActionItemStatus)
@@ -238,6 +265,7 @@ export default function ActionsPanel({
                           </option>
                         ))}
                       </select>
+                      <CommentsButton projectId={actionItem.projectId} entityType="action" entityId={actionItem.id} label={actionItem.title} />
                       <button
                         onClick={() => openEdit(actionItem)}
                         className="icon-btn"
@@ -283,7 +311,7 @@ export default function ActionsPanel({
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={actionItem.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Raised by {actionItem.raisedByName}
                         {actionItem.dateClosed &&
                           ` · Closed ${formatDate(actionItem.dateClosed)}`}

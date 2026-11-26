@@ -40,7 +40,7 @@ export default function ProjectOpenItems({
         >
           <span
             className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-              it.count > 0 ? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300" : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+              it.count > 0 ? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
             }`}
           >
             <Icon name={it.icon} className="w-[18px] h-[18px]" />
@@ -65,7 +65,7 @@ export default function ProjectOpenItems({
               <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100 truncate" title={next.m.taskActivity}>
                 {next.m.taskActivity}
               </span>
-              <span className={`block text-xs ${days! < 0 ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"}`}>
+              <span className={`block text-xs ${days! < 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-300"}`}>
                 {days! < 0 ? `${-days!} days late` : days === 0 ? "Due today" : `In ${days} days`} · {formatDate(next.due.toISOString())}
               </span>
             </>

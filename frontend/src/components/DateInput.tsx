@@ -151,8 +151,8 @@ export default function DateInput({
         title={title}
         className={`${className} inline-flex items-center gap-2 text-left w-full min-w-[9.5rem] disabled:opacity-60`}
       >
-        <Icon name="calendar" className="w-4 h-4 text-slate-400" />
-        <span className={`flex-1 truncate ${label ? "" : "text-slate-400"}`}>{label || placeholder}</span>
+        <Icon name="calendar" className="w-4 h-4 text-slate-500" />
+        <span className={`flex-1 truncate ${label ? "" : "text-slate-500"}`}>{label || placeholder}</span>
       </button>
       {required && (
         // Keeps the form's own "required" check working, as with a date box.
@@ -195,7 +195,7 @@ export default function DateInput({
                 <Icon name="chevronRight" className="w-4 h-4" />
               </button>
             </div>
-            <div className="grid grid-cols-7 gap-0.5 text-center text-[11px] font-medium text-slate-400 mb-1">
+            <div className="grid grid-cols-7 gap-0.5 text-center text-[11px] font-medium text-slate-500 mb-1">
               {WEEKDAYS.map((d) => (
                 <div key={d}>{d}</div>
               ))}

@@ -31,7 +31,7 @@ export default function HealthTrend({ history }: { history?: HealthHistoryPoint[
       ? { symbol: "↑", label: "improving", cls: "text-emerald-600 dark:text-emerald-400" }
       : change < 0
         ? { symbol: "↓", label: "slipping", cls: "text-red-600 dark:text-red-400" }
-        : { symbol: "→", label: "steady", cls: "text-slate-400 dark:text-slate-500" };
+        : { symbol: "→", label: "steady", cls: "text-slate-500 dark:text-slate-400" };
   const title =
     `Monthly reports (budget / schedule), ${arrow.label}:\n` +
     points

@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import RichTextArea from "./RichTextArea";
-import { Project, ProjectInput, ProjectStatus, UserOption } from "../types";
+import { Project, ProjectInput, ProjectStatus, TaskTemplate, UserOption } from "../types";
 import { ALL_STATUSES, STATUS_LABELS } from "../statusMeta";
 import { getUserOptions } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import DateInput from "./DateInput";
+import { getTaskTemplates } from "../api";
 
 // Select value for a project whose manager was typed in before managers were
 // picked from the user list and doesn't match a user — leaving it selected
@@ -14,7 +15,8 @@ const UNLINKED_MANAGER = "__unlinked__";
 interface Props {
   project: Project | null;
   onClose: () => void;
-  onSave: (data: Partial<ProjectInput>) => Promise<void>;
+  // extras.templateId: a task template to set a new project up with.
+  onSave: (data: Partial<ProjectInput>, extras?: { templateId?: string }) => Promise<void>;
 }
 
 function toDateInputValue(value: string | null): string {
@@ -50,6 +52,24 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
   const [consultant, setConsultant] = useState(project?.consultant ?? "");
   const [trimFolder, setTrimFolder] = useState(project?.trimFolder ?? "");
   const [budget, setBudget] = useState(project?.budget ?? "");
+  const [contingency, setContingency] = useState(project?.contingency ?? "");
+  // New projects can start from a template (tasks + milestones), offered
+  // first where the template's asset type matches.
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [templateId, setTemplateId] = useState("");
+  const [templateTouched, setTemplateTouched] = useState(false);
+  useEffect(() => {
+    if (project) return;
+    getTaskTemplates().then(setTemplates).catch(() => setTemplates([]));
+  }, [project]);
+  const matchingTemplates = templates.filter(
+    (t) => !t.assetType || !assetType || t.assetType.toLowerCase() === assetType.trim().toLowerCase()
+  );
+  useEffect(() => {
+    if (project || templateTouched) return;
+    const match = templates.find((t) => t.assetType && assetType && t.assetType.toLowerCase() === assetType.trim().toLowerCase());
+    setTemplateId(match?.id ?? "");
+  }, [assetType, templates, project, templateTouched]);
   const [latestApprovedBudget, setLatestApprovedBudget] = useState(
     project?.latestApprovedBudget ?? ""
   );
@@ -103,11 +123,12 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
         latestApprovedBudget: latestApprovedBudget
           ? String(latestApprovedBudget)
           : null,
+        contingency: contingency ? String(contingency) : null,
         startDate: startDate ? new Date(startDate).toISOString() : null,
         targetCompletionDate: targetCompletionDate
           ? new Date(targetCompletionDate).toISOString()
           : null,
-      });
+      }, templateId ? { templateId } : undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save project");
     } finally {
@@ -335,6 +356,45 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
                 className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Contingency ($, Excl. GST)
+              </label>
+              <input
+                type="number"
+                value={contingency}
+                onChange={(e) => setContingency(e.target.value)}
+                placeholder="Optional — or set on contracts"
+                className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
+              />
+            </div>
+            {!project && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Start from a template
+                </label>
+                <select
+                  value={templateId}
+                  onChange={(e) => {
+                    setTemplateId(e.target.value);
+                    setTemplateTouched(true);
+                  }}
+                  className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm"
+                >
+                  <option value="">No template</option>
+                  {matchingTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                      {t.assetType ? ` (${t.assetType})` : ""} — {t.items.length} tasks
+                      {t.milestones?.length ? `, ${t.milestones.length} milestones` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

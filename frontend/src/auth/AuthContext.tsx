@@ -56,6 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     await apiLogout();
     clearBatchCache();
+    try {
+      sessionStorage.removeItem("apd.sinceVisit");
+      sessionStorage.removeItem("apd.sinceVisitDismissed");
+    } catch {
+      // fine
+    }
     setUser(null);
   }
 

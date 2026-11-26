@@ -62,7 +62,7 @@ export default function OpenRfisPanel({ rfis, limit = 8 }: Props) {
                       className={`text-xs shrink-0 font-medium ${
                         overdue
                           ? "text-red-600 dark:text-red-400"
-                          : "text-slate-500 dark:text-slate-400"
+                          : "text-slate-600 dark:text-slate-300"
                       }`}
                     >
                       {overdue ? "Overdue " : "Due "}

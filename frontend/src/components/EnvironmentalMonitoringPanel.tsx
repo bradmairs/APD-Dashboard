@@ -164,7 +164,7 @@ export default function EnvironmentalMonitoringPanel({
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={record.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Monitored by {record.monitoredByName}
                       </div>
                     </div>

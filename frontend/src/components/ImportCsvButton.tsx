@@ -119,14 +119,14 @@ export default function ImportCsvButton<T>({
             <div className="max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded text-xs divide-y divide-slate-100 dark:divide-slate-700">
               {pending.slice(0, 5).map(({ row, rowNumber }) => (
                 <div key={rowNumber} className="px-2 py-1.5 flex gap-2">
-                  <span className="text-slate-400 shrink-0">{rowNumber}</span>
+                  <span className="text-slate-500 shrink-0">{rowNumber}</span>
                   <span className="text-slate-700 dark:text-slate-300 truncate">
                     {Object.values(row).slice(0, 3).filter(Boolean).join(" · ")}
                   </span>
                 </div>
               ))}
               {pending.length > 5 && (
-                <div className="px-2 py-1.5 text-slate-400">…and {pending.length - 5} more</div>
+                <div className="px-2 py-1.5 text-slate-500">…and {pending.length - 5} more</div>
               )}
             </div>
             <div className="flex justify-end gap-2">

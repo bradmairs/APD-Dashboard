@@ -74,7 +74,7 @@ export default function SectionJumpNav({ sections, onExpandAll, onCollapseAll, o
       style={{ top: headerHeight }}
       className={`${className} sticky z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 flex-wrap text-xs`}
     >
-      <span className="text-slate-400 dark:text-slate-500 shrink-0">Jump to:</span>
+      <span className="text-slate-500 dark:text-slate-400 shrink-0">Jump to:</span>
       {sections.map((section) => (
         <button
           key={section.id}
