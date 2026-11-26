@@ -331,6 +331,12 @@ model User {
   archiveLinks                   ArchiveLink[]
   taskTemplates                  TaskTemplate[]
   sharePointConnection           SharePointConnection?
+  // When the user last opened the app, and the visit before that ("what
+  // changed since your last visit"), plus per-notification read/snooze
+  // state (shape owned by the frontend's notification list).
+  lastSeenAt                     DateTime?
+  previousSeenAt                 DateTime?
+  notificationState              Json?
 }
 
 model Project {
@@ -419,6 +425,11 @@ model Project {
   safetyInspections              SafetyInspection[]
   tenderPackages                 TenderPackage[]
   archiveLinks                   ArchiveLink[]
+  // Contingency set aside within the budget (optional), for cost forecasting.
+  contingency                    Decimal?                        @db.Decimal(14, 2)
+  approvalRequests               ApprovalRequest[]
+  fieldChanges                   FieldChange[]
+  comments                       Comment[]
 
   @@index([projectManagerId])
 }
@@ -435,6 +446,11 @@ model TaskTemplate {
   id          String             @id @default(cuid())
   name        String
   description String?
+  // Optional: the asset type this template sets new projects up for
+  // (offered when a new project of that type is created), and the
+  // milestones it adds alongside its tasks.
+  assetType   String?
+  milestones  String[]           @default([])
   createdBy   User?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdById String?
   createdAt   DateTime           @default(now())
@@ -1654,4 +1670,81 @@ model SharePointConnection {
 enum TrimLinkKind {
   TRIM
   GENERAL
+}
+
+// ---- Approvals, change history and comments (3.0) ----------------------------
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+// A request for a named person to approve or reject a variation or payment
+// claim, with the decision and its comment kept as the audit trail.
+model ApprovalRequest {
+  id              String         @id @default(cuid())
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  // "variation" | "paymentClaim"
+  entityType      String
+  entityId        String
+  entityLabel     String
+  amount          Decimal?       @db.Decimal(14, 2)
+  requestedById   String?
+  requestedByName String
+  approverId      String
+  approverName    String
+  status          ApprovalStatus @default(PENDING)
+  note            String?
+  decisionComment String?
+  decidedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([entityType, entityId])
+  @@index([approverId, status])
+}
+
+// One field's old and new value each time a record is edited ("Budget
+// changed from $950k to $1.1M by A. Nguyen on 3 Nov").
+model FieldChange {
+  id          String   @id @default(cuid())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  // "project" | "variation" | "paymentClaim" | "risk" | ...
+  entityType  String
+  entityId    String
+  entityLabel String
+  field       String
+  oldValue    String?
+  newValue    String?
+  userId      String?
+  userName    String
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([entityType, entityId])
+}
+
+// A comment on a record (risk, RFI, action, ...), with the users it
+// @mentions so they're notified.
+model Comment {
+  id          String   @id @default(cuid())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  entityType  String
+  entityId    String
+  entityLabel String
+  body        String
+  authorId    String?
+  authorName  String
+  mentionIds  String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([projectId])
 }

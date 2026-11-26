@@ -21,6 +21,7 @@ import { parseImportDate, parseOptionalEnum, parseRequiredEnum, requireCell } fr
 import { useConfirm } from "../confirm/ConfirmContext";
 import EmptyState from "./EmptyState";
 import { Icon } from "./icons";
+import CommentsButton from "../comments/CommentsButton";
 
 const RISK_IMPORT_HEADERS = [
   "Type",
@@ -240,6 +241,7 @@ export default function RisksPanel({ risks, onCreate, onUpdate, onDelete }: Prop
                   <div className="flex items-start justify-between gap-3">
                     <input
                       type="checkbox"
+                      aria-label="Select this row"
                       checked={selection.isSelected(risk.id)}
                       onChange={() => selection.toggle(risk.id)}
                       className="mt-1.5 h-4 w-4 shrink-0"
@@ -277,6 +279,7 @@ export default function RisksPanel({ risks, onCreate, onUpdate, onDelete }: Prop
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={risk.status}
                         onChange={(e) =>
                           handleStatusChange(risk, e.target.value as RiskStatus)
@@ -289,6 +292,7 @@ export default function RisksPanel({ risks, onCreate, onUpdate, onDelete }: Prop
                           </option>
                         ))}
                       </select>
+                      <CommentsButton projectId={risk.projectId} entityType="risk" entityId={risk.id} label={risk.title} />
                       <button
                         onClick={() => openEdit(risk)}
                         className="icon-btn"
@@ -349,7 +353,7 @@ export default function RisksPanel({ risks, onCreate, onUpdate, onDelete }: Prop
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={risk.mitigation} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Raised by {risk.createdByName}
                       </div>
                     </div>

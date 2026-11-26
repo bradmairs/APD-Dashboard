@@ -123,7 +123,7 @@ function MeetingAttachments({
         </div>
       )}
       {linked.length === 0 ? (
-        <p className="text-xs text-slate-400 dark:text-slate-500">No files attached.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">No files attached.</p>
       ) : (
         <ul className="space-y-1">
           {linked.map((a) => (
@@ -135,7 +135,7 @@ function MeetingAttachments({
                 {a.originalName}
               </a>
               <span className="flex items-center gap-2 shrink-0 ml-2">
-                <span className="text-slate-400 dark:text-slate-500">
+                <span className="text-slate-500 dark:text-slate-400">
                   {formatFileSize(a.size)}
                 </span>
                 <button
@@ -304,7 +304,7 @@ function MeetingActions({
       )}
 
       {linked.length === 0 && linkedTasks.length === 0 ? (
-        <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
           No actions recorded from this meeting yet.
         </p>
       ) : (
@@ -317,7 +317,7 @@ function MeetingActions({
               <span
                 className={`truncate ${
                   t.status === "DONE"
-                    ? "line-through text-slate-400 dark:text-slate-500"
+                    ? "line-through text-slate-500 dark:text-slate-400"
                     : "text-slate-700 dark:text-slate-300"
                 }`}
               >
@@ -334,7 +334,7 @@ function MeetingActions({
               </span>
               <span className="text-slate-700 dark:text-slate-300 truncate">{a.title}</span>
               {a.ownerName && (
-                <span className="text-slate-400 dark:text-slate-500 shrink-0">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">
                   · {a.ownerName}
                 </span>
               )}
@@ -669,7 +669,7 @@ export default function MeetingMinutesPanel({
                         onExtractActions={onExtractActions}
                       />
 
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Recorded by {meeting.recordedByName}
                         {meeting.nextMeetingDate &&
                           ` · Next meeting ${formatDate(meeting.nextMeetingDate)}`}

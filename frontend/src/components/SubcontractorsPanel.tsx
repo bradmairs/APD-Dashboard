@@ -211,6 +211,7 @@ export default function SubcontractorsPanel({
                   <div className="flex items-start justify-between gap-3">
                     <input
                       type="checkbox"
+                      aria-label="Select this row"
                       checked={selection.isSelected(subcontractor.id)}
                       onChange={() => selection.toggle(subcontractor.id)}
                       className="mt-1.5 h-4 w-4 shrink-0"
@@ -268,6 +269,7 @@ export default function SubcontractorsPanel({
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={subcontractor.status}
                         onChange={(e) =>
                           handleStatusChange(subcontractor, e.target.value as SubcontractorStatus)
@@ -321,7 +323,7 @@ export default function SubcontractorsPanel({
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={subcontractor.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Added by {subcontractor.addedByName}
                       </div>
                     </div>

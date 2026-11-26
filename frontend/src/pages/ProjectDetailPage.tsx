@@ -276,8 +276,11 @@ import { formatCurrency, formatDate, formatReportMonth } from "../format";
 import { trimHref, useTrimRecordUrl } from "../trim";
 import { canModifyProject } from "../permissions";
 import AppLayout from "../components/AppLayout";
+import { ChangeHistoryButton } from "../history/ChangeHistory";
 import { Icon } from "../components/icons";
 import ProjectProgressStrip from "../components/ProjectProgressStrip";
+import CostForecastCard from "../components/CostForecastCard";
+import RiskHeatMap from "../components/RiskHeatMap";
 import ProjectOpenItems from "../components/ProjectOpenItems";
 import { onDataChanged, openQuickAdd } from "../components/QuickAdd";
 import { SkeletonCard, SkeletonSections } from "../components/Skeleton";
@@ -1594,6 +1597,14 @@ export default function ProjectDetailPage() {
       }
       actions={
         <>
+          <ChangeHistoryButton projectId={project.id} />
+          <Link
+            to={`/projects/${project.id}/summary`}
+            className="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+            title="One-page summary for steering committees and sponsors (PDF)"
+          >
+            Summary PDF
+          </Link>
           <Link
             to={`/projects/${project.id}/closeout-report`}
             className="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
@@ -1904,6 +1915,14 @@ export default function ProjectDetailPage() {
 
           {activeTab === "budget" && (
             <>
+              <div className={WIDE_SECTION}>
+                <CostForecastCard
+                  project={project}
+                  cashFlowEntries={cashFlowEntries}
+                  variations={variations}
+                  contracts={contracts}
+                />
+              </div>
               <CollapsibleSection {...section("contracts")}>
                 <ContractsPanel
                   contracts={contracts}
@@ -2022,6 +2041,7 @@ export default function ProjectDetailPage() {
 
           {activeTab === "quality" && (
             <>
+              {risks.length > 0 && <RiskHeatMap risks={risks} />}
               <CollapsibleSection {...section("risks")}>
                 <RisksPanel
                   risks={risks}

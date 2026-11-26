@@ -9,6 +9,7 @@ import TwoFactorModal from "./TwoFactorModal";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "./NotificationBell";
 import { Icon } from "./icons";
+import { useMenuKeys } from "../useMenuKeys";
 
 // ---- Table density (Comfortable / Compact), remembered in this browser ----
 const DENSITY_KEY = "apd.density";
@@ -46,6 +47,8 @@ export default function UserMenu() {
   const [togglingDigest, setTogglingDigest] = useState(false);
   const [density, setDensity] = useState<Density>(loadDensity);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useMenuKeys(menuRef, menuOpen);
 
   useEffect(() => applyDensity(density), [density]);
 
@@ -109,11 +112,11 @@ export default function UserMenu() {
           <span className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-navy-600 text-white text-xs font-semibold flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
             {initials(user.name)}
           </span>
-          <Icon name="chevronDown" className="w-3.5 h-3.5 text-slate-400" />
+          <Icon name="chevronDown" className="w-3.5 h-3.5 text-slate-500" />
         </button>
 
         {menuOpen && (
-          <div role="menu" className="menu-panel absolute right-0 top-full mt-2 w-72 z-40">
+          <div role="menu" ref={menuRef} className="menu-panel absolute right-0 top-full mt-2 w-72 z-40">
             <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-700">
               <div className="font-medium text-slate-900 dark:text-slate-100 truncate">{user.name}</div>
               <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</div>
@@ -124,11 +127,11 @@ export default function UserMenu() {
 
             <div className="py-1 border-b border-slate-100 dark:border-slate-700">
               <button role="menuitem" onClick={toggleTheme} className="menu-item">
-                <Icon name={theme === "dark" ? "sun" : "moon"} className="w-4 h-4 text-slate-400" />
+                <Icon name={theme === "dark" ? "sun" : "moon"} className="w-4 h-4 text-slate-500" />
                 {theme === "dark" ? "Light mode" : "Dark mode"}
               </button>
               <div className="px-3 py-2 flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-200">
-                <Icon name="rows" className="w-4 h-4 text-slate-400" />
+                <Icon name="rows" className="w-4 h-4 text-slate-500" />
                 <span className="flex-1">Density</span>
                 <div role="group" aria-label="Table density" className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-700/60 p-0.5 text-xs">
                   {(["comfortable", "compact"] as Density[]).map((d) => (
@@ -138,7 +141,7 @@ export default function UserMenu() {
                       aria-pressed={density === d}
                       onClick={() => changeDensity(d)}
                       className={`px-2 py-0.5 rounded-md capitalize ${
-                        density === d ? "bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"
+                        density === d ? "bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-slate-100" : "text-slate-600 dark:text-slate-300"
                       }`}
                     >
                       {d}
@@ -154,15 +157,15 @@ export default function UserMenu() {
                 }}
                 className="menu-item"
               >
-                <Icon name="sliders" className="w-4 h-4 text-slate-400" />
+                <Icon name="sliders" className="w-4 h-4 text-slate-500" />
                 Keyboard shortcuts
-                <kbd className="ml-auto text-[11px] text-slate-400">?</kbd>
+                <kbd className="ml-auto text-[11px] text-slate-500">?</kbd>
               </button>
             </div>
 
             <div className="py-1 border-b border-slate-100 dark:border-slate-700">
               <button role="menuitem" onClick={() => { setShowPasswordModal(true); close(); }} className="menu-item">
-                <Icon name="key" className="w-4 h-4 text-slate-400" />
+                <Icon name="key" className="w-4 h-4 text-slate-500" />
                 Change password
               </button>
               <button
@@ -171,9 +174,9 @@ export default function UserMenu() {
                 className="menu-item"
                 title="Require a code from an authenticator app when you sign in"
               >
-                <Icon name="shield" className="w-4 h-4 text-slate-400" />
+                <Icon name="shield" className="w-4 h-4 text-slate-500" />
                 Two-factor sign-in
-                <span className="ml-auto text-xs text-slate-400">{user.twoFactorEnabled ? "On" : "Off"}</span>
+                <span className="ml-auto text-xs text-slate-500">{user.twoFactorEnabled ? "On" : "Off"}</span>
               </button>
               <button
                 role="menuitem"
@@ -182,17 +185,17 @@ export default function UserMenu() {
                 className="menu-item disabled:opacity-50"
                 title="Daily email of overdue/due-soon tasks, RFIs, permits and insurance — requires the server to have email sending configured"
               >
-                <Icon name="mail" className="w-4 h-4 text-slate-400" />
+                <Icon name="mail" className="w-4 h-4 text-slate-500" />
                 Email digest
-                <span className="ml-auto text-xs text-slate-400">{user.emailDigestOptIn ? "On" : "Off"}</span>
+                <span className="ml-auto text-xs text-slate-500">{user.emailDigestOptIn ? "On" : "Off"}</span>
               </button>
               <Link role="menuitem" to="/task-templates" onClick={close} className="menu-item">
-                <Icon name="template" className="w-4 h-4 text-slate-400" />
+                <Icon name="template" className="w-4 h-4 text-slate-500" />
                 Task templates
               </Link>
               {user.role === "ADMIN" && (
                 <Link role="menuitem" to="/admin/users" onClick={close} className="menu-item">
-                  <Icon name="users" className="w-4 h-4 text-slate-400" />
+                  <Icon name="users" className="w-4 h-4 text-slate-500" />
                   Manage users
                 </Link>
               )}

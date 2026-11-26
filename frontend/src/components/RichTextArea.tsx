@@ -216,7 +216,7 @@ export default function RichTextArea({
       {!value && placeholder && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-8 text-sm text-slate-400 dark:text-slate-500"
+          className="pointer-events-none absolute left-3 top-8 text-sm text-slate-500 dark:text-slate-400"
         >
           {placeholder}
         </div>

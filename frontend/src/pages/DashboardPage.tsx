@@ -63,6 +63,7 @@ import {
   updateTask,
   updateDashboardView,
   getHealthHistory,
+  applyTaskTemplate,
   HealthHistoryPoint,
 } from "../api";
 import StatCards from "../components/StatCards";
@@ -99,6 +100,8 @@ import NeedsAttentionPanel from "../components/NeedsAttentionPanel";
 import AppLayout from "../components/AppLayout";
 import MyWeekPanel from "../components/MyWeekPanel";
 import ProjectBoard from "../components/ProjectBoard";
+import SinceLastVisit from "../components/SinceLastVisit";
+import RiskHeatMap from "../components/RiskHeatMap";
 import PortfolioTimeline from "../components/PortfolioTimeline";
 import { Icon } from "../components/icons";
 import { onDataChanged } from "../components/QuickAdd";
@@ -511,11 +514,17 @@ export default function DashboardPage() {
     setShowModal(true);
   }
 
-  async function handleSave(data: Partial<ProjectInput>) {
+  async function handleSave(data: Partial<ProjectInput>, extras?: { templateId?: string }) {
     if (modalProject) {
       await updateProject(modalProject.id, data);
     } else {
-      await createProject(data);
+      const created = await createProject(data);
+      // Set the new project up from its template (tasks and milestones).
+      if (extras?.templateId) {
+        await applyTaskTemplate(extras.templateId, created.id).catch((err) =>
+          console.error("Couldn't apply the template", err)
+        );
+      }
     }
     setShowModal(false);
     await loadData();
@@ -662,6 +671,8 @@ export default function DashboardPage() {
           </div>
         )}
 
+        <SinceLastVisit activity={recentActivity} projects={projects} />
+
         <StatCards
           projects={projects}
           variations={variations}
@@ -727,6 +738,7 @@ export default function DashboardPage() {
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <div className="flex gap-2 flex-wrap items-center">
                 <select
+                  aria-label="Health"
                   value={healthFilter}
                   onChange={(e) => setHealthFilter(e.target.value as RagStatus | "ALL")}
                   className="text-sm rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 px-2 py-1.5"
@@ -748,6 +760,7 @@ export default function DashboardPage() {
                   </button>
                 )}
                 <select
+                  aria-label="Project manager"
                   value={pmFilter}
                   onChange={(e) => setPmFilter(e.target.value)}
                   className="text-sm rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 px-2 py-1.5"
@@ -760,6 +773,7 @@ export default function DashboardPage() {
                   ))}
                 </select>
                 <select
+                  aria-label="Saved views"
                   value={selectedViewId}
                   onChange={(e) => applyView(e.target.value)}
                   className="text-sm rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 px-2 py-1.5"
@@ -845,7 +859,7 @@ export default function DashboardPage() {
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md ${
                       projectView === v.id
                         ? "bg-white dark:bg-slate-950 shadow-sm text-slate-900 dark:text-slate-100 font-medium"
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
                     }`}
                   >
                     <Icon name={v.icon} className="w-4 h-4" />
@@ -934,6 +948,11 @@ export default function DashboardPage() {
 
         {activeTab === "alerts" && !loading && projects.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+            {risks.length > 0 && (
+              <div className="lg:col-span-2">
+                <RiskHeatMap risks={risks} showProject />
+              </div>
+            )}
             <NeedsAttentionPanel projects={projects} healthByProjectId={healthByProjectId} />
             <ExpiringPermitsPanel permits={permits} />
             <OpenSqePanel records={sqeRecords} />

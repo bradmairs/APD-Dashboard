@@ -304,7 +304,7 @@ export default function TodayAndUpcomingPanel({
                 className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
                   bucket === "OVERDUE"
                     ? "text-red-600 dark:text-red-400"
-                    : "text-slate-500 dark:text-slate-400"
+                    : "text-slate-600 dark:text-slate-300"
                 }`}
               >
                 {BUCKET_LABELS[bucket]} ({buckets[bucket].length})

@@ -16,7 +16,7 @@ function taskCounts(project: Project): { done: number; total: number } | null {
 
 function TaskProgress({ project }: { project: Project }) {
   const counts = taskCounts(project);
-  if (!counts) return <span className="text-slate-400">—</span>;
+  if (!counts) return <span className="text-slate-500">—</span>;
   const pct = Math.round((counts.done / counts.total) * 100);
   return (
     <div className="flex items-center gap-2 min-w-[6rem]" title={`${counts.done} of ${counts.total} tasks done`}>
@@ -150,7 +150,7 @@ export default function ProjectTable({
         ]}
       />
     ) : (
-      <span className="text-slate-400 dark:text-slate-500 text-xs" title="Only the project's creator or an admin can edit it">
+      <span className="text-slate-500 dark:text-slate-400 text-xs" title="Only the project's creator or an admin can edit it">
         {project.createdBy ? `${project.createdBy.name} only` : ""}
       </span>
     );
@@ -170,6 +170,10 @@ export default function ProjectTable({
           <li
             key={project.id}
             onClick={() => onOpen(project)}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.target === e.currentTarget) onOpen(project);
+            }}
             className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-4 cursor-pointer"
           >
             <div className="flex items-start justify-between gap-3">
@@ -222,6 +226,11 @@ export default function ProjectTable({
               <tr
                 key={project.id}
                 onClick={() => onOpen(project)}
+                tabIndex={0}
+                aria-label={`Open ${project.name}`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.target === e.currentTarget) onOpen(project);
+                }}
                 className="group hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer [&>td]:border-b [&>td]:border-slate-100 dark:[&>td]:border-slate-700 [&:last-child>td]:border-b-0"
               >
                 <td className="px-4 py-3">

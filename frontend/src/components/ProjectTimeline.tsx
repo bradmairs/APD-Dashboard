@@ -211,7 +211,7 @@ export default function ProjectTimeline({ project, milestones, tasks, onUpdateMi
                     />
                   </div>
                 ) : (
-                  <span className="absolute inset-y-0 left-2 flex items-center text-[10px] text-slate-400 dark:text-slate-500">
+                  <span className="absolute inset-y-0 left-2 flex items-center text-[10px] text-slate-500 dark:text-slate-400">
                     No dates set
                   </span>
                 )}

@@ -17,6 +17,10 @@ export interface User {
   dashboardView?: Record<string, unknown> | null;
   // Own record (login/me) and the admin Users list — see backend/src/twoFactor.ts.
   twoFactorEnabled?: boolean;
+  // Own record only (3.0): read/snoozed notifications, and the visit before
+  // this one ("what changed since your last visit").
+  notificationState?: Record<string, string> | null;
+  previousSeenAt?: string | null;
 }
 
 export type ProjectStatus =
@@ -62,6 +66,9 @@ export interface TaskTemplate {
   id: string;
   name: string;
   description: string | null;
+  // 3.0: the asset type it sets new projects up for, and milestones it adds.
+  assetType?: string | null;
+  milestones?: string[];
   createdById: string | null;
   createdAt: string;
   updatedAt: string;
@@ -78,6 +85,8 @@ export interface TaskTemplateInput {
   name: string;
   description?: string | null;
   items: TaskTemplateItemInput[];
+  assetType?: string | null;
+  milestones?: string[];
 }
 
 export type TaskInput = Omit<
@@ -106,6 +115,8 @@ export interface Project {
   budget: string | null;
   latestApprovedBudget: string | null;
   contractValue: string | null;
+  // 3.0: contingency held within the budget (optional), for cost forecasting.
+  contingency?: string | null;
   startDate: string | null;
   targetCompletionDate: string | null;
   actualCompletionDate: string | null;
@@ -1281,3 +1292,64 @@ export interface ActionImportPreview {
 export type AttachmentUploadResult = Attachment & {
   actionImport?: ActionImportPreview | { error: string };
 };
+
+// ---- 3.0: approvals, change history, comments ----------------------------------
+
+export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+export type ApprovalEntityType = "variation" | "paymentClaim";
+
+export interface ApprovalRequest {
+  id: string;
+  projectId: string;
+  entityType: ApprovalEntityType;
+  entityId: string;
+  entityLabel: string;
+  amount: string | null;
+  requestedById: string | null;
+  requestedByName: string;
+  approverId: string;
+  approverName: string;
+  status: ApprovalStatus;
+  note: string | null;
+  decisionComment: string | null;
+  decidedAt: string | null;
+  createdAt: string;
+  project?: { id: string; name: string };
+}
+
+export interface FieldChange {
+  id: string;
+  projectId: string;
+  entityType: string;
+  entityId: string;
+  entityLabel: string;
+  field: string;
+  oldValue: string | null;
+  newValue: string | null;
+  userId: string | null;
+  userName: string;
+  createdAt: string;
+}
+
+export interface RecordComment {
+  id: string;
+  projectId: string;
+  entityType: string;
+  entityId: string;
+  entityLabel: string;
+  body: string;
+  authorId: string | null;
+  authorName: string;
+  mentionIds: string[];
+  createdAt: string;
+  project?: { id: string; name: string };
+}
+
+export interface ReportStatus {
+  projectId: string;
+  projectName: string;
+  projectManager: string | null;
+  projectManagerId: string | null;
+  hasReport: boolean;
+  logged: boolean;
+}

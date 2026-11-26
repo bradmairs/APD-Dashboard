@@ -19,6 +19,7 @@ import {
   updateMonthlyReport,
   uploadMonthlyReportWorkbook,
   getMonthlyReports,
+  saveReportPdfToSharePoint,
 } from "../api";
 import {
   MonthlyReport,
@@ -306,6 +307,18 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
 
   const spReady = sharePoint?.configured && sharePoint.connected;
 
+  // Saves this month's PDF into _PDFs beside the SharePoint workbook (where
+  // the workbook's own Log Monthly Report macro puts them).
+  async function pdfToSharePoint() {
+    if (!saved || !reportingMonth) return;
+    const result = await run("Saving the PDF to SharePoint…", async () => {
+      const { elementToPdfBlob } = await import("../pdfExport");
+      const blob = await elementToPdfBlob("monthly-report-sheet");
+      return saveReportPdfToSharePoint(project.id, saved.id, blob);
+    });
+    if (result) setMessage({ tone: "ok", text: `Saved to SharePoint as _PDFs/${result.name}.` });
+  }
+
   return (
     <div className="space-y-4">
       {/* Month picker and report actions */}
@@ -363,6 +376,11 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
             {content && (
               <button className={btn} onClick={pdf} disabled={!!busy}>
                 Download PDF
+              </button>
+            )}
+            {saved && workbook?.source === "sharepoint" && spReady && (
+              <button className={btn} onClick={pdfToSharePoint} disabled={!!busy} title="Saves into the _PDFs folder beside the workbook">
+                Save PDF to SharePoint
               </button>
             )}
             {saved && (

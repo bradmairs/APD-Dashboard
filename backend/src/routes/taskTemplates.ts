@@ -32,11 +32,23 @@ router.get("/", async (_req, res) => {
   res.json(templates);
 });
 
+// Optional template extras (3.0): the asset type it suits, and the names
+// of milestones it adds.
+function parseMilestones(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((m): m is string => typeof m === "string" && m.trim().length > 0)
+    .map((m) => m.trim().slice(0, 200))
+    .slice(0, 50);
+}
+
 router.post("/", async (req, res) => {
-  const { name, description, items } = req.body as {
+  const { name, description, items, assetType, milestones } = req.body as {
     name?: string;
     description?: string;
     items?: unknown;
+    assetType?: string | null;
+    milestones?: unknown;
   };
   if (typeof name !== "string" || !name.trim()) {
     return res.status(400).json({ error: "Name is required" });
@@ -50,6 +62,8 @@ router.post("/", async (req, res) => {
     data: {
       name: name.trim(),
       description: description || null,
+      assetType: typeof assetType === "string" && assetType.trim() ? assetType.trim() : null,
+      milestones: parseMilestones(milestones),
       createdById: req.user!.sub,
       items: {
         create: parsedItems.map((item, index) => ({ ...item, sortOrder: index })),
@@ -61,10 +75,12 @@ router.post("/", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
-  const { name, description, items } = req.body as {
+  const { name, description, items, assetType, milestones } = req.body as {
     name?: string;
     description?: string;
     items?: unknown;
+    assetType?: string | null;
+    milestones?: unknown;
   };
   const existing = await prisma.taskTemplate.findUnique({ where: { id: req.params.id } });
   if (!existing) return res.status(404).json({ error: "Template not found" });
@@ -77,6 +93,10 @@ router.put("/:id", async (req, res) => {
     data.name = name.trim();
   }
   if (description !== undefined) data.description = description || null;
+  if (assetType !== undefined) {
+    data.assetType = typeof assetType === "string" && assetType.trim() ? assetType.trim() : null;
+  }
+  if (milestones !== undefined) data.milestones = parseMilestones(milestones);
 
   // Items are replaced wholesale rather than diffed — a template's item
   // list is small and edited as a batch in the form UI, the same rationale
@@ -123,7 +143,7 @@ router.post("/:id/apply", async (req, res) => {
   ]);
   if (!template) return res.status(404).json({ error: "Template not found" });
   if (!project) return res.status(404).json({ error: "Project not found" });
-  if (template.items.length === 0) {
+  if (template.items.length === 0 && template.milestones.length === 0) {
     return res.status(400).json({ error: "This template has no task items" });
   }
 
@@ -144,12 +164,32 @@ router.post("/:id/apply", async (req, res) => {
     )
   );
 
+  // The template's milestones go after any the project already has.
+  let milestonesAdded = 0;
+  if (template.milestones.length > 0) {
+    const last = await prisma.milestone.findFirst({
+      where: { projectId },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+    const base = (last?.sortOrder ?? -1) + 1;
+    await prisma.$transaction(
+      template.milestones.map((name, i) =>
+        prisma.milestone.create({ data: { projectId, taskActivity: name, sortOrder: base + i } })
+      )
+    );
+    milestonesAdded = template.milestones.length;
+  }
+
   await logActivity({
     projectId: project.id,
     projectName: project.name,
     userId: req.user!.sub,
     userName: req.user!.name,
-    action: `applied task template "${template.name}" (${tasks.length} task${tasks.length === 1 ? "" : "s"})`,
+    action:
+      `applied task template "${template.name}" (${tasks.length} task${tasks.length === 1 ? "" : "s"}` +
+      (milestonesAdded ? `, ${milestonesAdded} milestone${milestonesAdded === 1 ? "" : "s"}` : "") +
+      ")",
   });
 
   res.status(201).json(tasks);

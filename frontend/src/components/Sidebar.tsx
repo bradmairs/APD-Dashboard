@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getProjects, getUpcomingTasks } from "../api";
+import { getApprovals, getProjects, getUpcomingTasks } from "../api";
 import { batched } from "../batch";
 import { useAuth } from "../auth/AuthContext";
 import { APP_VERSION } from "../version";
@@ -13,18 +13,19 @@ export { Icon, ICONS } from "./icons";
 
 // Counts shown beside menu items, fetched at most once a minute however
 // many pages are opened.
-let countsCache: { at: number; promise: Promise<{ projects: number; due: number }> } | null = null;
+let countsCache: { at: number; promise: Promise<{ projects: number; due: number; approvals: number }> } | null = null;
 
 function loadCounts() {
   if (!countsCache || Date.now() - countsCache.at > 60_000) {
     countsCache = {
       at: Date.now(),
-      promise: batched(() => Promise.all([getProjects(), getUpcomingTasks()]), { preferCache: true })
-        .then(([projects, tasks]) => ({
+      promise: batched(() => Promise.all([getProjects(), getUpcomingTasks(), getApprovals({ mine: "pending" })]), { preferCache: true })
+        .then(([projects, tasks, approvals]) => ({
           projects: projects.length,
           due: tasks.filter((t) => isTaskOverdue(t) || isTaskDueSoon(t)).length,
+          approvals: approvals.length,
         }))
-        .catch(() => ({ projects: 0, due: 0 })),
+        .catch(() => ({ projects: 0, due: 0, approvals: 0 })),
     };
   }
   return countsCache.promise;
@@ -56,7 +57,7 @@ export default function Sidebar({ collapsed: collapsedPref, onToggleCollapsed, o
   const collapsed = collapsedPref && !mobile;
   const { user } = useAuth();
   const location = useLocation();
-  const [counts, setCounts] = useState<{ projects: number; due: number } | null>(null);
+  const [counts, setCounts] = useState<{ projects: number; due: number; approvals: number } | null>(null);
   const [recent, setRecent] = useState<RecentProject[]>(() => (user ? loadRecentProjects(user.id) : []));
 
   useEffect(() => {
@@ -89,6 +90,7 @@ export default function Sidebar({ collapsed: collapsedPref, onToggleCollapsed, o
         { label: "Today & Upcoming", icon: "clock", to: "/?tab=today", tab: "today", badge: counts?.due, shortcut: "G T" },
         { label: "My week", icon: "calendar", to: "/?tab=week", tab: "week", shortcut: "G W" },
         { label: "Alerts", icon: "alert", to: "/?tab=alerts", tab: "alerts", shortcut: "G A" },
+        { label: "Approvals", icon: "checkCircle", to: "/approvals", badge: counts?.approvals, shortcut: "G P" },
         { label: "Charts", icon: "chart", to: "/?tab=charts", tab: "charts", shortcut: "G C" },
         { label: "Activity", icon: "activity", to: "/?tab=activity", tab: "activity", shortcut: "G V" },
       ],
@@ -100,6 +102,7 @@ export default function Sidebar({ collapsed: collapsedPref, onToggleCollapsed, o
         { label: "Lessons Learned", icon: "book", to: "/lessons-learned", shortcut: "G L" },
         { label: "Tool Suggestions", icon: "idea", to: "/tool-suggestions", shortcut: "G S" },
         { label: "Reports", icon: "report", to: "/reports", shortcut: "G R" },
+        { label: "Capital works", icon: "dollar", to: "/capital-works", shortcut: "G F" },
       ],
     },
     {
@@ -138,7 +141,7 @@ export default function Sidebar({ collapsed: collapsedPref, onToggleCollapsed, o
               Project Management Dashboard
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              Asset &amp; Project Delivery <span className="text-slate-400 dark:text-slate-500">v{APP_VERSION}</span>
+              Asset &amp; Project Delivery <span className="text-slate-500 dark:text-slate-400">v{APP_VERSION}</span>
             </div>
           </div>
         )}

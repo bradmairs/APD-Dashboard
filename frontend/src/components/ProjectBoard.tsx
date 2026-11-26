@@ -88,6 +88,10 @@ export default function ProjectBoard({ projects, currentUser, healthByProjectId,
                         setOver(null);
                       }}
                       onClick={() => onOpen(p)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") onOpen(p);
+                      }}
                       className={`card card-hover p-3 cursor-pointer ${draggable ? "active:cursor-grabbing" : ""} ${
                         dragId === p.id ? "opacity-50" : ""
                       }`}

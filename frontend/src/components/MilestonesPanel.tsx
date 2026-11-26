@@ -105,7 +105,7 @@ export default function MilestonesPanel({
                       <button
                         onClick={() => onReorder(milestone, "up")}
                         disabled={index === 0}
-                        className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed leading-none text-xs"
+                        className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed leading-none text-xs"
                         aria-label="Move up"
                       >
                         ▲
@@ -113,7 +113,7 @@ export default function MilestonesPanel({
                       <button
                         onClick={() => onReorder(milestone, "down")}
                         disabled={index === milestones.length - 1}
-                        className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed leading-none text-xs"
+                        className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed leading-none text-xs"
                         aria-label="Move down"
                       >
                         ▼
@@ -123,7 +123,7 @@ export default function MilestonesPanel({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         {milestone.wbsItem && (
-                          <span className="text-xs text-slate-400 dark:text-slate-500">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
                             {milestone.wbsItem}
                           </span>
                         )}

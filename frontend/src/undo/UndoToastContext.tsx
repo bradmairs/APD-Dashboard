@@ -64,7 +64,7 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
               <button
                 onClick={() => dismiss(entry.id)}
                 aria-label="Dismiss"
-                className="shrink-0 text-slate-400 hover:text-slate-200 leading-none"
+                className="shrink-0 text-slate-500 hover:text-slate-200 leading-none"
               >
                 ×
               </button>

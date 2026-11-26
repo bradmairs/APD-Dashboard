@@ -151,6 +151,7 @@ export default function TenderPackagesPanel({
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={tenderPackage.status}
                         onChange={(e) =>
                           handleStatusChange(tenderPackage, e.target.value as TenderStatus)
@@ -200,7 +201,7 @@ export default function TenderPackagesPanel({
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={tenderPackage.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Managed by {tenderPackage.managedByName}
                         {tenderPackage.submissionsReceived !== null &&
                           ` · ${tenderPackage.submissionsReceived} submission${tenderPackage.submissionsReceived === 1 ? "" : "s"} received`}

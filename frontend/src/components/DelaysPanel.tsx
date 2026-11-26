@@ -133,6 +133,7 @@ export default function DelaysPanel({ delays, onCreate, onUpdate, onDelete }: Pr
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={delay.status}
                         onChange={(e) => handleStatusChange(delay, e.target.value as DelayStatus)}
                         className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
@@ -178,9 +179,9 @@ export default function DelaysPanel({ delays, onCreate, onUpdate, onDelete }: Pr
                           )
                       )}
                       {!hasDetail && (
-                        <p className="text-xs text-slate-400 dark:text-slate-500">No further detail recorded.</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">No further detail recorded.</p>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">Logged by {delay.raisedByName}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">Logged by {delay.raisedByName}</div>
                     </div>
                   )}
                 </li>

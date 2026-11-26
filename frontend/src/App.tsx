@@ -15,6 +15,9 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage"));
 const MonthlyReportViewPage = lazy(() => import("./pages/MonthlyReportViewPage"));
 const ProjectCloseoutReportPage = lazy(() => import("./pages/ProjectCloseoutReportPage"));
+const ProjectSummaryPage = lazy(() => import("./pages/ProjectSummaryPage"));
+const CapitalWorksPage = lazy(() => import("./pages/CapitalWorksPage"));
+const ApprovalsPage = lazy(() => import("./pages/ApprovalsPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const LessonsLearnedPage = lazy(() => import("./pages/LessonsLearnedPage"));
 const ToolSuggestionsPage = lazy(() => import("./pages/ToolSuggestionsPage"));
@@ -60,6 +63,18 @@ export default function App() {
                 <Route
                   path="/projects/:projectId/reports/:reportId"
                   element={<Protected><MonthlyReportViewPage /></Protected>}
+                />
+                <Route
+                  path="/projects/:id/summary"
+                  element={<Protected><ProjectSummaryPage /></Protected>}
+                />
+                <Route
+                  path="/capital-works"
+                  element={<Protected><CapitalWorksPage /></Protected>}
+                />
+                <Route
+                  path="/approvals"
+                  element={<Protected><ApprovalsPage /></Protected>}
                 />
                 <Route
                   path="/projects/:id/closeout-report"

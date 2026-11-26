@@ -193,6 +193,7 @@ export default function DocumentsPanel({ documents, onCreate, onUpdate, onDelete
                   <div className="flex items-start justify-between gap-3">
                     <input
                       type="checkbox"
+                      aria-label="Select this row"
                       checked={selection.isSelected(document.id)}
                       onChange={() => selection.toggle(document.id)}
                       className="mt-1.5 h-4 w-4 shrink-0"
@@ -221,6 +222,7 @@ export default function DocumentsPanel({ documents, onCreate, onUpdate, onDelete
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={document.status}
                         onChange={(e) =>
                           handleStatusChange(document, e.target.value as DocumentStatus)
@@ -270,7 +272,7 @@ export default function DocumentsPanel({ documents, onCreate, onUpdate, onDelete
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={document.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Added by {document.uploadedByName}
                       </div>
                     </div>

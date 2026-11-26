@@ -9,7 +9,7 @@ import html2canvas from "html2canvas";
 // have print-tuned CSS (print:p-0, print:border-0, etc.), so re-deriving
 // that layout in PDF-drawing calls would just be a second copy to keep in
 // sync with the HTML.
-export async function downloadElementAsPdf(elementId: string, filename: string): Promise<void> {
+async function renderElementToPdf(elementId: string): Promise<jsPDF> {
   const element = document.getElementById(elementId);
   if (!element) throw new Error(`Element #${elementId} not found`);
 
@@ -47,5 +47,16 @@ export async function downloadElementAsPdf(elementId: string, filename: string):
     heightLeft -= pageHeight;
   }
 
+  return pdf;
+}
+
+export async function downloadElementAsPdf(elementId: string, filename: string): Promise<void> {
+  const pdf = await renderElementToPdf(elementId);
   pdf.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
+}
+
+// The same PDF as a file to upload (e.g. to SharePoint) instead of download.
+export async function elementToPdfBlob(elementId: string): Promise<Blob> {
+  const pdf = await renderElementToPdf(elementId);
+  return pdf.output("blob");
 }

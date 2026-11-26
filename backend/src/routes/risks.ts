@@ -1,3 +1,4 @@
+import { recordChanges } from "../fieldHistory";
 import { Request, Response, Router } from "express";
 import { RiskConsequence, RiskLikelihood, RiskStatus, RiskType } from "@prisma/client";
 import { prisma } from "../prisma";
@@ -197,6 +198,16 @@ risksRouter.put("/:id", async (req, res) => {
       userId: req.user!.sub,
       userName: req.user!.name,
       action: describeRiskUpdate(before, data),
+    });
+    await recordChanges({
+      projectId: before.project.id,
+      entityType: "risk",
+      entityId: req.params.id,
+      entityLabel: before.title,
+      before: before as unknown as Record<string, unknown>,
+      after: data as Record<string, unknown>,
+      fields: ["type","title","category","inherentLikelihood","inherentConsequence","residualLikelihood","residualConsequence","ownerName","dueDate","status"],
+      user: req.user!,
     });
     res.json(risk);
   } catch (err) {

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ActionItem, Project, RagStatus, Task } from "../types";
+import { ActionItem, Project, RagStatus, ReportStatus, Task } from "../types";
 import { ProjectHealth } from "../health";
 import { formatDate } from "../format";
 import { Icon } from "./icons";
@@ -47,7 +47,7 @@ export function PortfolioHealthWidget({
                     key={c.key}
                     title={`${c.label}: ${c.count} (${share}%)`}
                     className="h-full rounded-[4px] flex items-center px-1.5 text-[11px] font-semibold"
-                    style={{ width: `${(c.count / total) * 100}%`, background: c.color, color: c.key === "AMBER" ? "#1a1a1a" : "#fff" }}
+                    style={{ width: `${(c.count / total) * 100}%`, background: c.color, color: "#111111" }}
                   >
                     {share >= 15 ? `${share}%` : ""}
                   </div>
@@ -98,7 +98,7 @@ export function UpcomingCompletionsWidget({ projects }: { projects: Project[] })
             <li key={p.id} className="flex items-center gap-3">
               <div className="w-12 shrink-0 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-center py-1">
                 <div className="text-base font-semibold text-blue-700 dark:text-blue-300 leading-none">{days}</div>
-                <div className="text-[10px] uppercase tracking-wide text-blue-700/70 dark:text-blue-300/70">{days === 1 ? "day" : "days"}</div>
+                <div className="text-[10px] uppercase tracking-wide text-blue-800 dark:text-blue-200">{days === 1 ? "day" : "days"}</div>
               </div>
               <div className="min-w-0">
                 <Link to={`/projects/${p.id}`} className="block text-sm font-medium text-slate-800 dark:text-slate-200 truncate hover:underline">
@@ -163,7 +163,7 @@ export function DueCalendarWidget({ tasks, actionItems }: { tasks: Task[]; actio
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-7 text-center text-[10px] font-medium text-slate-400 mb-1">
+      <div className="grid grid-cols-7 text-center text-[10px] font-medium text-slate-500 mb-1">
         {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
           <div key={i}>{d}</div>
         ))}
@@ -224,6 +224,73 @@ export function DueCalendarWidget({ tasks, actionItems }: { tasks: Task[]; actio
             </ul>
           )}
         </div>
+      )}
+    </section>
+  );
+}
+
+export function currentMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// Projects with key details missing, so they're fixed before reporting:
+// no project manager, no dates, no TRIM folder, no budget, or no monthly
+// report started for this month (from the 15th). Click a project to fix it.
+export function MissingDetailsWidget({ projects, reportStatus }: { projects: Project[]; reportStatus: ReportStatus[] | null }) {
+  const active = projects.filter((p) => p.status !== "COMPLETE" && p.status !== "CANCELLED");
+  const noReport = new Set((reportStatus ?? []).filter((r) => !r.hasReport).map((r) => r.projectId));
+  const askReport = new Date().getDate() >= 15;
+  const checks: { label: string; missing: (p: Project) => boolean }[] = [
+    { label: "No project manager", missing: (p) => !p.projectManager },
+    { label: "No start or target date", missing: (p) => !p.startDate || !p.targetCompletionDate },
+    { label: "No TRIM folder", missing: (p) => !p.trimFolder },
+    { label: "No budget", missing: (p) => !p.budget && !p.latestApprovedBudget },
+    ...(askReport && reportStatus ? [{ label: "This month's report not started", missing: (p: Project) => noReport.has(p.id) }] : []),
+  ];
+  const rows = checks
+    .map((c) => ({ ...c, projects: active.filter(c.missing) }))
+    .filter((c) => c.projects.length > 0);
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <section className={`${card} p-4`} aria-labelledby="w-missing">
+      <h2 id="w-missing" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+        Missing details
+      </h2>
+      {rows.length === 0 ? (
+        <p className="text-sm text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1.5">
+          <Icon name="checkCircle" className="w-4 h-4" /> Every active project has its key details.
+        </p>
+      ) : (
+        <ul className="space-y-1">
+          {rows.map((r) => (
+            <li key={r.label}>
+              <button
+                type="button"
+                onClick={() => setOpen(open === r.label ? null : r.label)}
+                aria-expanded={open === r.label}
+                className="w-full flex items-center gap-2 text-sm py-1 text-left text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white"
+              >
+                <Icon name="alert" className="w-4 h-4 text-amber-500" />
+                <span className="flex-1">{r.label}</span>
+                <span className="tabular-nums text-xs rounded-full px-2 py-0.5 bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                  {r.projects.length}
+                </span>
+              </button>
+              {open === r.label && (
+                <ul className="ml-6 mb-1 space-y-0.5">
+                  {r.projects.map((p) => (
+                    <li key={p.id}>
+                      <Link to={`/projects/${p.id}`} className="text-xs text-blue-700 dark:text-blue-300 hover:underline">
+                        {p.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

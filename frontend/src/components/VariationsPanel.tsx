@@ -16,6 +16,8 @@ import { useSelection } from "../useSelection";
 import { useConfirm } from "../confirm/ConfirmContext";
 import EmptyState from "./EmptyState";
 import { Icon } from "./icons";
+import CommentsButton from "../comments/CommentsButton";
+import ApprovalControl from "../approvals/ApprovalControl";
 
 interface Props {
   variations: Variation[];
@@ -177,6 +179,7 @@ export default function VariationsPanel({
                   <div className="flex items-start justify-between gap-3">
                     <input
                       type="checkbox"
+                      aria-label="Select this row"
                       checked={selection.isSelected(variation.id)}
                       onChange={() => selection.toggle(variation.id)}
                       className="mt-1.5 h-4 w-4 shrink-0"
@@ -189,7 +192,7 @@ export default function VariationsPanel({
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         {variation.reference && (
-                          <span className="text-xs text-slate-400 dark:text-slate-500">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
                             {variation.reference}
                           </span>
                         )}
@@ -225,6 +228,7 @@ export default function VariationsPanel({
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label={`Status of ${variation.title}`}
                         value={variation.status}
                         onChange={(e) =>
                           handleStatusChange(variation, e.target.value as VariationStatus)
@@ -237,6 +241,8 @@ export default function VariationsPanel({
                           </option>
                         ))}
                       </select>
+                      <ApprovalControl projectId={variation.projectId} entityType="variation" entityId={variation.id} />
+                      <CommentsButton projectId={variation.projectId} entityType="variation" entityId={variation.id} label={variation.title} />
                       <button
                         onClick={() => openEdit(variation)}
                         className="icon-btn"
@@ -274,7 +280,7 @@ export default function VariationsPanel({
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={variation.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Raised by {variation.raisedByName}
                         {variation.dateDecided &&
                           ` · Decided ${formatDate(variation.dateDecided)}`}

@@ -156,7 +156,7 @@ export default function StatCards({
                     ? "text-emerald-700 dark:text-emerald-400"
                     : t.delta?.good === false
                       ? "text-red-600 dark:text-red-400"
-                      : "text-slate-500 dark:text-slate-400"
+                      : "text-slate-600 dark:text-slate-300"
                 }`}
               >
                 {t.delta?.text}

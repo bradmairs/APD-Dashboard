@@ -28,7 +28,9 @@ import {
   listReportFiles,
   matchScore,
   uploadFile,
+  uploadPdfBesideWorkbook,
 } from "../sharepoint";
+import express from "express";
 
 const RAG_VALUES = new Set(["GREEN", "AMBER", "RED"]);
 
@@ -271,6 +273,42 @@ projectReportsRouter.get(
   })
 );
 
+// POST /api/projects/:id/reports/:reportId/pdf (body: the PDF) — saves the
+// report's PDF into _PDFs beside the project's SharePoint workbook (3.0).
+projectReportsRouter.post(
+  "/:reportId/pdf",
+  express.raw({ type: "application/pdf", limit: "25mb" }),
+  wrap(async (req, res) => {
+    const project = await prisma.project.findUnique({ where: { id: req.params.id } });
+    if (!project) return res.status(404).json({ error: "Project not found" });
+    if (!project.monthlyReportDriveId || !project.monthlyReportItemId) {
+      return res.status(400).json({ error: "Link this project's workbook in SharePoint first" });
+    }
+    const report = await prisma.monthlyReport.findUnique({ where: { id: (req.params as unknown as { reportId: string }).reportId } });
+    if (!report || report.projectId !== project.id) return res.status(404).json({ error: "Report not found" });
+    const body = req.body as Buffer;
+    if (!Buffer.isBuffer(body) || body.length < 100 || body.subarray(0, 4).toString() !== "%PDF") {
+      return res.status(400).json({ error: "That isn't a PDF" });
+    }
+    const label = report.reportingMonth.toLocaleDateString("en-AU", { month: "long", year: "numeric", timeZone: "UTC" });
+    const saved = await uploadPdfBesideWorkbook(
+      req.user!.sub,
+      project.monthlyReportDriveId,
+      project.monthlyReportItemId,
+      `Monthly Report - ${project.name} - ${label}.pdf`,
+      body
+    );
+    await logActivity({
+      projectId: project.id,
+      projectName: project.name,
+      userId: req.user!.sub,
+      userName: req.user!.name,
+      action: `saved the ${label} monthly report PDF to SharePoint`,
+    });
+    res.json(saved);
+  })
+);
+
 projectReportsRouter.post(
   "/",
   async (req: Request<ProjectParams>, res: Response) => {
@@ -493,6 +531,79 @@ projectReportsRouter.post(
 // ---- /api/reports/:id --------------------------------------------------------------
 
 export const reportsRouter = Router();
+
+// POST /api/reports/draft-all { month } (admins) — starts this month's
+// report for every active project that doesn't have one yet, filled from
+// the project and last month just like "New month" does. Nothing existing
+// is changed. Returns which projects got a draft.
+reportsRouter.post("/draft-all", async (req, res) => {
+  if (req.user!.role !== "ADMIN") return res.status(403).json({ error: "Only admins can draft every report" });
+  const month = normalizeReportingMonth((req.body as Record<string, unknown>).month);
+  if (!month) return res.status(400).json({ error: "A valid reporting month is required" });
+  const projects = await prisma.project.findMany({
+    where: { status: { notIn: ["COMPLETE", "CANCELLED"] } },
+    select: { id: true, name: true, monthlyReports: { where: { reportingMonth: month }, select: { id: true } } },
+    orderBy: { name: "asc" },
+  });
+  const created: { projectId: string; projectName: string }[] = [];
+  const skipped: { projectId: string; projectName: string; reason: string }[] = [];
+  for (const p of projects) {
+    if (p.monthlyReports.length > 0) {
+      skipped.push({ projectId: p.id, projectName: p.name, reason: "already has one" });
+      continue;
+    }
+    try {
+      const loaded = await loadAutofillData(p.id);
+      if (!loaded) continue;
+      const { content } = buildAutofill(loaded.data, monthKey(month), await previousContent(p.id, month));
+      const normalized = normalizeContent(content);
+      await prisma.monthlyReport.create({
+        data: {
+          projectId: p.id,
+          reportingMonth: month,
+          ...legacyColumns(normalized),
+          content: normalized as unknown as Prisma.InputJsonValue,
+          createdById: req.user!.sub,
+          authorName: req.user!.name,
+        },
+      });
+      await logActivity({
+        projectId: p.id,
+        projectName: p.name,
+        userId: req.user!.sub,
+        userName: req.user!.name,
+        action: `drafted the ${formatReportMonth(month)} monthly report (batch)`,
+      });
+      created.push({ projectId: p.id, projectName: p.name });
+    } catch (err) {
+      console.error("draft-all", p.id, err);
+      skipped.push({ projectId: p.id, projectName: p.name, reason: "couldn't be drafted" });
+    }
+  }
+  res.json({ month: monthKey(month), created, skipped });
+});
+
+// GET /api/reports/status?month= — which active projects have a report for
+// the month (for reminders and the missing-details widget).
+reportsRouter.get("/status", async (req, res) => {
+  const month = normalizeReportingMonth(req.query.month);
+  if (!month) return res.status(400).json({ error: "A valid reporting month is required" });
+  const projects = await prisma.project.findMany({
+    where: { status: { notIn: ["COMPLETE", "CANCELLED"] } },
+    select: { id: true, name: true, projectManager: true, projectManagerId: true, monthlyReports: { where: { reportingMonth: month }, select: { id: true, loggedAt: true } } },
+    orderBy: { name: "asc" },
+  });
+  res.json(
+    projects.map((p) => ({
+      projectId: p.id,
+      projectName: p.name,
+      projectManager: p.projectManager,
+      projectManagerId: p.projectManagerId,
+      hasReport: p.monthlyReports.length > 0,
+      logged: !!p.monthlyReports[0]?.loggedAt,
+    }))
+  );
+});
 
 // GET /api/reports/health-history — every project's budget and schedule
 // RAG from its last few monthly reports (newest first), for the trend

@@ -1,3 +1,4 @@
+import { recordChanges } from "../fieldHistory";
 import { Request, Response, Router } from "express";
 import { PaymentClaimStatus } from "@prisma/client";
 import { prisma } from "../prisma";
@@ -201,6 +202,16 @@ paymentClaimsRouter.put("/:id", async (req, res) => {
       userId: req.user!.sub,
       userName: req.user!.name,
       action: describePaymentClaimUpdate(before, data),
+    });
+    await recordChanges({
+      projectId: before.project.id,
+      entityType: "paymentClaim",
+      entityId: req.params.id,
+      entityLabel: `Payment claim ${before.claimNumber}`,
+      before: before as unknown as Record<string, unknown>,
+      after: data as Record<string, unknown>,
+      fields: ["claimNumber","periodEnding","claimedAmount","certifiedAmount","status","dateSubmitted","dateCertified","datePaid","trimLink"],
+      user: req.user!,
     });
     res.json(claim);
   } catch (err) {

@@ -15,6 +15,7 @@ import BulkActionsBar from "./BulkActionsBar";
 import { useSelection } from "../useSelection";
 import { useConfirm } from "../confirm/ConfirmContext";
 import { Icon } from "./icons";
+import CommentsButton from "../comments/CommentsButton";
 
 interface Props {
   defects: DefectItem[];
@@ -167,6 +168,7 @@ export default function DefectsPanel({ defects, onCreate, onUpdate, onDelete }: 
                   <div className="flex items-start justify-between gap-3">
                     <input
                       type="checkbox"
+                      aria-label="Select this row"
                       checked={selection.isSelected(defect.id)}
                       onChange={() => selection.toggle(defect.id)}
                       className="mt-1.5 h-4 w-4 shrink-0"
@@ -197,6 +199,7 @@ export default function DefectsPanel({ defects, onCreate, onUpdate, onDelete }: 
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={defect.status}
                         onChange={(e) =>
                           handleStatusChange(defect, e.target.value as DefectStatus)
@@ -209,6 +212,7 @@ export default function DefectsPanel({ defects, onCreate, onUpdate, onDelete }: 
                           </option>
                         ))}
                       </select>
+                      <CommentsButton projectId={defect.projectId} entityType="defect" entityId={defect.id} label={defect.title} />
                       <button
                         onClick={() => openEdit(defect)}
                         className="icon-btn"
@@ -246,7 +250,7 @@ export default function DefectsPanel({ defects, onCreate, onUpdate, onDelete }: 
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={defect.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Raised by {defect.raisedByName} on {formatDate(defect.dateRaised)}
                         {defect.dateClosed && ` · Verified ${formatDate(defect.dateClosed)}`}
                       </div>

@@ -112,7 +112,7 @@ export default function TenderSubmissionsPanel({
                   </button>
                 </div>
                 {rows.length === 0 ? (
-                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     No submissions recorded for this package.
                   </p>
                 ) : (

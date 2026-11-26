@@ -150,7 +150,7 @@ export default function ToolboxTalksPanel({ talks, onCreate, onUpdate, onDelete 
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={talk.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Recorded by {talk.recordedByName}
                       </div>
                     </div>

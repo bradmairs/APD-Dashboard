@@ -149,7 +149,7 @@ export default function ContractsPanel({
                             className={
                               remaining < 0
                                 ? "text-red-600 dark:text-red-400 font-medium"
-                                : "text-slate-500 dark:text-slate-400"
+                                : "text-slate-600 dark:text-slate-300"
                             }
                           >
                             Remaining: {formatCurrency(remaining)}
@@ -161,6 +161,7 @@ export default function ContractsPanel({
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={contract.status}
                         onChange={(e) =>
                           handleStatusChange(contract, e.target.value as ContractStatus)
@@ -214,7 +215,7 @@ export default function ContractsPanel({
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={contract.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Added by {contract.addedByName}
                       </div>
                     </div>

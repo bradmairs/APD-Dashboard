@@ -16,6 +16,7 @@ import BulkActionsBar from "./BulkActionsBar";
 import { useSelection } from "../useSelection";
 import { useConfirm } from "../confirm/ConfirmContext";
 import { Icon } from "./icons";
+import CommentsButton from "../comments/CommentsButton";
 
 interface Props {
   rfis: Rfi[];
@@ -163,6 +164,7 @@ export default function RfisPanel({ rfis, onCreate, onUpdate, onDelete }: Props)
                   <div className="flex items-start justify-between gap-3">
                     <input
                       type="checkbox"
+                      aria-label="Select this row"
                       checked={selection.isSelected(rfi.id)}
                       onChange={() => selection.toggle(rfi.id)}
                       className="mt-1.5 h-4 w-4 shrink-0"
@@ -198,6 +200,7 @@ export default function RfisPanel({ rfis, onCreate, onUpdate, onDelete }: Props)
                     </button>
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                       <select
+                        aria-label="Status"
                         value={rfi.status}
                         onChange={(e) => handleStatusChange(rfi, e.target.value as RfiStatus)}
                         className="text-xs rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-1.5 py-1"
@@ -208,6 +211,7 @@ export default function RfisPanel({ rfis, onCreate, onUpdate, onDelete }: Props)
                           </option>
                         ))}
                       </select>
+                      <CommentsButton projectId={rfi.projectId} entityType="rfi" entityId={rfi.id} label={`${rfi.rfiNumber}: ${rfi.subject}`} />
                       <button
                         onClick={() => openEdit(rfi)}
                         className="icon-btn"
@@ -251,7 +255,7 @@ export default function RfisPanel({ rfis, onCreate, onUpdate, onDelete }: Props)
                           <FormattedText className="text-slate-700 dark:text-slate-300" text={rfi.notes} />
                         </div>
                       )}
-                      <div className="text-xs text-slate-400 dark:text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         Raised by {rfi.raisedByName}
                         {rfi.dateAnswered && ` · Answered ${formatDate(rfi.dateAnswered)}`}
                       </div>
