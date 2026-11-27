@@ -3,6 +3,7 @@
 #   scripts/bump-version.sh fix       # a fix or minor change                 2.6.1 -> 2.6.2
 #   scripts/bump-version.sh feature   # a new feature or bigger upgrade       2.6.1 -> 2.7.0
 #   scripts/bump-version.sh section   # a significant new section (like Monthly Reporting)  2.6.1 -> 3.0.0
+#   scripts/bump-version.sh rebase    # main moved on: renumber this branch onto the next version after main's
 # (patch, minor and major also work, as fix, feature and section.) Each part counts on its own and never
 # rolls over into the next, so a whole-number change always means a new section.
 # Writes VERSION, both package.json files (and their lockfiles), the README's version line, and starts
@@ -12,6 +13,22 @@ cd "$(dirname "$0")/.."
 
 kind="${1:-}"
 current="$(tr -d '[:space:]' < VERSION)"
+if [ "$kind" = "rebase" ]; then
+  # 2026-11-28: main moved on: keep this branch's size of change (fix, feature or section) on top of main's version.
+  git fetch -q origin main
+  base="$(git show "$(git merge-base HEAD origin/main):VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
+  kind="$(python3 - "$base" "$current" <<'PY2'
+import sys
+try:
+    bs, bf, bx = (int(p) for p in sys.argv[1].split("."))
+    cs, cf, cx = (int(p) for p in sys.argv[2].split("."))
+except ValueError:
+    print("fix"); sys.exit()
+print("section" if cs > bs else "feature" if cf > bf else "fix")
+PY2
+)"
+  current="$(git show origin/main:VERSION | tr -d '[:space:]')"
+fi
 next="$(python3 - "$current" "$kind" <<'PY'
 import sys
 current, kind = sys.argv[1], {"patch": "fix", "minor": "feature", "major": "section"}.get(sys.argv[2], sys.argv[2])
@@ -35,7 +52,8 @@ echo "$next" > VERSION
 for app in backend frontend; do
   (cd "$app" && npm version "$next" --no-git-tag-version --allow-same-version >/dev/null)
 done
-sed -i -E "s#^\*\*Version [0-9.]+\*\* \(\[release notes\]\(docs/releases/[0-9.]+\.md\)#**Version $next** ([release notes](docs/releases/$next.md)#" README.md
+# perl, not sed: macOS's sed -i -E takes -E as a backup suffix, and the pattern then fails (as in SirisOS 11.9).
+perl -pi -e "s#^\\*\\*Version [0-9.]+\\*\\* \\(\\[release notes\\]\\(docs/releases/[0-9.]+\\.md\\)#**Version $next** ([release notes](docs/releases/$next.md)#" README.md
 notes="docs/releases/$next.md"
 [ -f "$notes" ] || printf '# APD Project Management Dashboard %s\n\n- \n' "$next" > "$notes"
 echo "Dashboard $current -> $next (fill in $notes; if users will notice the change, rewrite frontend/src/whatsNew/whatsNew.md for them too)"
