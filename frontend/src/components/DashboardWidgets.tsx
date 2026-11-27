@@ -91,7 +91,7 @@ export function UpcomingCompletionsWidget({ projects }: { projects: Project[] })
         Next completions
       </h2>
       {upcoming.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">No upcoming target completions.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">No upcoming approved completion targets.</p>
       ) : (
         <ul className="space-y-3">
           {upcoming.map(({ p, days }) => (
@@ -243,7 +243,7 @@ export function MissingDetailsWidget({ projects, reportStatus }: { projects: Pro
   const askReport = new Date().getDate() >= 15;
   const checks: { label: string; missing: (p: Project) => boolean }[] = [
     { label: "No project manager", missing: (p) => !p.projectManager },
-    { label: "No start or target date", missing: (p) => !p.startDate || !p.targetCompletionDate },
+    { label: "No start date or approved completion target", missing: (p) => !p.startDate || !p.targetCompletionDate },
     { label: "No TRIM folder", missing: (p) => !p.trimFolder },
     { label: "No budget", missing: (p) => !p.budget && !p.latestApprovedBudget },
     ...(askReport && reportStatus ? [{ label: "This month's report not started", missing: (p: Project) => noReport.has(p.id) }] : []),

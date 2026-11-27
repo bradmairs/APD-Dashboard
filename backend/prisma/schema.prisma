@@ -430,6 +430,7 @@ model Project {
   approvalRequests               ApprovalRequest[]
   fieldChanges                   FieldChange[]
   comments                       Comment[]
+  notes                          ProjectNote[]
 
   @@index([projectManagerId])
 }
@@ -1746,5 +1747,29 @@ model Comment {
   updatedAt   DateTime @updatedAt
 
   @@index([entityType, entityId])
+  @@index([projectId])
+}
+
+// ---- Ideas & notes (3.1) ---------------------------------------------------------
+
+// A brainstorming note on a project: a coloured card with a title, formatted
+// text (the same light Markdown as other long-text fields) and tags. Notes
+// link to each other with [[Note title]], like Obsidian, and can be exported
+// as an Obsidian vault.
+model ProjectNote {
+  id            String   @id @default(cuid())
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  title         String
+  body          String   @default("")
+  tags          String[] @default([])
+  color         String?
+  pinned        Boolean  @default(false)
+  createdById   String?
+  createdByName String
+  updatedByName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@index([projectId])
 }

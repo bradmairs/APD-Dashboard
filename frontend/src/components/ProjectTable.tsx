@@ -38,8 +38,8 @@ const COLUMNS: { id: ColumnId; label: string; align?: "right" }[] = [
   { id: "health", label: "Health" },
   { id: "manager", label: "Manager" },
   { id: "location", label: "Location" },
-  { id: "budget", label: "Original Budget", align: "right" },
-  { id: "target", label: "Target Completion" },
+  { id: "budget", label: "Latest Approved Budget", align: "right" },
+  { id: "target", label: "Approved Completion Target" },
   { id: "tasks", label: "Tasks" },
 ];
 const HIDDEN_KEY = "apd.projectTable.hiddenColumns";
@@ -126,8 +126,16 @@ export default function ProjectTable({
         return project.projectManager || "—";
       case "location":
         return project.location || "—";
-      case "budget":
-        return formatCurrency(project.budget);
+      case "budget": {
+        // Latest approved, or the original when it hasn't changed.
+        const latest = project.latestApprovedBudget ?? project.budget;
+        const changed = project.latestApprovedBudget !== null && project.budget !== null && Number(project.latestApprovedBudget) !== Number(project.budget);
+        return (
+          <span title={changed ? `Original budget ${formatCurrency(project.budget)}` : undefined}>
+            {formatCurrency(latest)}
+          </span>
+        );
+      }
       case "target":
         return (
           <span className={isProjectOverdue(project) ? "text-red-600 dark:text-red-400 font-medium" : ""}>

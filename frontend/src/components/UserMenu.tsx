@@ -10,6 +10,8 @@ import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "./NotificationBell";
 import { Icon } from "./icons";
 import { useMenuKeys } from "../useMenuKeys";
+import { SHOW_WHATS_NEW_EVENT } from "./WhatsNew";
+import { APP_VERSION } from "../version";
 
 // ---- Table density (Comfortable / Compact), remembered in this browser ----
 const DENSITY_KEY = "apd.density";
@@ -160,6 +162,18 @@ export default function UserMenu() {
                 <Icon name="sliders" className="w-4 h-4 text-slate-500" />
                 Keyboard shortcuts
                 <kbd className="ml-auto text-[11px] text-slate-500">?</kbd>
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  close();
+                  window.dispatchEvent(new Event(SHOW_WHATS_NEW_EVENT));
+                }}
+                className="menu-item"
+              >
+                <Icon name="idea" className="w-4 h-4 text-slate-500" />
+                What's new
+                <span className="ml-auto text-xs text-slate-500">v{APP_VERSION}</span>
               </button>
             </div>
 

@@ -44,7 +44,10 @@ export default function StatCards({
   variations,
   cashFlowEntries = [],
   onSelect,
+  scopeLabel,
 }: {
+  // Shown above the tiles when they cover only some projects.
+  scopeLabel?: string;
   projects: Project[];
   variations: Variation[];
   cashFlowEntries?: CashFlowEntry[];
@@ -113,7 +116,7 @@ export default function StatCards({
       tone: overdue > 0
         ? "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300"
         : "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-      delta: overdue > 0 ? { text: "Past target completion", good: false } : { text: "All on track", good: true },
+      delta: overdue > 0 ? { text: "Past approved completion target", good: false } : { text: "All on track", good: true },
       alert: overdue > 0,
     },
     {
@@ -128,6 +131,12 @@ export default function StatCards({
   ];
 
   return (
+    <div>
+    {scopeLabel && (
+      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2 inline-flex items-center gap-1.5">
+        <Icon name="user" className="w-3.5 h-3.5" /> {scopeLabel} · {total} project{total === 1 ? "" : "s"}
+      </p>
+    )}
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {tiles.map((t) => {
         const select = onSelect?.[t.key];
@@ -176,6 +185,7 @@ export default function StatCards({
           </div>
         );
       })}
+    </div>
     </div>
   );
 }

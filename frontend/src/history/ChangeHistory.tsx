@@ -24,7 +24,7 @@ const FIELD_LABELS: Record<string, string> = {
   contingency: "Contingency",
   contractValue: "Contract value",
   startDate: "Start date",
-  targetCompletionDate: "Target completion",
+  targetCompletionDate: "Approved completion target",
   actualCompletionDate: "Actual completion",
   reference: "Reference",
   title: "Title",

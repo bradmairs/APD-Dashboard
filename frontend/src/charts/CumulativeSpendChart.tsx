@@ -45,7 +45,7 @@ export default function CumulativeSpendChart({
   if (starts.length === 0 || ends.length === 0) {
     return (
       <p className="text-sm text-slate-500 dark:text-slate-400 py-6 text-center">
-        Add a start/target completion date or a cash flow entry to see spend
+        Add a start date / approved completion target or a cash flow entry to see spend
         over time.
       </p>
     );

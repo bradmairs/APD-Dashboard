@@ -73,6 +73,7 @@ import {
   TenderPackage,
   TenderPackageInput,
   TenderSubmission,
+  ProjectNote,
   TenderSubmissionInput,
   ToolboxTalk,
   ToolboxTalkInput,
@@ -276,6 +277,8 @@ import { formatCurrency, formatDate, formatReportMonth } from "../format";
 import { trimHref, useTrimRecordUrl } from "../trim";
 import { canModifyProject } from "../permissions";
 import AppLayout from "../components/AppLayout";
+import NotesPanel from "../notes/NotesPanel";
+import { createProjectNote, deleteProjectNote, getProjectNotes, importProjectNotes, updateProjectNote } from "../api";
 import { ChangeHistoryButton } from "../history/ChangeHistory";
 import { Icon } from "../components/icons";
 import ProjectProgressStrip from "../components/ProjectProgressStrip";
@@ -326,6 +329,7 @@ const TAB_SECTIONS: Record<ProjectTabId, JumpSection[]> = {
     { id: "stakeholders", label: "Stakeholders" },
     { id: "actions", label: "Actions & Decisions" },
     { id: "meeting-minutes", label: "Meeting Minutes" },
+    { id: "notes", label: "Ideas & Notes" },
     { id: "activity", label: "Activity" },
   ],
   schedule: [
@@ -431,6 +435,7 @@ export default function ProjectDetailPage() {
   const [safetyInspections, setSafetyInspections] = useState<SafetyInspection[]>([]);
   const [tenderPackages, setTenderPackages] = useState<TenderPackage[]>([]);
   const [tenderSubmissions, setTenderSubmissions] = useState<TenderSubmission[]>([]);
+  const [notes, setNotes] = useState<ProjectNote[]>([]);
   const { expanded: expandedSections, setExpanded: setSectionsExpanded } =
     useExpandedSections();
   const trimRecordUrl = useTrimRecordUrl();
@@ -525,6 +530,7 @@ export default function ProjectDetailPage() {
         tenderPackageData,
         delayData,
         tenderSubmissionData,
+        notesData,
       ] = await batched(() => Promise.all([
         getProject(id),
         getProjectActivity(id),
@@ -562,6 +568,7 @@ export default function ProjectDetailPage() {
         getTenderPackages(id),
         getDelays(id),
         getTenderSubmissions(id),
+        getProjectNotes(id),
       ]), { preferCache: initial, onCacheHit: () => (refreshAfter = true) });
       // Two quick saves overlap two refreshes — only the newest one's
       // result is applied, so an older response can't overwrite it.
@@ -602,6 +609,7 @@ export default function ProjectDetailPage() {
       setSafetyInspections(safetyInspectionData);
       setTenderPackages(tenderPackageData);
       setTenderSubmissions(tenderSubmissionData);
+      setNotes(notesData);
       loadedIdRef.current = id;
     } catch (err) {
       if (seq !== loadSeqRef.current) return;
@@ -1521,6 +1529,7 @@ export default function ProjectDetailPage() {
     "actions": actionItems.length,
     "meeting-minutes": meetingMinutes.length,
     "activity": activity.length,
+    "notes": notes.length,
     "milestones": milestones.length,
     "tasks": (project.tasks ?? []).length,
     "delays": delays.length,
@@ -1735,7 +1744,7 @@ export default function ProjectDetailPage() {
                 />
               )}
               <Field label="Start Date" value={formatDate(project.startDate)} />
-              <Field label="Target Completion" value={formatDate(project.targetCompletionDate)} />
+              <Field label="Approved Completion Target" value={formatDate(project.targetCompletionDate)} />
               {revisedTargetCompletion &&
                 revisedTargetCompletion !== project.targetCompletionDate && (
                   <Field label="Revised Completion" value={formatDate(revisedTargetCompletion)} />
@@ -1839,6 +1848,30 @@ export default function ProjectDetailPage() {
                   onCreateAction={handleCreateActionItem}
                   onExtractActions={handleExtractMeetingActions}
                   onGenerateDraft={handleGenerateMeetingMinutesDraft}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection {...section("notes")} className={WIDE_SECTION}>
+                <NotesPanel
+                  projectName={project.name}
+                  notes={notes}
+                  onCreate={async (data) => {
+                    const created = await createProjectNote(project.id, data);
+                    await load();
+                    return created;
+                  }}
+                  onUpdate={async (note, data) => {
+                    await updateProjectNote(note.id, data);
+                    await load();
+                  }}
+                  onDelete={async (note) => {
+                    await deleteProjectNote(note.id);
+                    await load();
+                  }}
+                  onImport={async (list) => {
+                    await importProjectNotes(project.id, list);
+                    await load();
+                  }}
                 />
               </CollapsibleSection>
 

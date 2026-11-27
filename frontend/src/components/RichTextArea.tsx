@@ -158,7 +158,13 @@ export default function RichTextArea({
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-1 mb-1" role="toolbar" aria-label="Formatting">
+      {/* Stays pinned at the top of the form while scrolling through long
+          text (e.g. meeting minutes), so the buttons are always in reach. */}
+      <div
+        className="sticky top-0 z-10 -mx-1 px-1 py-1 mb-1 flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm"
+        role="toolbar"
+        aria-label="Formatting"
+      >
         {BUTTONS.map((b) => (
           <button
             key={b.command}
@@ -202,6 +208,8 @@ export default function RichTextArea({
         aria-label={ariaLabel}
         aria-required={required}
         contentEditable={!disabled}
+        spellCheck
+        lang="en-AU"
         suppressContentEditableWarning
         onInput={emit}
         onBlur={emit}

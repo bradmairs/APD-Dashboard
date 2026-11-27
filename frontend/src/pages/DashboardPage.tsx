@@ -412,6 +412,16 @@ export default function DashboardPage() {
     await loadData();
   }
 
+  // The top four tiles follow the project manager filter (My projects / a
+  // chosen manager), so they describe the projects actually being shown.
+  const statProjects = useMemo(
+    () => (pmFilter ? projects.filter((p) => p.projectManager === pmFilter) : projects),
+    [projects, pmFilter]
+  );
+  const statIds = useMemo(() => new Set(statProjects.map((p) => p.id)), [statProjects]);
+  const statVariations = useMemo(() => variations.filter((v) => statIds.has(v.projectId)), [variations, statIds]);
+  const statCashFlow = useMemo(() => cashFlowEntries.filter((e) => statIds.has(e.projectId)), [cashFlowEntries, statIds]);
+
   const statusCounts = useMemo(() => {
     const counts: Partial<Record<ProjectStatus, number>> = {};
     for (const p of projects) counts[p.status] = (counts[p.status] ?? 0) + 1;
@@ -674,9 +684,10 @@ export default function DashboardPage() {
         <SinceLastVisit activity={recentActivity} projects={projects} />
 
         <StatCards
-          projects={projects}
-          variations={variations}
-          cashFlowEntries={cashFlowEntries}
+          projects={statProjects}
+          variations={statVariations}
+          cashFlowEntries={statCashFlow}
+          scopeLabel={pmFilter ? (user && pmFilter === user.name ? "Your projects" : `${pmFilter}'s projects`) : undefined}
           onSelect={{
             total: () => {
               setStatusFilter("ALL");
@@ -731,6 +742,8 @@ export default function DashboardPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, number, location, manager…"
+                spellCheck={false}
+                aria-label="Search projects"
                 className="w-full sm:w-72 rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm"
               />
             </div>
@@ -819,7 +832,7 @@ export default function DashboardPage() {
                   { header: "Latest Approved Budget", key: "latestApprovedBudget" },
                   { header: "Contract Value", key: "contractValue" },
                   { header: "Start Date", key: "startDate" },
-                  { header: "Target Completion", key: "targetCompletion" },
+                  { header: "Approved Completion Target", key: "targetCompletion" },
                   { header: "Actual Completion", key: "actualCompletion" },
                 ]}
                 rows={filteredProjects.map((p) => ({

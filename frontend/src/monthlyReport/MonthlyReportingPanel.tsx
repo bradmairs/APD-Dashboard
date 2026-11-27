@@ -66,7 +66,18 @@ function summaryText(s: WorkbookImportSummary): string {
   if (s.created.length) parts.push(`added ${s.created.join(", ")}`);
   if (s.updated.length) parts.push(`updated ${s.updated.join(", ")}`);
   if (s.skipped.length) parts.push(`kept the dashboard's ${s.skipped.join(", ")}`);
-  return parts.length ? `Imported: ${parts.join("; ")}.` : "Nothing to import.";
+  let text = parts.length ? `Imported: ${parts.join("; ")}.` : "Nothing to import.";
+  const p = s.projectData;
+  if (p) {
+    const cf = p.cashFlow.created + p.cashFlow.updated;
+    const ms = p.milestones.created + p.milestones.updated;
+    text +=
+      ` Project updated: ${cf} cash flow month${cf === 1 ? "" : "s"}, ${ms} milestone${ms === 1 ? "" : "s"}` +
+      (p.approvedCompletion === "set" ? ", approved completion target" : "") +
+      (p.cashFlow.skipped + p.milestones.skipped > 0 ? ` (${p.cashFlow.skipped + p.milestones.skipped} existing value(s) kept)` : "") +
+      ".";
+  }
+  return text;
 }
 
 export default function MonthlyReportingPanel({ project, reports, currentUser, onReportsChange }: Props) {
@@ -83,6 +94,9 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  // 3.1: also copy the workbook's cash flow and schedule into the project.
+  const [importProjectData, setImportProjectData] = useState(false);
+  const [overwriteProjectData, setOverwriteProjectData] = useState(false);
   const [newMonth, setNewMonth] = useState(() =>
     sorted[0] ? addMonth(sorted[0].reportingMonth.slice(0, 7), 1) : currentMonth()
   );
@@ -209,7 +223,9 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
 
   async function uploadWorkbook(file: File) {
     if (!(await confirmDiscard())) return;
-    const result = await run("Importing the workbook…", () => uploadMonthlyReportWorkbook(project.id, file));
+    const result = await run("Importing the workbook…", () =>
+      uploadMonthlyReportWorkbook(project.id, file, { importProjectData, overwrite: overwriteProjectData })
+    );
     if (!result) return;
     setWorkbook(result.workbook);
     setDirty(false);
@@ -236,7 +252,9 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
 
   async function pull() {
     if (!(await confirmDiscard())) return;
-    const result = await run("Pulling from SharePoint…", () => pullSharePointWorkbook(project.id));
+    const result = await run("Pulling from SharePoint…", () =>
+      pullSharePointWorkbook(project.id, { importProjectData, overwrite: overwriteProjectData })
+    );
     if (!result) return;
     setDirty(false);
     await reloadReports();
@@ -459,6 +477,22 @@ export default function MonthlyReportingPanel({ project, reports, currentUser, o
               <button className={btn} onClick={() => fileInput.current?.click()} disabled={!!busy}>
                 {workbook?.source === "upload" ? "Re-upload / import" : "Upload workbook"}
               </button>
+              <label
+                className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"
+                title="Copies the workbook's monthly cash flow (actuals to the report month, forecasts after), its milestones and its approved completion date into this project"
+              >
+                <input type="checkbox" checked={importProjectData} onChange={(e) => setImportProjectData(e.target.checked)} />
+                Also update cash flow &amp; schedule
+              </label>
+              {importProjectData && (
+                <label
+                  className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"
+                  title="Replace values already in the dashboard. Unticked, only blanks are filled in."
+                >
+                  <input type="checkbox" checked={overwriteProjectData} onChange={(e) => setOverwriteProjectData(e.target.checked)} />
+                  Overwrite existing
+                </label>
+              )}
               {workbook?.source && (
                 <a className={btn} href={monthlyReportWorkbookDownloadUrl(project.id)}>
                   Download workbook
