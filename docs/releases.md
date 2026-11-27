@@ -14,7 +14,19 @@ Each change merged to main moves the version up by one of:
 
 Each part counts on its own and never rolls over into the next (2.9.0 plus a feature is 2.10.0), so a change in the
 whole number always means a new section. The script writes every version spot and starts
-`docs/releases/<version>.md`: fill in what changed, why, and how to update, then run `scripts/sync-release-notes.sh`. That copies the notes into the app, where they're shown once in a "What's new" pop-up after the update (and from the avatar menu). Bump in the same pull request as the change.
+`docs/releases/<version>.md`: fill in what changed, why, and how to update. Bump in the same pull request as the change.
+
+### What's new, for users
+
+The app shows a "What's new" pop-up once after an update (and from the avatar menu). It's written for the people
+using the dashboard, separately from the release notes, in
+[`frontend/src/whatsNew/whatsNew.md`](../frontend/src/whatsNew/whatsNew.md):
+
+- What's new and how to use it, in plain words, with a screenshot where it helps. Pictures (`.webp`, at most 1200 px
+  wide) sit beside it and are shown with `![What it shows](file.webp)`.
+- No server or update steps, technical detail, or things that were already there; those belong in the release notes.
+- It starts with `<!-- version: X.Y.Z -->`. The pop-up shows once per version written there, so set it to the new
+  version when you rewrite the notes, and leave it alone for changes users won't notice.
 
 ### The renumbering (2026-11-25)
 

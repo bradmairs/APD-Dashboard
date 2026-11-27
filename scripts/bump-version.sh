@@ -38,4 +38,4 @@ done
 sed -i -E "s#^\*\*Version [0-9.]+\*\* \(\[release notes\]\(docs/releases/[0-9.]+\.md\)#**Version $next** ([release notes](docs/releases/$next.md)#" README.md
 notes="docs/releases/$next.md"
 [ -f "$notes" ] || printf '# APD Project Management Dashboard %s\n\n- \n' "$next" > "$notes"
-echo "Dashboard $current -> $next (fill in $notes, then run scripts/sync-release-notes.sh)"
+echo "Dashboard $current -> $next (fill in $notes; if users will notice the change, rewrite frontend/src/whatsNew/whatsNew.md for them too)"
