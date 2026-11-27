@@ -7,7 +7,7 @@ per project for tracking tasks/milestones and their due dates.
 
 ## Versioning
 
-**Version 3.1.0** ([release notes](docs/releases/3.1.0.md), [all releases](docs/releases.md))
+**Version 3.1.1** ([release notes](docs/releases/3.1.1.md), [all releases](docs/releases.md))
 
 Versions are **Section.Feature.Fix**, the same as SirisOS: `scripts/bump-version.sh fix` for a fix or minor change,
 `feature` for a new feature or bigger upgrade, `section` for a significant new section. Every pull request bumps it

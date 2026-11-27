@@ -1,8 +1,28 @@
 import { ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import notes from "../whatsNew.md?raw";
+import rawNotes from "../whatsNew/whatsNew.md?raw";
 import { APP_VERSION } from "../version";
 import { Icon } from "./icons";
+
+// The pop-up's pictures, kept beside the notes in src/whatsNew/ and
+// referred to by file name: ![What it shows](picture.webp).
+const PICTURES = import.meta.glob("../whatsNew/*.{webp,png,jpg,jpeg,gif,svg}", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+export function pictureUrl(file: string): string | undefined {
+  return PICTURES[`../whatsNew/${file.replace(/^\.\//, "")}`];
+}
+
+// The notes start with <!-- version: X.Y.Z -->, the version they were
+// written for. The pop-up shows once per notes version, so a release that
+// doesn't change them (a small fix) doesn't show the same notes again.
+export function notesVersion(md: string): string | undefined {
+  return /<!--\s*version:\s*([\d.]+)\s*-->/.exec(md)?.[1];
+}
+const NOTES_VERSION = notesVersion(rawNotes) ?? APP_VERSION;
+const notes = rawNotes.replace(/<!--[\s\S]*?-->/g, "").trim();
 
 const SEEN_KEY = "apd.whatsNewSeen";
 export const SHOW_WHATS_NEW_EVENT = "apd:whats-new";
@@ -33,7 +53,7 @@ function inline(text: string): ReactNode[] {
   return out;
 }
 
-// The release notes (a small Markdown subset: headings, paragraphs and
+// The notes (a small Markdown subset: headings, paragraphs, pictures and
 // bullet lists, nested by indentation).
 export function renderNotes(md: string): ReactNode {
   const lines = md.replace(/\r/g, "").split("\n");
@@ -59,6 +79,25 @@ export function renderNotes(md: string): ReactNode {
       i++;
       continue;
     }
+    const pic = /^!\[([^\]]*)\]\(([^)]+)\)\s*$/.exec(line.trim());
+    if (pic) {
+      const src = pictureUrl(pic[2]);
+      if (src)
+        blocks.push(
+          <figure key={i} className="my-3">
+            <a href={src} target="_blank" rel="noreferrer" title="Open full size" className="block">
+            <img
+              src={src}
+              alt={pic[1]}
+              loading="lazy"
+              className="block mx-auto max-w-full max-h-[26rem] w-auto rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm bg-white hover:shadow-md transition-shadow"
+            />
+            </a>
+          </figure>
+        );
+      i++;
+      continue;
+    }
     if (/^\s*-\s+/.test(line)) {
       const items: { depth: number; text: string }[] = [];
       while (i < lines.length && /^\s*-\s+/.test(lines[i])) {
@@ -79,7 +118,7 @@ export function renderNotes(md: string): ReactNode {
       continue;
     }
     const para: string[] = [];
-    while (i < lines.length && lines[i].trim() && !/^(#|\s*-\s)/.test(lines[i])) {
+    while (i < lines.length && lines[i].trim() && !/^(#|\s*-\s|\s*!\[)/.test(lines[i])) {
       para.push(lines[i]);
       i++;
     }
@@ -92,9 +131,10 @@ export function renderNotes(md: string): ReactNode {
   return blocks;
 }
 
-// "What's new": after the app is updated, the first visit shows the new
-// version's release notes once (remembered in this browser). Reopen it
-// any time from the avatar menu.
+// "What's new": after an update with new notes for users, the first visit
+// shows them once (remembered in this browser). Reopen it any time from the
+// avatar menu. The notes, in src/whatsNew/whatsNew.md, are written for the
+// people using the dashboard; the full release notes are in docs/releases/.
 export default function WhatsNew() {
   const [open, setOpen] = useState(false);
 
@@ -104,9 +144,9 @@ export default function WhatsNew() {
       seen = localStorage.getItem(SEEN_KEY);
     } catch {
       // storage blocked: don't nag
-      seen = APP_VERSION;
+      seen = NOTES_VERSION;
     }
-    if (seen !== APP_VERSION && APP_VERSION !== "dev") setOpen(true);
+    if (seen !== NOTES_VERSION && APP_VERSION !== "dev") setOpen(true);
     const show = () => setOpen(true);
     window.addEventListener(SHOW_WHATS_NEW_EVENT, show);
     return () => window.removeEventListener(SHOW_WHATS_NEW_EVENT, show);
@@ -115,7 +155,7 @@ export default function WhatsNew() {
   function close() {
     setOpen(false);
     try {
-      localStorage.setItem(SEEN_KEY, APP_VERSION);
+      localStorage.setItem(SEEN_KEY, NOTES_VERSION);
     } catch {
       // fine
     }
@@ -140,7 +180,7 @@ export default function WhatsNew() {
         aria-modal="true"
         aria-labelledby="whats-new-title"
         onMouseDown={(e) => e.stopPropagation()}
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col animate-pop-in overflow-hidden"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-3xl max-h-[88vh] flex flex-col animate-pop-in overflow-hidden"
       >
         <div className="px-6 pt-6 pb-4 bg-gradient-to-br from-blue-600 to-navy-700 text-white">
           <div className="flex items-start justify-between gap-4">
