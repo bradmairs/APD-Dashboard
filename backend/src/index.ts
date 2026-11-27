@@ -3,6 +3,7 @@ import { batchRouter } from "./routes/batch";
 import approvalsRouter from "./routes/approvals";
 import commentsRouter from "./routes/comments";
 import historyRouter from "./routes/history";
+import notesRouter from "./routes/notes";
 import express, { ErrorRequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -92,7 +93,7 @@ app.use(cors({ origin: corsOrigin, credentials: true }));
 // Compress responses (JSON lists can be large); the GVW deployment has no
 // nginx in front to do it.
 app.use(compression());
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
 app.get("/api/health", (_req, res) => {
@@ -168,6 +169,7 @@ app.use("/api/batch", requireAuth, batchRouter(port));
 app.use("/api/approvals", readOnlyGuarded, approvalsRouter);
 app.use("/api/comments", readOnlyGuarded, commentsRouter);
 app.use("/api/history", requireAuth, historyRouter);
+app.use("/api/notes", readOnlyGuarded, notesRouter);
 
 // Catches multer's file-size/file-type rejections (thrown before any route
 // handler runs) and reports them as clean JSON instead of Express's default

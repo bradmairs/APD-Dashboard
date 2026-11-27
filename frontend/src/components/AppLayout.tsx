@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar, { Icon } from "./Sidebar";
 import UserMenu, { SHOW_SHORTCUTS_EVENT } from "./UserMenu";
 import QuickAddMenu from "./QuickAdd";
+import WhatsNew from "./WhatsNew";
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "../layout/navMemory";
 
 interface Props {
@@ -133,6 +134,7 @@ export default function AppLayout({ title, subtitle, actions, secondaryNav, chil
       >
         Skip to content
       </a>
+      <WhatsNew />
       <div className="hidden lg:block shrink-0 sticky top-0 h-screen z-40">
         <Sidebar collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
       </div>

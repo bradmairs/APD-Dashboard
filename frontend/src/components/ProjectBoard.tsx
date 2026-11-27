@@ -104,7 +104,7 @@ export default function ProjectBoard({ projects, currentUser, healthByProjectId,
                       )}
                       <div className="flex items-center justify-between gap-2 mt-2.5">
                         {healthByProjectId[p.id] ? <HealthBadge health={healthByProjectId[p.id]} /> : <span />}
-                        <span className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">{formatCurrency(p.budget)}</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-300 tabular-nums">{formatCurrency(p.latestApprovedBudget ?? p.budget)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
                         <span className="inline-flex items-center gap-1 truncate">

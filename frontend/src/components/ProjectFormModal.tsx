@@ -410,7 +410,7 @@ export default function ProjectFormModal({ project, onClose, onSave }: Props) {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Target Completion
+                Approved Completion Target
               </label>
               <DateInput
                 value={targetCompletionDate}

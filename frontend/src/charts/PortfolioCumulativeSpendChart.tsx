@@ -57,7 +57,7 @@ export default function PortfolioCumulativeSpendChart({
   if (starts.length === 0 || ends.length === 0) {
     return (
       <p className="text-sm text-slate-500 dark:text-slate-400 py-6 text-center">
-        Add project start/target completion dates or cash flow entries to see
+        Add project start dates / approved completion targets or cash flow entries to see
         portfolio spend over time.
       </p>
     );

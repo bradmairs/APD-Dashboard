@@ -234,6 +234,7 @@ export default function GlobalSearch() {
       <input
         ref={inputRef}
         type="search"
+        spellCheck={false}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);

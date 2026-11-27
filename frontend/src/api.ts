@@ -64,6 +64,9 @@ import {
   FieldChange,
   RecordComment,
   ReportStatus,
+  ProjectDataImportOptions,
+  ProjectNote,
+  ProjectNoteInput,
   ProjectInput,
   Rfi,
   RfiInput,
@@ -515,9 +518,14 @@ export function getMonthlyReportWorkbook(projectId: string): Promise<MonthlyRepo
 
 export function uploadMonthlyReportWorkbook(
   projectId: string,
-  file: File
+  file: File,
+  options?: ProjectDataImportOptions
 ): Promise<WorkbookImportSummary & { workbook: MonthlyReportWorkbook }> {
   const formData = new FormData();
+  if (options?.importProjectData) {
+    formData.append("importProjectData", "true");
+    if (options.overwrite) formData.append("overwrite", "true");
+  }
   formData.append("file", file);
   return fetch(`${API_BASE}/projects/${projectId}/reports/workbook`, {
     method: "POST",
@@ -581,10 +589,12 @@ export function linkSharePointWorkbook(
   }).then((res) => handle(res));
 }
 
-export function pullSharePointWorkbook(projectId: string): Promise<WorkbookImportSummary> {
-  return fetch(`${API_BASE}/projects/${projectId}/reports/sharepoint/pull`, { method: "POST" }).then((res) =>
-    handle(res)
-  );
+export function pullSharePointWorkbook(projectId: string, options?: ProjectDataImportOptions): Promise<WorkbookImportSummary> {
+  return fetch(`${API_BASE}/projects/${projectId}/reports/sharepoint/pull`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(options ?? {}),
+  }).then((res) => handle(res));
 }
 
 export function deleteMonthlyReport(id: string): Promise<void> {
@@ -1893,4 +1903,38 @@ export function saveReportPdfToSharePoint(projectId: string, reportId: string, p
     headers: { "Content-Type": "application/pdf" },
     body: pdf,
   }).then((res) => handle(res));
+}
+
+// ---- 3.1: ideas & notes -----------------------------------------------------------
+
+export function getProjectNotes(projectId: string): Promise<ProjectNote[]> {
+  return fetch(`${API_BASE}/notes?projectId=${encodeURIComponent(projectId)}`).then((res) => handle(res));
+}
+
+export function createProjectNote(projectId: string, data: Partial<ProjectNoteInput>): Promise<ProjectNote> {
+  return fetch(`${API_BASE}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, projectId }),
+  }).then((res) => handle(res));
+}
+
+export function importProjectNotes(projectId: string, notes: Partial<ProjectNoteInput>[]): Promise<ProjectNote[]> {
+  return fetch(`${API_BASE}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ projectId, notes }),
+  }).then((res) => handle(res));
+}
+
+export function updateProjectNote(id: string, data: Partial<ProjectNoteInput>): Promise<ProjectNote> {
+  return fetch(`${API_BASE}/notes/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((res) => handle(res));
+}
+
+export function deleteProjectNote(id: string): Promise<void> {
+  return fetch(`${API_BASE}/notes/${id}`, { method: "DELETE" }).then((res) => handle(res));
 }

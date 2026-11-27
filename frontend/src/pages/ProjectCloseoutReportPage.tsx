@@ -253,9 +253,9 @@ export default function ProjectCloseoutReportPage() {
 
           <ReportSection title="Final Schedule Outcome">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-              <ReportField label="Original Target Completion" value={formatDate(project.targetCompletionDate)} />
+              <ReportField label="Original Approved Completion Target" value={formatDate(project.targetCompletionDate)} />
               <ReportField label="Approved EOT Days" value={String(eotDaysTotal)} />
-              <ReportField label="Revised Target Completion" value={formatDate(finalCompletionDate)} />
+              <ReportField label="Revised Approved Completion Target" value={formatDate(finalCompletionDate)} />
               <ReportField label="Actual Completion" value={formatDate(project.actualCompletionDate)} />
               <ReportField label="Overall Milestone Completion" value={overallMilestonePercent === null ? "—" : `${overallMilestonePercent}%`} />
             </div>

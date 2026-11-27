@@ -69,7 +69,7 @@ export default function PortfolioTimeline({ projects, onOpen }: { projects: Proj
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Portfolio timeline</h2>
         <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-2 rounded-sm" style={{ background: accent }} /> Start → target completion
+            <span className="w-3 h-2 rounded-sm" style={{ background: accent }} /> Start → approved completion target
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="w-3 h-2 rounded-sm" style={{ background: CRITICAL }} /> Overdue

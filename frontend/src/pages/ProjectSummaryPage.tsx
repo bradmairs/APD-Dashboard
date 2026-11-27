@@ -180,7 +180,7 @@ export default function ProjectSummaryPage() {
               <H>Key dates</H>
               <dl className="space-y-1">
                 <div><dt className="inline text-slate-500">Start: </dt><dd className="inline">{formatDate(project.startDate)}</dd></div>
-                <div><dt className="inline text-slate-500">Target: </dt><dd className="inline">{formatDate(project.targetCompletionDate)}</dd></div>
+                <div><dt className="inline text-slate-500">Approved target: </dt><dd className="inline">{formatDate(project.targetCompletionDate)}</dd></div>
                 {revised && revised !== project.targetCompletionDate && (
                   <div><dt className="inline text-slate-500">Revised (EOT): </dt><dd className="inline">{formatDate(revised)}</dd></div>
                 )}

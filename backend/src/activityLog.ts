@@ -76,7 +76,7 @@ const PROJECT_FIELD_LABELS: Record<string, string> = {
   latestApprovedBudget: "latest approved budget",
   contractValue: "contract value",
   startDate: "start date",
-  targetCompletionDate: "target completion date",
+  targetCompletionDate: "approved completion target",
   actualCompletionDate: "actual completion date",
 };
 

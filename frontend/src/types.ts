@@ -200,6 +200,17 @@ export interface WorkbookImportSummary {
   created: string[];
   updated: string[];
   skipped: string[];
+  // 3.1: when "update the project from the workbook" was ticked.
+  projectData?: {
+    cashFlow: { created: number; updated: number; skipped: number };
+    milestones: { created: number; updated: number; skipped: number };
+    approvedCompletion: "set" | "kept" | "none";
+  } | null;
+}
+
+export interface ProjectDataImportOptions {
+  importProjectData: boolean;
+  overwrite: boolean;
 }
 
 export interface WorkbookSyncResult {
@@ -1353,3 +1364,22 @@ export interface ReportStatus {
   hasReport: boolean;
   logged: boolean;
 }
+
+export type NoteColor = "yellow" | "blue" | "green" | "pink" | "purple" | "orange" | "slate";
+
+export interface ProjectNote {
+  id: string;
+  projectId: string;
+  title: string;
+  body: string;
+  tags: string[];
+  color: NoteColor | null;
+  pinned: boolean;
+  createdById: string | null;
+  createdByName: string;
+  updatedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProjectNoteInput = Pick<ProjectNote, "title" | "body" | "tags" | "color" | "pinned">;

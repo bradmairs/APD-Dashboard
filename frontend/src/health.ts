@@ -70,12 +70,12 @@ interface RagResult {
 function scheduleHealth(project: Project, eotClaims: EotClaim[]): RagResult {
   const effectiveTarget = revisedCompletionDate(project, eotClaims);
   if (!effectiveTarget || !project.startDate) {
-    return { status: "GREEN", reason: "No target completion date set." };
+    return { status: "GREEN", reason: "No approved completion target set." };
   }
   if (STATUSES_EXEMPT_FROM_OVERDUE.includes(project.status)) {
     return {
       status: "GREEN",
-      reason: `Status is ${STATUS_LABELS[project.status]}, which isn't tracked against the target date.`,
+      reason: `Status is ${STATUS_LABELS[project.status]}, which isn't tracked against the approved completion target.`,
     };
   }
 
@@ -91,7 +91,7 @@ function scheduleHealth(project: Project, eotClaims: EotClaim[]): RagResult {
   const dateLabel = formatDate(effectiveTarget);
   return {
     status: ragForPercentOf(elapsed, plannedDuration),
-    reason: `${pctElapsed}% of the planned timeframe elapsed, against a target completion of ${dateLabel}.`,
+    reason: `${pctElapsed}% of the planned timeframe elapsed, against an approved completion target of ${dateLabel}.`,
   };
 }
 

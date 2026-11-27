@@ -16,6 +16,7 @@ import {
   ragToHealth,
 } from "../monthlyReport/model";
 import { buildAutofill } from "../monthlyReport/autofill";
+import { importProjectData } from "../monthlyReport/projectImport";
 import {
   ParsedWorkbook,
   WorkbookError,
@@ -223,6 +224,26 @@ async function importWorkbook(
   return summary;
 }
 
+// 3.1: when asked ("importProjectData" true, optional "overwrite"), copy
+// the workbook's current month cash flow and schedule into the project.
+async function maybeImportProjectData(
+  project: { id: string; name: string },
+  parsed: ParsedWorkbook,
+  body: Record<string, unknown> | undefined,
+  user: NonNullable<Request["user"]>
+) {
+  const flag = (v: unknown) => v === true || v === "true" || v === "1" || v === "on";
+  if (!body || !flag(body.importProjectData) || !parsed.current) return null;
+  return importProjectData({
+    projectId: project.id,
+    projectName: project.name,
+    reportingMonth: parsed.current.reportingMonth,
+    content: parsed.current.content,
+    overwrite: flag(body.overwrite),
+    user,
+  });
+}
+
 function storedWorkbookPath(projectId: string, stored: string) {
   return path.join(projectUploadDir(projectId), path.basename(stored));
 }
@@ -424,7 +445,8 @@ projectReportsRouter.post(
       },
     });
     const summary = await importWorkbook(project.id, project.name, parsed, req.user!);
-    res.json({ workbook: workbookInfo(updated), ...summary });
+    const projectData = await maybeImportProjectData(project, parsed, req.body as Record<string, unknown>, req.user!);
+    res.json({ workbook: workbookInfo(updated), ...summary, projectData });
   })
 );
 
@@ -524,7 +546,9 @@ projectReportsRouter.post(
     }
     const file = await downloadFile(req.user!.sub, project.monthlyReportDriveId, project.monthlyReportItemId);
     const parsed = await readReportWorkbook(file.buffer);
-    res.json(await importWorkbook(project.id, project.name, parsed, req.user!));
+    const summary = await importWorkbook(project.id, project.name, parsed, req.user!);
+    const projectData = await maybeImportProjectData(project, parsed, req.body as Record<string, unknown>, req.user!);
+    res.json({ ...summary, projectData });
   })
 );
 

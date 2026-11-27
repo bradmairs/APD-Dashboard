@@ -20,6 +20,12 @@ describe("version", () => {
     }
   });
 
+  it("ships its release notes to the What's new pop-up", () => {
+    const notes = readFileSync(join(root, "docs", "releases", `${version}.md`), "utf8");
+    const copy = readFileSync(join(root, "frontend", "src", "whatsNew.md"), "utf8");
+    expect(copy, "run scripts/sync-release-notes.sh").toBe(notes);
+  });
+
   it("has release notes", () => {
     expect(() => readFileSync(join(root, "docs", "releases", `${version}.md`), "utf8")).not.toThrow();
   });

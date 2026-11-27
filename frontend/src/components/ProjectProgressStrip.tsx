@@ -57,7 +57,7 @@ export default function ProjectProgressStrip({ project, cashFlowEntries, revised
   const done = !!project.actualCompletionDate;
 
   let timePct: number | null = null;
-  let timeDetail = "Add a start and target date";
+  let timeDetail = "Add a start date and approved completion target";
   if (done) {
     timePct = 100;
     timeDetail = `Completed ${formatDate(project.actualCompletionDate)}`;
@@ -80,7 +80,7 @@ export default function ProjectProgressStrip({ project, cashFlowEntries, revised
   // Key dates on one line.
   const marks = [
     { label: "Start", iso: project.startDate, icon: "flag" },
-    { label: "Target", iso: project.targetCompletionDate, icon: "target" },
+    { label: "Approved target", iso: project.targetCompletionDate, icon: "target" },
     ...(revisedTargetCompletion && revisedTargetCompletion !== project.targetCompletionDate
       ? [{ label: "Revised", iso: revisedTargetCompletion, icon: "clock" }]
       : []),
